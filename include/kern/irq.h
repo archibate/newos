@@ -3,7 +3,6 @@
 
 #define IRQ_PIT		0
 #define IRQ_KBD		1
-#define IRQ_PIC1	2
 #define IRQ_COM1	3
 #define IRQ_COM0	4
 #define IRQ_ATA1	5

@@ -2,7 +2,7 @@
 # vim: ft=gdb ts=4 sts=4 tw=4
 
 define cn
-		file kernel
+		file build/vmlinux
 		target remote localhost:1234
 end
 cn
@@ -26,8 +26,3 @@ end
 define u
 	x/10i $pc
 end
-
-bc exec.c:114
-bc execve_inode
-bc *0x1000127
-bc *0x1000140

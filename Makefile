@@ -1,9 +1,12 @@
 COPT=-ggdb -gstabs+
-QEMUOPT=-serial stdio -display none
+QEMUOPT=-m 128 -serial stdio -display none
 QEMUCMD=qemu-system-i386 -kernel build/vmlinux $(QEMUOPT)
-SRCDIRS=kern lib
+SRCDIRS=kern mm lib
 SRCS=$(shell find $(SRCDIRS) -name '*.[cS]' -type f)
-OBJS=$(SRCS:%=build/%.o)
+OBJS+=build/tools/stext.c.o
+OBJS+=$(SRCS:%=build/%.o)
+OBJS+=$(shell gcc -m32 -print-libgcc-file-name)
+OBJS+=build/tools/ebss.c.o
 
 .PHONY: run
 run: build/vmlinux
@@ -18,7 +21,7 @@ build/%.S.o: %.S
 build/%.c.o: %.c
 	@echo - [cc] $<
 	@mkdir -p $(@D)
-	@gcc -nostdlib -nostdinc -fno-stack-protector $(COPT) -Iinclude -m32 -c -o $@ $<
+	@gcc -m32 -nostdlib -nostdinc -fno-stack-protector $(COPT) -D_KERNEL -Iinclude -c -o $@ $<
 
 info:
 	@echo COPT=$(COPT)
@@ -29,4 +32,4 @@ info:
 build/vmlinux: $(OBJS)
 	@echo + [ld] $@
 	@mkdir -p $(@D)
-	@ld -m elf_i386 -e _start -Ttext 0x100000 -o $@ $^ `gcc -m32 -print-libgcc-file-name`
+	@ld -m elf_i386 -e _start -Ttext 0x100000 -o $@ $^

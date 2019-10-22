@@ -5,6 +5,4 @@
 
 clock_t clock_tick;
 
-void do_clock(void);
-
 #endif

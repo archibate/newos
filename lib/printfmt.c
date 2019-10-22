@@ -135,17 +135,23 @@ static const char *const error_string[] =
 	[ESTRPIPE] = "Streams pipe error",
 }; // }}}
 
+static const char *const table[2] =
+{
+	"0123456789abcdef",
+	"0123456789ABCDEF",
+};
+
 /*
  * Print a number (base <= 16) in reverse order,
  * using specified putch function and associated pointer putdat.
  */
 static void
-printnum(void (*putch)(int, void*), void *putdat,
+printnum(void (*putch)(int, void*), void *putdat, const char *table,
 		unsigned long long num, unsigned base, int width, int padc)
 {
 	// first recursively print all preceding (more significant) digits
 	if (num >= base) {
-		printnum(putch, putdat, num / base, base, width - 1, padc);
+		printnum(putch, putdat, table, num / base, base, width - 1, padc);
 	} else {
 		// print any needed pad characters before first digit
 		while (--width > 0)
@@ -153,7 +159,7 @@ printnum(void (*putch)(int, void*), void *putdat,
 	}
 
 	// then print this (the least significant) digit
-	putch("0123456789abcdef"[num % base], putdat);
+	putch(table[num % base], putdat);
 }
 
 // Get an unsigned int of various possible sizes from a varargs list,
@@ -312,12 +318,18 @@ process_precision:
 
 				// (unsigned) octal
 			case 'o':
+				if (altflag)
+					putch('0', putdat);
 				num = getuint(&ap, lflag);
 				base = 8;
 				goto number;
 
 				// pointer
 			case 'p':
+				width = sizeof(unsigned long) * 2;
+				padc = '0';
+				if (altflag)
+					putch('0', putdat);
 				putch('0', putdat);
 				putch('x', putdat);
 				num = (unsigned long long)
@@ -325,12 +337,17 @@ process_precision:
 				base = 16;
 				goto number;
 
-				// (unsigned) hexadecimal
+				// (unsigned) hexadecimal, 'X' for captial character
+			case 'X':
 			case 'x':
+				if (altflag) {
+					putch('0', putdat);
+					putch('x', putdat);
+				}
 				num = getuint(&ap, lflag);
 				base = 16;
 number:
-				printnum(putch, putdat, num, base, width, padc);
+				printnum(putch, putdat, table[ch == 'X'], num, base, width, padc);
 				break;
 
 				// escaped '%' character

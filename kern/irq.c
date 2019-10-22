@@ -63,6 +63,6 @@ do_irq(int irq)
 	if (irq_proc[irq])
 		irq_proc[irq]();
 	else
-		printk("Ignored IRQ #%d", irq);
+		printk("WARNING: Ignored IRQ #%d", irq);
 	irq_done(irq);
 }

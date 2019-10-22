@@ -1,6 +1,7 @@
 #ifndef _SYS_REG_H
 #define _SYS_REG_H 1
 
+#define NREGS 18
 #define SS 17
 #define ESP 16
 #define EFLAGS 15
