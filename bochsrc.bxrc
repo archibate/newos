@@ -1,0 +1,2 @@
+boot: c
+ata0-master: type=disk, path=build/boot.img, mode=flat
