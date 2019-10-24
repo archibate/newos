@@ -18,6 +18,7 @@ const char message[] =
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifdef _WIN32
 #include <conio.h>
 #else
@@ -93,7 +94,7 @@ struct node {
 	struct node *next;
 } *head, *tail;
 char *map;
-int X = 18, Y = 18, dx, dy, interval = 800;
+int score = 0, X = 18, Y = 18, dx, dy, interval = 800;
 #define M(x, y) map[(x) + (X+2)*(y)]
 
 void mkfood(void)
@@ -109,7 +110,7 @@ void mkfood(void)
 void init(void)
 {
 	int x, y, size;
-	srand(233);
+	srand((unsigned long)time(NULL));
 	size = (X+2) * (Y+2);
 	map = malloc(size);
 	memset(map, ' ', size);
@@ -139,6 +140,7 @@ void show(void)
 		}
 		putchar('\n');
 	}
+	printf("score: %d\n", score);
 }
 
 void over(void)

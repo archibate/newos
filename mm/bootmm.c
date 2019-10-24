@@ -14,6 +14,12 @@ void *boot_alloc(size_t n)
 	return p;
 }
 
+void switch_pgdir(pde_t *pd)
+{
+	memcpy(pd, mmu_get_pgdir(), KERNEL_END >> 22);
+	mmu_set_pgdir(pd);
+}
+
 pde_t *kern_pd;
 pte_t *kern_ptes;
 

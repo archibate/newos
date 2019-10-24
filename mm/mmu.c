@@ -40,7 +40,6 @@ pgdir_walk(pde_t *pd, void *va, int create)
 		if (!create)
 			return NULL;
 		struct page_info *page = alloc_page_zero();
-		if (!page) return NULL;
 		pd[i] = page2pa(page) | PG_P | PG_W | PG_U;
 	}
 	return (pte_t *)kvaddr(pd[i] & PGMASK) + j;

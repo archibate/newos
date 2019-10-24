@@ -1,5 +1,6 @@
 ; vim: ft=nasm ai
 
+BOOT_DRV  equ 0x80
 tmp_kaddr equ 0x10000
 fin_kaddr equ 0x100000
 kern_size equ 0x10000
@@ -61,7 +62,7 @@ read_kernel:
 read_sect:
 	mov si, disk_addr_packet
 	mov ah, 0x42
-	mov dl, 0x80
+	mov dl, BOOT_DRV
 	int 0x13
 	ret
 

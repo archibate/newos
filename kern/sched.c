@@ -114,8 +114,7 @@ static struct task initial_task;
 void
 sched_init(void)
 {
-	initial_task.priority = 0;
-	initial_task.counter = 1;
+	initial_task.priority = 1;
 	current = task[0] = &initial_task;
 }
 
@@ -152,7 +151,9 @@ new_task(struct task *parent)
 __attribute__((noreturn)) void
 kthread_exit(int status)
 {
-	panic("kthread_exit not impelemented");
+	current->state = TASK_ZOMBIE;
+	schedule();
+	panic("kthread_exit schedule returned");
 }
 
 __attribute__((noreturn)) static void

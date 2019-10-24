@@ -18,6 +18,7 @@ struct tty_struct
 	int (*putc)(int);
 	int (*getc)(int *);
 	tty_queue_t read_q;
+	struct task *read_wait;
 };
 
 void tty_intr(int num);

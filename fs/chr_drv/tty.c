@@ -1,4 +1,5 @@
 #include <kern/tty.h>
+#include <kern/sched.h>
 
 static struct tty_struct ttys[NTTYS];
 
@@ -12,9 +13,8 @@ static int
 tty_getc(struct tty_struct *tty)
 {
 	int c;
-	while (RING_EMPTY(&tty->read_q)) {
-		// TODO: use sleep_on here (DEP sched, cli)
-	}
+	while (RING_EMPTY(&tty->read_q))
+		block_on(&tty->read_wait);
 	// tty_intr filled one, we pop it
 	RING_GET(&tty->read_q, c);
 	return c;
@@ -31,6 +31,8 @@ tty_intr(int num)
 		} else {
 			tty_putc(tty, c);
 			RING_PUT(&tty->read_q, c);
+			if (c == '\n')
+				wake_up(&tty->read_wait);
 		}
 	}
 }

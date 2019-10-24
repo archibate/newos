@@ -1,7 +1,7 @@
 COPT=-ggdb -gstabs+
 QEMUOPT=-m 128 -serial stdio -display none
 QEMUCMD=qemu-system-i386 $(QEMUOPT)
-SRCDIRS=kern mm lib
+SRCDIRS=kern mm fs lib
 SRCS=$(shell find $(SRCDIRS) -name '*.[cS]' -type f)
 OBJS+=build/tools/stext.c.o
 OBJS+=$(SRCS:%=build/%.o)
@@ -9,7 +9,7 @@ OBJS+=$(shell gcc -m32 -print-libgcc-file-name)
 OBJS+=build/tools/ebss.c.o
 
 .PHONY: default
-default: bochs
+default: boot
 
 .PHONY: run
 run: build/vmlinux
@@ -21,7 +21,7 @@ boot: build/boot.img
 
 .PHONY: bochs
 bochs: build/boot.img
-	@-bochs -qf bochsrc.bxrc
+	@-bochs -qf tools/bochsrc.bxrc
 
 build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin
 	@echo + [gen] $@

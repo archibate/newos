@@ -14,6 +14,7 @@
 #define KERNEL_CODE 0x100000
 #define KERNEL_PMAP 0x400000
 #define KERNEL_HEAP 0x20000000
+#define KERNEL_END  0x40000000
 
 #define kvaddr(pa) ((void *)(pa) + KERNEL_BASE)
 #define paddr(va) ((physaddr_t)(va) - KERNEL_BASE)
@@ -27,7 +28,9 @@ struct page_info
 };
 
 void mmu_enable(int enable);
+pde_t *mmu_get_pgdir(void);
 void mmu_set_pgdir(pde_t *pd);
+void switch_pgdir(pde_t *pd);
 void tlb_invalidate(pde_t *pd, void *va);
 pte_t *pgdir_walk(pde_t *pd, void *va, int create);
 struct page_info *page_lookup(pde_t *pd, void *va, pte_t **pte_store);
