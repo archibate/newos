@@ -36,12 +36,12 @@ struct nefs_super_block
 
 struct nefs_inode
 {
-	nefs_mode_t i_mode;
-	nefs_size_t i_size;
-	nefs_nlink_t i_nlink;
-	nefs_zone_t i_zone[NEFS_NR_DIRECT];
-	nefs_zone_t i_s_zone;
-	nefs_time_t i_atime;
+	nefs_mode_t mode;
+	nefs_size_t size;
+	nefs_nlink_t nlink;
+	nefs_zone_t zone[NEFS_NR_DIRECT];
+	nefs_zone_t s_zone;
+	nefs_time_t atime;
 };
 
 #endif

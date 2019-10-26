@@ -21,7 +21,7 @@ run: build/vmlinux
 
 .PHONY: boot
 boot: build/boot.img
-	@tools/startqemu.sh $(QEMUCMD) -hda $<
+	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw
 
 .PHONY: bochs
 bochs: build/boot.img
@@ -31,7 +31,7 @@ build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin
 	@echo + [gen] $@
 	@mkdir -p $(@D)
 	@cat $^ > $@
-	@tools/mknefs.c $@ NewOS $$[`du $(word 2, $^) | awk '{print $$1}'` + 1]
+	@tools/mknefs.c $@ -r $$[1 + `du $(word 2, $^) | awk '{print $$1}'`]
 
 build/vmlinux.bin: build/vmlinux
 	@echo + [gen] $@

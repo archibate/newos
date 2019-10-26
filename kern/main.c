@@ -27,20 +27,33 @@ main(void)
 	INIT(irq);
 	INIT(rs);
 	INIT(vga);
+	printk("Kernel Started");
 	INIT(memtest);
 	INIT(bootmm);
 	INIT(pmm);
 	INIT(clock);
 	INIT(rtc);
 	INIT(sched);
-	printk("Kernel Started");
 
 	/** do some tests begin **/
 	free(malloc(100));
 	kernel_thread(initial_thread, "Hello, th1!");
 	kernel_thread(initial_thread, "Hello, th2!");
 	struct inode *ip = iget(NEFS_ROOT_INO);
-	printk("root inode size=%d", ip->i_nefs.i_size);
+	char buf[233];
+	buf[0] = 'b';
+	buf[1] = '!';
+	iwrite(ip, 0x3600, buf, 2);
+	iread(ip, 0x3600, buf, sizeof(buf));
+	printk("[%.7s]", buf);
+	printk("ip->i_size = %d", ip->i_size);
+	iwrite(ip, ip->i_size, buf, 1028);
+	printk("ip->i_size = %d", ip->i_size);
+	iwrite(ip, ip->i_size, buf, 2);
+	printk("ip->i_size = %d", ip->i_size);
+	buf[3] = '!';
+	iread(ip, ip->i_size - 2, buf, 9);
+	printk("[%.7s]", buf);
 	/** do some tests end **/
 
 	asm volatile ("sti");

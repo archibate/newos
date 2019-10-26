@@ -13,6 +13,7 @@ true */
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <assert.h>
 #include <strings.h>
@@ -103,37 +104,65 @@ int add_inode(const char *file)
 	struct nefs_inode inode;
 	memset(&inode, 0, sizeof(inode));
 	for (int i = 0; i < NEFS_NR_DIRECT; i++) {
+		if (feof(f))
+			goto eof;
 		int z = alloc_zone();
-		inode.i_zone[i] = z;
+		inode.zone[i] = z;
 		if (!write_zone(z, f))
 			goto eof;
 	}
-	eprintf("WARNING: file too big, truncated to NR_DIRECT\n");
+	int s_zone_buf[BSIZE / sizeof(int)];
+	memset(s_zone_buf, 0, BSIZE);
+	for (int i = 0; i < BSIZE / sizeof(int); i++) {
+		if (feof(f))
+			goto s_eof;
+		int z = alloc_zone();
+		s_zone_buf[i] = z;
+		if (!write_zone(z, f))
+			goto s_eof;
+	}
+	eprintf("WARNING: file too big, truncated to %d KB\n", ftell(f) / 1024);
+s_eof:
+	inode.s_zone = alloc_zone();
+	fseek(fp, (sb.s_data_begin_blk + inode.s_zone - 1) * BSIZE, SEEK_SET);
+	fwrite(s_zone_buf, BSIZE, 1, fp);
 eof:
-	inode.i_size = ftell(f);
+	inode.size = ftell(f);
 	update_inode(ino, &inode);
 	fclose(f);
-	printf("++  %d   %s\n", ino, file);
+	printf("%6d %s\n", ino, file);
 	return ino;
 }
 
 int main(int argc, char **argv)
 {
 	if (argc < 2) {
-		eprintf("usage: %s <image> [volume label]"
-			"[reserved blocks] [inodes] [blocks]\n", _ARGV0);
+usage:
+		eprintf("Usage: %s <image> [-L volume-label]\n"
+			"[-i inodes] [-b blocks] [-r reserved-blocks]\n"
+			"[copy-in-file-list]\n", _ARGV0);
 		return EXIT_FAILURE;
 	}
-	fp = fopen(argv[1], "r+");
+	const char *vol_label = "NeFS";
+	int reserved_blocks = 0;
+	int inodes = BSIZE * 8;
+	int blocks = BSIZE * 8;
+	int ch;
+	while (-1 != (ch = getopt(argc, argv, "L:i:b:r:"))) {
+		switch (ch) {
+		case 'L': vol_label = optarg; break;
+		case 'i': inodes = atoi(optarg); break;
+		case 'b': blocks = atoi(optarg); break;
+		case 'r': reserved_blocks = atoi(optarg); break;
+		default: goto usage;
+		}
+	}
+	fp = fopen(argv[optind], "r+");
 	if (!fp) {
-		perror(argv[1]);
+		perror(argv[optind]);
 		return EXIT_FAILURE;
 	}
-	const char *vol_label = argc >= 3 ? argv[2] : "NeFS";
-	int reserved_blocks = argc >= 4 ? atoi(argv[3]) : 0;
-	int inodes = argc >= 5 ? atoi(argv[4]) : BSIZE * 8;
-	int blocks = argc >= 6 ? atoi(argv[5]) : BSIZE * 8;
-	printf("mknefs with %d inodes, %d blocks\n", inodes, blocks);
+	printf("%s: %d inodes, %d blocks\n", vol_label, inodes, blocks);
 	memset(&sb, 0, sizeof(sb));
 	switch (0) { case 0: case BSIZE % sizeof(struct nefs_inode) == 0:; }
 	sb.s_super_len = sizeof(sb);

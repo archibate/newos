@@ -3,8 +3,8 @@
 #include <kern/asm/ide.h>
 #include <sys/io.h>
 
-#define PHYS_BLOCK_SIZE  		512
-#define PBPB    (BLOCK_SIZE/PHYS_BLOCK_SIZE)
+#define PHYS_BSIZE  		512
+#define PBPB    (BSIZE/PHYS_BSIZE)
 
 static void ide_wait(void)
 {
@@ -52,9 +52,9 @@ void ll_rw_block(struct buf *b, int rw)
 	ide_wait();
 	if (rw == READ) {
 		b->b_uptodate = 1;
-		insl(IDE_DAT, b->b_data, BLOCK_SIZE/4);
+		insl(IDE_DAT, b->b_data, BSIZE/4);
 	} else if (rw == WRITE) {
 		b->b_dirt = 0;
-		outsl(IDE_DAT, b->b_data, BLOCK_SIZE/4);
+		outsl(IDE_DAT, b->b_data, BSIZE/4);
 	}
 }

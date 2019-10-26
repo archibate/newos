@@ -5,14 +5,14 @@
 #include <sys/types.h>
 #include <kern/nefs.h>
 
-#define BLOCK_SIZE	1024
-#define NBUFS		64
-#define NINODES		128
-#define READ		0
-#define WRITE		1
+#define BSIZE	1024
+#define NBUFS	128
+#define NINODES	128
+#define READ	0
+#define WRITE	1
 
 struct buf {
-	char b_data[BLOCK_SIZE];
+	char b_data[BSIZE];
 	int b_count;
 	int b_blkno;
 	int b_uptodate;
@@ -28,6 +28,13 @@ struct inode {
 	int i_dirt;
 };
 
+#define i_mode i_nefs.mode
+#define i_size i_nefs.size
+#define i_nlink i_nefs.nlink
+#define i_zone i_nefs.zone
+#define i_s_zone i_nefs.s_zone
+#define i_atime i_nefs.atime
+
 extern struct buf buffer[NBUFS];
 struct inode inodes[NINODES];
 
@@ -41,5 +48,8 @@ struct nefs_super_block *get_super(void);
 struct inode *idup(struct inode *ip);
 void iput(struct inode *ip);
 struct inode *iget(int ino);
+size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
+size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
+size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 
 #endif

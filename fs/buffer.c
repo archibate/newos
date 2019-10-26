@@ -55,19 +55,19 @@ void brelse(struct buf *b)
 // two easy-for-use APIs
 void blk_readitem(int blkno, size_t index, void *buf, size_t size)
 {
-	if (BLOCK_SIZE % size)
+	if (BSIZE % size)
 		panic("blk_readitem: size not aligned");
-	struct buf *b = bread(blkno + (index * size) / BLOCK_SIZE);
-	memcpy(buf, b->b_data + (index * size) % BLOCK_SIZE, size);
+	struct buf *b = bread(blkno + (index * size) / BSIZE);
+	memcpy(buf, b->b_data + (index * size) % BSIZE, size);
 	brelse(b);
 }
 
 void blk_writeitem(int blkno, size_t index, const void *buf, size_t size)
 {
-	if (BLOCK_SIZE % size)
+	if (BSIZE % size)
 		panic("blk_writeitem: size not aligned");
-	struct buf *b = bread(blkno + (index * size) / BLOCK_SIZE);
-	memcpy(b->b_data + (index * size) % BLOCK_SIZE, buf, size);
+	struct buf *b = bread(blkno + (index * size) / BSIZE);
+	memcpy(b->b_data + (index * size) % BSIZE, buf, size);
 	bwrite(b);
 	brelse(b);
 }
