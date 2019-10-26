@@ -39,7 +39,7 @@ schedule(void)
 		int c = -1;
 		for (int i = NTASKS - 1; i >= 0; i--) {
 			struct task *p = task[i];
-			if (p->state == 0 && p->counter > c)
+			if (p && p->state == 0 && p->counter > c)
 				c = p->counter, next = i;
 		}
 		if (c) break;

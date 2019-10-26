@@ -108,7 +108,7 @@ strchr(const char *s, int c)
 // Return a pointer to the first occurrence of 'c' in 's',
 // or a pointer to the string-ending null character if the string has no 'c'.
 char *
-strfind(const char *s, int c)
+strchrnul(const char *s, int c)
 {
 	for (; *s; s++)
 		if (*s == c)
@@ -226,13 +226,13 @@ memcmp(const void *v1, const void *v2, size_t n)
 }
 
 void *
-memfind(const void *s, int c, size_t n)
+memchr(const void *s, int c, size_t n)
 {
 	const void *ends = (const char *) s + n;
 	for (; s < ends; s++)
 		if (*(const unsigned char *) s == (unsigned char) c)
-			break;
-	return (void *) s;
+			return (void *) s;
+	return NULL;
 }
 
 long

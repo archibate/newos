@@ -43,7 +43,7 @@ void fillzero(size_t size)
 
 int alloc_zone(void)
 {
-	fseek(fp, (sb.s_zmap_begin_blk - 1) * BSIZE, SEEK_SET);
+	fseek(fp, (sb.s_zmap_begblk - 1) * BSIZE, SEEK_SET);
 	for (int i = 0; i < sb.s_zmap_blknr * BSIZE; i += sizeof(unsigned)) {
 		unsigned r;
 		fread(&r, sizeof(r), 1, fp);
@@ -61,7 +61,7 @@ int alloc_zone(void)
 
 int alloc_inode(void)
 {
-	fseek(fp, (sb.s_imap_begin_blk - 1) * BSIZE, SEEK_SET);
+	fseek(fp, (sb.s_imap_begblk - 1) * BSIZE, SEEK_SET);
 	for (int i = 0; i < sb.s_imap_blknr * BSIZE; i += sizeof(unsigned)) {
 		unsigned r;
 		fread(&r, sizeof(r), 1, fp);
@@ -80,7 +80,7 @@ int alloc_inode(void)
 void update_inode(int ino, struct nefs_inode *ip)
 {
 	char c = 0;
-	fseek(fp, (sb.s_itab_begin_blk - 1) * BSIZE + ino * sizeof(*ip), SEEK_SET);
+	fseek(fp, (sb.s_itab_begblk - 1) * BSIZE + ino * sizeof(*ip), SEEK_SET);
 	fwrite(ip, sizeof(*ip), 1, fp);
 }
 
@@ -88,26 +88,29 @@ int write_zone(int z, FILE *f)
 {
 	char buf[BSIZE];
 	size_t size = fread(buf, 1, BSIZE, f);
-	fseek(fp, (sb.s_data_begin_blk + z - 1) * BSIZE, SEEK_SET);
+	fseek(fp, (sb.s_data_begblk + z - 1) * BSIZE, SEEK_SET);
 	fwrite(buf, size, 1, fp);
 	return size == BSIZE;
 }
 
-int add_inode(const char *file)
+void dir_write_entry(FILE *f, const char *name, int ino)
 {
-	FILE *f = fopen(file, "r");
-	if (!f) {
-		perror(file);
-		return 0;
-	}
-	int ino = alloc_inode();
+	struct nefs_dir_entry de;
+	de.d_ino = ino;
+	strncpy(de.d_name, name, NEFS_NAME_MAX);
+	fwrite(&de, sizeof(de), 1, f);
+}
+
+int set_inode(int ino, FILE *f)
+{
 	struct nefs_inode inode;
 	memset(&inode, 0, sizeof(inode));
+	rewind(f);
 	for (int i = 0; i < NEFS_NR_DIRECT; i++) {
 		if (feof(f))
 			goto eof;
 		int z = alloc_zone();
-		inode.zone[i] = z;
+		inode.i_nefs_zone[i] = z;
 		if (!write_zone(z, f))
 			goto eof;
 	}
@@ -123,33 +126,59 @@ int add_inode(const char *file)
 	}
 	eprintf("WARNING: file too big, truncated to %d KB\n", ftell(f) / 1024);
 s_eof:
-	inode.s_zone = alloc_zone();
-	fseek(fp, (sb.s_data_begin_blk + inode.s_zone - 1) * BSIZE, SEEK_SET);
+	inode.i_nefs_s_zone = alloc_zone();
+	fseek(fp, (sb.s_data_begblk + inode.i_nefs_s_zone - 1) * BSIZE, SEEK_SET);
 	fwrite(s_zone_buf, BSIZE, 1, fp);
 eof:
-	inode.size = ftell(f);
+	inode.i_nefs_size = ftell(f);
 	update_inode(ino, &inode);
-	fclose(f);
-	printf("%6d %s\n", ino, file);
 	return ino;
+}
+
+void parse_file_list(int dir, FILE *fl)
+{
+	FILE *dir_tmp = tmpfile();
+
+	while (1) {
+		char buf[512];
+		fgets(buf, sizeof(buf), fl);
+		int ino = alloc_inode();
+		char *destname = strtok(buf, " \t\r\n");
+		if (!strcmp(destname, "!END")) {
+			break;
+		} else if (!strcmp(destname, "!DIR")) {
+			destname = strtok(NULL, " \t\r\n");
+			parse_file_list(ino, fl);
+		} else {
+			char *srcpath = strtok(NULL, " \t\r\n");
+			FILE *sf = fopen(srcpath, "r");
+			set_inode(ino, sf);
+			fclose(sf);
+		}
+		dir_write_entry(dir_tmp, destname, ino);
+	}
+
+	set_inode(dir, dir_tmp);
+	fclose(dir_tmp);
 }
 
 int main(int argc, char **argv)
 {
 	if (argc < 2) {
 usage:
-		eprintf("Usage: %s <image> [-L volume-label]\n"
-			"[-i inodes] [-b blocks] [-r reserved-blocks]\n"
-			"[copy-in-file-list]\n", _ARGV0);
+		eprintf("Usage: %s <image> [-L volume-label] [-f file-list]\n"
+			"[-i inodes] [-b blocks] [-r reserved-blocks]\n", _ARGV0);
 		return EXIT_FAILURE;
 	}
 	const char *vol_label = "NeFS";
+	const char *file_list = "tools/file_list.txt";
 	int reserved_blocks = 0;
 	int inodes = BSIZE * 8;
 	int blocks = BSIZE * 8;
 	int ch;
-	while (-1 != (ch = getopt(argc, argv, "L:i:b:r:"))) {
+	while (-1 != (ch = getopt(argc, argv, "f:L:i:b:r:"))) {
 		switch (ch) {
+		case 'f': file_list = optarg; break;
 		case 'L': vol_label = optarg; break;
 		case 'i': inodes = atoi(optarg); break;
 		case 'b': blocks = atoi(optarg); break;
@@ -172,20 +201,27 @@ usage:
 	sb.s_data_blknr = blocks;
 	sb.s_magic = NEFS_MAGIC;
 	sb.s_blksize_log2 = 10;
-	sb.s_imap_begin_blk = 3 + reserved_blocks;
-	sb.s_zmap_begin_blk = sb.s_imap_begin_blk + sb.s_imap_blknr;
-	sb.s_itab_begin_blk = sb.s_zmap_begin_blk + sb.s_zmap_blknr;
-	sb.s_data_begin_blk = sb.s_itab_begin_blk + sb.s_itab_blknr;
+	sb.s_imap_begblk = 3 + reserved_blocks;
+	sb.s_zmap_begblk = sb.s_imap_begblk + sb.s_imap_blknr;
+	sb.s_itab_begblk = sb.s_zmap_begblk + sb.s_zmap_blknr;
+	sb.s_data_begblk = sb.s_itab_begblk + sb.s_itab_blknr;
 	touch_seek(1 * BSIZE);
 	fwrite(&sb, sizeof(sb), 1, fp);
 	fwrite(vol_label, strnlen(vol_label, BSIZE - sb.s_super_len), 1, fp);
-	touch_seek((sb.s_imap_begin_blk - 1) * BSIZE);
+	touch_seek((sb.s_imap_begblk - 1) * BSIZE);
 	fillzero((sb.s_imap_blknr + sb.s_zmap_blknr
 		+ sb.s_itab_blknr + blocks) * BSIZE);
 	assert(alloc_inode() == 0);
 	assert(alloc_zone() == 0);
-	add_inode("tools/aa.txt");
-	fclose(fp);
-	fp = NULL;
+
+	FILE *fl = fopen(file_list, "r");
+	if (!fl) {
+		perror(file_list);
+		exit(0);
+	}
+	assert(alloc_inode() == NEFS_ROOT_INO);
+	parse_file_list(NEFS_ROOT_INO, fl);
+	fclose(fl);
+
 	return EXIT_SUCCESS;
 }

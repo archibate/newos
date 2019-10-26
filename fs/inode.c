@@ -41,7 +41,7 @@ struct inode *idup(struct inode *ip)
 
 void iput(struct inode *ip)
 {
-	if (!ip->i_count-- <= 0)
+	if (ip->i_count-- <= 0)
 		panic("trying to free free inode");
 	wake_up(&inode_buffer_wait);
 }
@@ -54,16 +54,16 @@ void iupdate(struct inode *ip)
 static int check_inode_exist(int ino)
 {
 	char c = 0;
-	struct nefs_super_block *sb = get_super();
-	blk_readitem(sb->s_imap_begin_blk, ino / 8, &c, 1);
+	struct super_block *sb = get_super();
+	blk_readitem(sb->s_imap_begblk, ino / 8, &c, 1);
 	return !!(c & 1 << ino % 8);
 }
 
 static int alloc_inode(struct inode *ip)
 {
-	struct nefs_super_block *sb = get_super();
+	struct super_block *sb = get_super();
 	for (int t = 0; t < sb->s_imap_blknr; t++) {
-		struct buf *b = bread(sb->s_imap_begin_blk + t);
+		struct buf *b = bread(sb->s_imap_begblk + t);
 		for (int i = 0; i < BSIZE; i++) {
 			for (int j = 0; j < 8; j++) {
 				if (!(b->b_data[i] & 1 << j)) {
@@ -81,9 +81,9 @@ static int alloc_inode(struct inode *ip)
 
 static int alloc_zone(struct inode *ip)
 {
-	struct nefs_super_block *sb = get_super();
+	struct super_block *sb = get_super();
 	for (int t = 0; t < sb->s_zmap_blknr; t++) {
-		struct buf *b = bread(sb->s_zmap_begin_blk + t);
+		struct buf *b = bread(sb->s_zmap_begblk + t);
 		for (int i = 0; i < BSIZE; i++) {
 			for (int j = 0; j < 8; j++) {
 				if (!(b->b_data[i] & 1 << j)) {
@@ -101,16 +101,16 @@ static int alloc_zone(struct inode *ip)
 
 static void load_inode(struct inode *ip)
 {
-	struct nefs_super_block *sb = get_super();
-	blk_readitem(sb->s_itab_begin_blk, ip->i_ino,
+	struct super_block *sb = get_super();
+	blk_readitem(sb->s_itab_begblk, ip->i_ino,
 			&ip->i_nefs, NEFS_INODE_SIZE);
 	ip->i_uptodate = 1;
 }
 
 static void update_inode(struct inode *ip)
 {
-	struct nefs_super_block *sb = get_super();
-	blk_writeitem(sb->s_itab_begin_blk, ip->i_ino,
+	struct super_block *sb = get_super();
+	blk_writeitem(sb->s_itab_begblk, ip->i_ino,
 			&ip->i_nefs, NEFS_INODE_SIZE);
 	ip->i_dirt = 0;
 }
@@ -129,7 +129,8 @@ struct inode *iget(int ino)
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 {
 	if (pos > ip->i_size) {
-		printk("WARNING: i%s: pos > ip->i_size", rw == READ ? "read" : "write");
+		printk("WARNING: i%s: pos > ip->i_size",
+				rw == READ ? "read" : "write");
 		return 0;
 	}
 	if (pos + size > ip->i_size) {
@@ -140,7 +141,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 			iupdate(ip);
 		}
 	}
-	struct nefs_super_block *sb = get_super();
+	struct super_block *sb = get_super();
 	size_t offset = pos % BSIZE;
 	size_t sz_left = size;
 	struct buf *s_blk = NULL;
@@ -148,7 +149,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 	int *zid;
 	while (sz_left) {
 		if (!s_blk && iz >= NEFS_NR_DIRECT) {
-			s_blk = bread(sb->s_data_begin_blk + ip->i_s_zone);
+			s_blk = bread(sb->s_data_begblk + ip->i_s_zone);
 			iz -= NEFS_NR_DIRECT;
 		}
 		if (s_blk && iz >= BSIZE / 4) {
@@ -168,7 +169,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 			else
 				iupdate(ip);
 		}
-		struct buf *b = bread(sb->s_data_begin_blk + *zid);
+		struct buf *b = bread(sb->s_data_begblk + *zid);
 		if (rw == READ) {
 			memcpy(buf, b->b_data + offset, n);
 		} else {

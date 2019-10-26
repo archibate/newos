@@ -3,9 +3,9 @@
 #include <string.h>
 #include <malloc.h>
 
-struct nefs_super_block *get_super(void)
+struct super_block *get_super(void)
 {
-	static struct nefs_super_block *sb;
+	static struct super_block *sb;
 	if (!sb) {
 		struct buf *b = bread(2);
 		sb = malloc(sizeof(*sb));

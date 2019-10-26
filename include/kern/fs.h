@@ -28,12 +28,14 @@ struct inode {
 	int i_dirt;
 };
 
-#define i_mode i_nefs.mode
-#define i_size i_nefs.size
-#define i_nlink i_nefs.nlink
-#define i_zone i_nefs.zone
-#define i_s_zone i_nefs.s_zone
-#define i_atime i_nefs.atime
+#define super_block nefs_super_block
+
+#define i_mode i_nefs.i_nefs_mode
+#define i_size i_nefs.i_nefs_size
+#define i_nlink i_nefs.i_nefs_nlink
+#define i_zone i_nefs.i_nefs_zone
+#define i_s_zone i_nefs.i_nefs_s_zone
+#define i_atime i_nefs.i_nefs_atime
 
 extern struct buf buffer[NBUFS];
 struct inode inodes[NINODES];
@@ -44,12 +46,13 @@ void bwrite(struct buf *b);
 void brelse(struct buf *b);
 void blk_readitem(int blkno, size_t index, void *buf, size_t size);
 void blk_writeitem(int blkno, size_t index, const void *buf, size_t size);
-struct nefs_super_block *get_super(void);
+struct super_block *get_super(void);
 struct inode *idup(struct inode *ip);
 void iput(struct inode *ip);
 struct inode *iget(int ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
+struct inode *namei(const char *path);
 
 #endif

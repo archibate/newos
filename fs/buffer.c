@@ -8,7 +8,7 @@ static struct task *buffer_wait;
 
 static struct buf *getblk(int blkno)
 {
-	struct buf *b;
+	struct buf *b, *eb = NULL;
 again:
 	for (b = buffer; b < buffer + NBUFS; b++) {
 		if (b->b_blkno == blkno) {
@@ -16,17 +16,24 @@ again:
 			return b;
 		}
 	}
-	for (b = buffer; b < buffer + NBUFS; b++) {
-		if (b->b_count == 0) {
-			b->b_count = 1;
-			b->b_dirt = 0;
-			b->b_uptodate = 0;
-			b->b_blkno = blkno;
-			return b;
+#define BADNESS(b) ((b)->b_dirt * 2 + (b)->b_uptodate)
+	for (b = buffer; b < buffer + NBUFS; b++)
+		if (b->b_count == 0 &&
+		   (!eb || BADNESS(b) < BADNESS(eb))) {
+			eb = b;
+			if (!BADNESS(eb))
+				break;
 		}
+	if (!eb) {
+		block_on(&buffer_wait);
+		goto again;
 	}
-	block_on(&buffer_wait);
-	goto again;
+	b = eb;
+	b->b_count = 1;
+	b->b_dirt = 0;
+	b->b_uptodate = 0;
+	b->b_blkno = blkno;
+	return b;
 }
 
 struct buf *bread(int blkno)

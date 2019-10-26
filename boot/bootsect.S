@@ -1,9 +1,8 @@
 ; vim: ft=nasm ai
 
 BOOT_DRV  equ 0x80
+%include "build/boot/kerninfo.inc"
 tmp_kaddr equ 0x10000
-fin_kaddr equ 0x100000
-kern_size equ 0x40000
 
 	org 0x7c00
 	bits 16
@@ -91,11 +90,14 @@ start32:
 	mov fs, eax
 	mov gs, eax
 	mov esi, tmp_kaddr
-	mov edi, fin_kaddr
-	mov ecx, kern_size >> 2
+	mov edi, kern_addr
+	mov ecx, (kern_size + 3) >> 2
 	cld
 	rep movsd
-	jmp 0x0008:fin_kaddr
+	xor eax, eax
+	mov ecx, (kmem_size + 3 - kern_size) >> 2
+	rep stosd
+	jmp 0x0008:kern_addr
 
 	align 8
 gdt:

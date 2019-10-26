@@ -39,7 +39,8 @@ main(void)
 	free(malloc(100));
 	kernel_thread(initial_thread, "Hello, th1!");
 	kernel_thread(initial_thread, "Hello, th2!");
-	struct inode *ip = iget(NEFS_ROOT_INO);
+	struct inode *ip = namei("test/aa.txt");
+	if (!ip) panic("test/aa.txt not found");
 	char buf[233];
 	buf[0] = 'b';
 	buf[1] = '!';
@@ -54,6 +55,14 @@ main(void)
 	buf[3] = '!';
 	iread(ip, ip->i_size - 2, buf, 9);
 	printk("[%.7s]", buf);
+	iput(ip);
+	ip = namei("test/melty.txt");
+	if (!ip) panic("test/melty.txt not found");
+	size_t s, pos = 0;
+	while ((s = iread(ip, pos, buf, sizeof(buf)))) {
+		tty_write(TTY_COM0, buf, s);
+		pos += s;
+	}
 	/** do some tests end **/
 
 	asm volatile ("sti");
