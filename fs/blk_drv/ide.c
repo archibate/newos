@@ -40,8 +40,8 @@ static void ide_seek(int ide, int sectnr, int nsects)
 
 void ll_rw_block(struct buf *b, int rw)
 {
-	printk("ll_rw_block: rw=%d, blkno=%d", rw, b->b_blkno);
-	ide_seek(0, b->b_blkno - 1, PBPB);
+	//printk("ll_rw_block: rw=%d, blkno=%d", rw, b->b_blkno);
+	ide_seek(0, (b->b_blkno - 1) * PBPB, PBPB);
 	if (rw == READ)
 		outb(IDE_CMD, PBPB == 1 ? IDE_CMD_READ : IDE_CMD_RDMUL);
 	else if (rw == WRITE)

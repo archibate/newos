@@ -39,15 +39,8 @@ main(void)
 	free(malloc(100));
 	kernel_thread(initial_thread, "Hello, th1!");
 	kernel_thread(initial_thread, "Hello, th2!");
-	struct buf *b = bread(1);
-	printk("%#x", *(unsigned short *)(b->b_data + 510));
-	brelse(b);
-	b = bread(1);
-	printk("%#x", *(unsigned short *)(b->b_data + 510));
-	b = bread(1);
-	printk("%#x", *(unsigned short *)(b->b_data + 510));
-	b = bread(2);
-	printk("%#x", *(unsigned short *)(b->b_data + 510));
+	struct inode *ip = iget(NEFS_ROOT_INO);
+	printk("root inode size=%d", ip->i_nefs.i_size);
 	/** do some tests end **/
 
 	asm volatile ("sti");

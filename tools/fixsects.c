@@ -1,6 +1,15 @@
-#define true
-true /* ; chmod +x $0; gcc -lpthread $0 -o /tmp/$$ && /tmp/$$ $*; exit; */
-#undef true
+#if 0 // {{{
+true /*
+set -e
+chmod +x $0
+gcc -D_ARGV0=\"$0\" $0 -o /tmp/$$
+/tmp/$$ $*
+exit
+true */
+#endif
+#ifndef _ARGV0
+#define _ARGV0 (argv[0])
+#endif // }}}
 #include <stdio.h>
 #include <stdlib.h>
 

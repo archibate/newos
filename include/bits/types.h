@@ -4,7 +4,7 @@
 typedef unsigned char __uint8_t, __uint_fast8_t;
 typedef unsigned short __uint16_t, __wchar_t;
 typedef unsigned int __uint32_t, __uint_least8_t, __uint_least16_t,
-	__uint_least32_t, __uint_fast16_t, __uint_fast32_t, __wint_t;
+	__uint_least32_t, __uint_fast16_t, __uint_fast32_t, __wint_t, __ino_t;
 typedef unsigned long __uintptr_t, __size_t, __clock_t, __time_t, __suseconds_t;
 typedef unsigned long long __uint64_t, __uint_least64_t, __uint_fast64_t, __uintmax_t;
 

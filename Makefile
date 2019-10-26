@@ -1,5 +1,5 @@
 COPT=-ggdb -gstabs+
-QEMUOPT=-m 128 -serial stdio -display none
+QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
 QEMUCMD=qemu-system-i386 $(QEMUOPT)
 SRCDIRS=kern mm fs lib
 SRCS=$(shell find $(SRCDIRS) -name '*.[cS]' -type f)
@@ -10,6 +10,10 @@ OBJS+=build/tools/ebss.c.o
 
 .PHONY: default
 default: boot
+
+.PHONY: image-test
+image-test: build/boot.img
+	@hexdump -C $< | less
 
 .PHONY: run
 run: build/vmlinux
@@ -27,6 +31,7 @@ build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin
 	@echo + [gen] $@
 	@mkdir -p $(@D)
 	@cat $^ > $@
+	@tools/mknefs.c $@ NewOS $$[`du $(word 2, $^) | awk '{print $$1}'` + 1]
 
 build/vmlinux.bin: build/vmlinux
 	@echo + [gen] $@

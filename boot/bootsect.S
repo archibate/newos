@@ -3,31 +3,17 @@
 BOOT_DRV  equ 0x80
 tmp_kaddr equ 0x10000
 fin_kaddr equ 0x100000
-kern_size equ 0x10000
+kern_size equ 0x40000
 
 	org 0x7c00
 	bits 16
 _start:
-	jmp main
-
-main:
 	mov si, load_msg
 	call print
-	call read_kernel
-	mov si, done_msg
-	call print
-enable_prot:
-	cli
-	lgdt [gdtr]
-	lidt [idtr]
-.a20:	in al, 0x64
-	test al, 0x02
-	jnz .a20
-	mov al, 0xdf
-	out 0x64, al
-	mov ax, 0x01
-	lmsw ax
-	jmp 0x0008:start32
+	call read_sect
+	cmp word [stage2_signature], 0x55aa
+	jne error
+	jmp stage2
 
 error:
 	mov si, error_msg
@@ -47,8 +33,32 @@ print:
 .done:
 	ret
 
-read_kernel:
+read_sect:
 	mov si, disk_addr_packet
+	mov ah, 0x42
+	mov dl, BOOT_DRV
+	int 0x13
+	ret
+
+load_msg:
+	db "Loading System...", 0
+error_msg:
+	db "ERROR", 0
+
+disk_addr_packet:
+	db	16	; [0] packet size: 16 bytes
+	db	0	; [1] reserved, always be 0
+	dw	1	; [2] blocks to read
+	dw	0	; [4] transfer buffer: offset
+	dw	0x07e0	; [6] transfer buffer: segment
+	dq	1	; [8] starting block LBA
+
+	times 510-($-$$) db 0
+	dw 0xaa55
+
+stage2:
+	mov si, disk_addr_packet
+	mov word [si + 8], 4
 	mov word [si + 6], tmp_kaddr >> 4
 	mov cx, kern_size >> 9
 .repeat:
@@ -57,14 +67,20 @@ read_kernel:
 	inc word [si + 8]
 	add word [si + 6], 512 >> 4
 	loop .repeat
-	ret
-
-read_sect:
-	mov si, disk_addr_packet
-	mov ah, 0x42
-	mov dl, BOOT_DRV
-	int 0x13
-	ret
+	mov si, done_msg
+	call print
+enable_prot:
+	cli
+	lgdt [gdtr]
+	lidt [idtr]
+.a20:	in al, 0x64
+	test al, 0x02
+	jnz .a20
+	mov al, 0xdf
+	out 0x64, al
+	mov ax, 0x01
+	lmsw ax
+	jmp 0x0008:start32
 
 	bits 32
 start32:
@@ -81,21 +97,6 @@ start32:
 	rep movsd
 	jmp 0x0008:fin_kaddr
 
-load_msg:
-	db "Loading System...", 0
-done_msg:
-	db "done", 13, 10, 0
-error_msg:
-	db "ERROR", 0
-
-disk_addr_packet:
-	db	0x10	; [0] packet size: 16 bytes
-	db	0x00	; [1] reserved, always be 0
-	dw	0x01	; [2] blocks to read
-	dw	0x00	; [4] transfer buffer: offset
-	dw	0x00	; [6] transfer buffer: segment
-	dq	0x01	; [8] starting block LBA
-
 	align 8
 gdt:
 	dq 0x0000000000000000
@@ -108,5 +109,11 @@ idtr:
 	dw 0
 	dd 0
 
-	times 510-($-$$) db 0
-	dw 0xaa55
+done_msg:
+	db "done", 13, 10, 0
+
+	times 1022-($-$$) db 0
+stage2_signature:
+	dw 0x55aa
+
+	times 2048-($-$$) db 0 ; reserved for NEFS super block

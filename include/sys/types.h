@@ -24,5 +24,8 @@
 #ifndef pid_t
 #define pid_t __pid_t
 #endif
+#ifndef ino_t
+#define ino_t __ino_t
+#endif
 
 #endif
