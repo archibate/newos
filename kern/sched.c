@@ -1,6 +1,8 @@
 #include <kern/sched.h>
 #include <kern/kernel.h>
+#include <kern/fs.h>
 #include <malloc.h>
+#include <string.h>
 #include <stddef.h>
 
 struct task *task[NTASKS];
@@ -144,8 +146,19 @@ new_task(struct task *parent)
 	task[i] = p;
 	p->ppid = parent->pid;
 	p->pid = last_pid;
+	p->priority = parent->priority;
+	p->root = idup(parent->root);
+	p->cwd = idup(parent->cwd);
 	p->stack = malloc(STACK_SIZE);
 	return p;
+}
+
+void del_task(struct task *p)
+{
+	iput(p->root);
+	iput(p->cwd);
+	free(p->stack);
+	memset(p, 0, sizeof(struct task));
 }
 
 __attribute__((noreturn)) void
@@ -172,6 +185,5 @@ kernel_thread(void *start, void *arg)
 	*--sp = __kthread_exit;
 	*--sp = start;
 	p->kregs[K_ESP] = (unsigned long) sp;
-	p->priority = current->priority;
 	return p;
 }

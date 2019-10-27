@@ -25,7 +25,7 @@ run: build/boot.img
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin tools/file_list.txt
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt
 	@echo + [gen] $@
 	@mkdir -p $(@D)
 	@cat $^ > $@

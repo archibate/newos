@@ -43,7 +43,7 @@ bootmm_init(void)
 			pte += PGSIZE;
 		}
 	}
-	kern_ptes[0] = 0;
+	kern_ptes[0] = 0; // nuke NULL
 	mmu_set_pgdir(kern_pd);
 	mmu_enable(1);
 }

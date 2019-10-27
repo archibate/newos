@@ -34,13 +34,32 @@ main(void)
 	INIT(clock);
 	INIT(rtc);
 	INIT(sched);
+	INIT(fs);
 
 	/** do some tests begin **/
 	free(malloc(100));
 	kernel_thread(initial_thread, "Hello, th1!");
 	kernel_thread(initial_thread, "Hello, th2!");
-	struct inode *ip = namei("test/aa.txt");
-	if (!ip) panic("test/aa.txt not found");
+	struct inode *ip;
+	struct dir_entry de;
+	printk("ls of /");
+	ip = namei("/");
+	for (int i = 0; -1 != dir_read_entry(ip, &de, i); i++) {
+		if (de.d_ino != 0) {
+			printk("%6d %.*s", de.d_ino, NEFS_NAME_MAX, de.d_name);
+		}
+	}
+	iput(ip);
+	printk("ls of .");
+	ip = namei(".");
+	for (int i = 0; -1 != dir_read_entry(ip, &de, i); i++) {
+		if (de.d_ino != 0) {
+			printk("%6d %.*s", de.d_ino, NEFS_NAME_MAX, de.d_name);
+		}
+	}
+	iput(ip);
+	ip = namei("aa.txt");
+	if (!ip) panic("aa.txt not found");
 	char buf[233];
 	buf[0] = 'b';
 	buf[1] = '!';
@@ -56,13 +75,15 @@ main(void)
 	iread(ip, ip->i_size - 2, buf, 9);
 	printk("[%.7s]", buf);
 	iput(ip);
-	ip = namei("test/melty.txt");
-	if (!ip) panic("test/melty.txt not found");
+	printk("contents of /usr/src/snake.c");
+	ip = namei("../usr/src/snake.c");
+	if (!ip) panic("../usr/src/snake.c not found");
 	size_t s, pos = 0;
 	while ((s = iread(ip, pos, buf, sizeof(buf)))) {
 		tty_write(TTY_COM0, buf, s);
 		pos += s;
 	}
+	iput(ip);
 	/** do some tests end **/
 
 	asm volatile ("sti");

@@ -12,6 +12,7 @@ true */
 #endif // }}}
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -84,6 +85,18 @@ void update_inode(int ino, struct nefs_inode *ip)
 	fwrite(ip, sizeof(*ip), 1, fp);
 }
 
+void increase_i_nlink(int ino)
+{
+	nefs_nlink_t nlink;
+	fseek(fp, (sb.s_itab_begblk - 1) * BSIZE
+			+ ino * sizeof(struct nefs_inode)
+			+ offsetof(struct nefs_inode, i_nefs_nlink), SEEK_SET);
+	fread(&nlink, sizeof(nlink), 1, fp);
+	nlink++;
+	fseek(fp, -sizeof(nlink), SEEK_CUR);
+	fwrite(&nlink, sizeof(nlink), 1, fp);
+}
+
 int write_zone(int z, FILE *f)
 {
 	char buf[BSIZE];
@@ -99,6 +112,7 @@ void dir_write_entry(FILE *f, const char *name, int ino)
 	de.d_ino = ino;
 	strncpy(de.d_name, name, NEFS_NAME_MAX);
 	fwrite(&de, sizeof(de), 1, f);
+	increase_i_nlink(ino);
 }
 
 int set_inode(int ino, FILE *f)
@@ -135,20 +149,23 @@ eof:
 	return ino;
 }
 
-void parse_file_list(int dir, FILE *fl)
+void parse_file_list(int dir, int parent_dir, FILE *fl)
 {
 	FILE *dir_tmp = tmpfile();
 
+	dir_write_entry(dir_tmp, ".", dir);
+	dir_write_entry(dir_tmp, "..", parent_dir);
 	while (1) {
 		char buf[512];
-		fgets(buf, sizeof(buf), fl);
+		if (!fgets(buf, sizeof(buf), fl))
+			break;
 		int ino = alloc_inode();
 		char *destname = strtok(buf, " \t\r\n");
-		if (!strcmp(destname, "!END")) {
+		if (!*destname || !strcmp(destname, "!END")) {
 			break;
 		} else if (!strcmp(destname, "!DIR")) {
 			destname = strtok(NULL, " \t\r\n");
-			parse_file_list(ino, fl);
+			parse_file_list(ino, dir, fl);
 		} else {
 			char *srcpath = strtok(NULL, " \t\r\n");
 			FILE *sf = fopen(srcpath, "r");
@@ -220,7 +237,7 @@ usage:
 		exit(0);
 	}
 	assert(alloc_inode() == NEFS_ROOT_INO);
-	parse_file_list(NEFS_ROOT_INO, fl);
+	parse_file_list(NEFS_ROOT_INO, NEFS_ROOT_INO, fl);
 	fclose(fl);
 
 	return EXIT_SUCCESS;

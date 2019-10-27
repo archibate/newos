@@ -26,6 +26,9 @@ struct task {
 	pid_t pid, ppid;
 	unsigned long kregs[NR_KREGS];
 	void *stack;
+
+	struct inode *cwd;
+	struct inode *root;
 };
 
 #define NTASKS	64

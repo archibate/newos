@@ -1,0 +1,10 @@
+!DIR root
+	aa.txt tools/aa.txt
+	melty.txt tools/meltyland.txt
+!END DIR
+!DIR usr
+	!DIR src
+		snake.c tools/snake.c
+		ascii.c tools/ascii.c
+	!END DIR
+!END DIR

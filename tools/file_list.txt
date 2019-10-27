@@ -1,6 +1,0 @@
-snake.c tools/snake.c
-!DIR test
-aa.txt tools/aa.txt
-melty.txt tools/meltyland.txt
-!END DIR
-!END

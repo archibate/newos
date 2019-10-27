@@ -29,6 +29,7 @@ struct inode {
 };
 
 #define super_block nefs_super_block
+#define dir_entry nefs_dir_entry
 
 #define i_mode i_nefs.i_nefs_mode
 #define i_size i_nefs.i_nefs_size
@@ -53,6 +54,7 @@ struct inode *iget(int ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
+int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
 struct inode *namei(const char *path);
 
 #endif
