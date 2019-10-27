@@ -59,7 +59,7 @@ static int check_inode_exist(int ino)
 	return !!(c & 1 << ino % 8);
 }
 
-static int alloc_inode(struct inode *ip)
+static int alloc_inode(struct inode *pip)
 {
 	struct super_block *sb = get_super();
 	for (int t = 0; t < sb->s_imap_blknr; t++) {
@@ -113,6 +113,12 @@ static void update_inode(struct inode *ip)
 	blk_writeitem(sb->s_itab_begblk, ip->i_ino,
 			&ip->i_nefs, NEFS_INODE_SIZE);
 	ip->i_dirt = 0;
+}
+
+struct inode *create_inode(struct inode *pip)
+{
+	int ino = alloc_inode(pip);
+	return iget(ino);
 }
 
 struct inode *iget(int ino)

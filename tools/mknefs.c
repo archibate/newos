@@ -111,6 +111,7 @@ void dir_write_entry(FILE *f, const char *name, int ino)
 	struct nefs_dir_entry de;
 	de.d_ino = ino;
 	strncpy(de.d_name, name, NEFS_NAME_MAX);
+	de.d_name[NEFS_NAME_MAX] = 0;
 	fwrite(&de, sizeof(de), 1, f);
 	increase_i_nlink(ino);
 }

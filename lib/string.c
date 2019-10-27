@@ -102,7 +102,17 @@ strchr(const char *s, int c)
 	for (; *s; s++)
 		if (*s == c)
 			return (char *) s;
-	return 0;
+	return NULL;
+}
+
+char *
+strrchr(const char *s, int c)
+{
+	char *p = NULL;
+	for (; *s; s++)
+		if (*s == c)
+			p = (char *) s;
+	return p;
 }
 
 // Return a pointer to the first occurrence of 'c' in 's',

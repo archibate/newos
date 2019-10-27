@@ -15,11 +15,9 @@ static int dir_find_entry(struct inode *dir, struct dir_entry *de,
 	for (size_t pos = 0; pos + NEFS_DIR_ENTRY_SIZE <= dir->i_size;
 			pos += NEFS_DIR_ENTRY_SIZE) {
 		iread(dir, pos, de, NEFS_DIR_ENTRY_SIZE);
-		if (de->d_ino != 0) { // if this entry is not none
-			if (match(de, name, namelen)) {
+		if (de->d_ino != 0) // if this entry is not none
+			if (match(de, name, namelen))
 				return pos / NEFS_DIR_ENTRY_SIZE;
-			}
-		}
 	}
 	return -1;
 }
@@ -32,21 +30,53 @@ int dir_read_entry(struct inode *dir, struct dir_entry *de, int i)
 	return de->d_ino != 0;
 }
 
-static int dir_del_entry(struct inode *dir, struct dir_entry *de, int i)
+// assumes that dir_find_entry returned -1, add directly
+static void dir_add_entry(struct inode *dir, struct inode *ip,
+		const char *name, size_t namelen)
 {
-	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size)
-		return -1;
-	iread(dir, i * NEFS_DIR_ENTRY_SIZE, de, NEFS_DIR_ENTRY_SIZE);
-	if (de->d_ino == 0)
-		return 0;
-	return 1;
+	struct dir_entry de;
+	ip->i_nlink++;
+	iupdate(ip);
+	de.d_ino = ip->i_ino;
+	if (namelen > NEFS_NAME_MAX)
+		namelen = NEFS_NAME_MAX;
+	memcpy(de.d_name, name, namelen);
+	de.d_name[namelen] = 0;
+	dir->i_size -= dir->i_size % NEFS_DIR_ENTRY_SIZE;
+	iwrite(dir, dir->i_size, &de, NEFS_DIR_ENTRY_SIZE);
 }
 
-struct inode *namei(const char *path)
+static int dir_del_entry(struct inode *dir, int i)
+{
+	nefs_ino_t ino;
+	static const char zero[NEFS_DIR_ENTRY_SIZE];
+	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size)
+		return -1;
+	iread(dir, i * NEFS_DIR_ENTRY_SIZE, &ino, sizeof(ino));
+	if (ino != 0) {
+		struct inode *ip = iget(ino);
+		if (!ip) {
+			printk("ERROR: de inode %d not exist", ino);
+		} else {
+			if (ip->i_nlink <= 0)
+				printk("ERROR: de inode %d nlink <= 0", ino);
+			else
+				ip->i_nlink--;
+			iupdate(ip);
+			iput(ip);
+		}
+		iwrite(dir, i * NEFS_DIR_ENTRY_SIZE, &zero, sizeof(zero));
+	}
+	return ino;
+}
+
+struct inode *_namei(const char **ppath, struct inode **pip)
 {
 	size_t namelen;
 	struct dir_entry de;
 	struct inode *ip;
+	const char *path = *ppath;
+	*pip = NULL;
 	if (*path == '/')
 		ip = idup(current->root);
 	else if (*path != 0)
@@ -62,12 +92,48 @@ struct inode *namei(const char *path)
 		if (path[0] == '.' && (namelen == 1 || ip == current->root &&
 					namelen == 2 && path[1] == '.'))
 			continue;
+		if (*pip) iput(*pip);
+		*pip = ip;
 		if (-1 == dir_find_entry(ip, &de, path, namelen)) {
+			*ppath = path;
+			return NULL;
+		}
+		ip = iget(de.d_ino);
+	}
+	*ppath = path;
+	return ip;
+}
+
+struct inode *creati(const char *path, int excl)
+{
+	char *p;
+	size_t namelen;
+	struct inode *pip, *ip;
+	ip = _namei(&path, &pip);
+	if (ip != NULL) {
+		if (pip) iput(pip);
+		if (excl) {
 			iput(ip);
 			return NULL;
 		}
-		iput(ip);
-		ip = iget(de.d_ino);
+		return ip;
 	}
+	p = strchrnul(path, '/');
+	namelen = p - path;
+	while (*p == '/')
+		p++;
+	if (*p) // no inner directory, /path/_to_/file
+		return NULL;
+	ip = create_inode(pip);
+	dir_add_entry(pip, ip, path, namelen);
+	iput(pip);
+	return ip;
+}
+
+struct inode *namei(const char *path)
+{
+	struct inode *pip, *ip;
+	ip = _namei(&path, &pip);
+	if (pip) iput(pip);
 	return ip;
 }

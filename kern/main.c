@@ -2,6 +2,7 @@
 #include <kern/sched.h>
 #include <kern/tty.h>
 #include <kern/fs.h>
+#include <string.h>
 #include <malloc.h>
 
 #define INIT(x) do { \
@@ -42,6 +43,7 @@ main(void)
 	kernel_thread(initial_thread, "Hello, th2!");
 	struct inode *ip;
 	struct dir_entry de;
+	char buf[233];
 	printk("ls of /");
 	ip = namei("/");
 	for (int i = 0; -1 != dir_read_entry(ip, &de, i); i++) {
@@ -49,6 +51,10 @@ main(void)
 			printk("%6d %.*s", de.d_ino, NEFS_NAME_MAX, de.d_name);
 		}
 	}
+	iput(ip);
+	ip = creati("hello.txt", 1);
+	strcpy(buf, "Hello, World!\n");
+	iwrite(ip, 0, buf, sizeof(buf));
 	iput(ip);
 	printk("ls of .");
 	ip = namei(".");
@@ -60,7 +66,6 @@ main(void)
 	iput(ip);
 	ip = namei("aa.txt");
 	if (!ip) panic("aa.txt not found");
-	char buf[233];
 	buf[0] = 'b';
 	buf[1] = '!';
 	iwrite(ip, 0x3600, buf, 2);
@@ -79,6 +84,14 @@ main(void)
 	ip = namei("../usr/src/snake.c");
 	if (!ip) panic("../usr/src/snake.c not found");
 	size_t s, pos = 0;
+	while ((s = iread(ip, pos, buf, sizeof(buf)))) {
+		tty_write(TTY_COM0, buf, s);
+		pos += s;
+	}
+	iput(ip);
+	ip = namei("hello.txt");
+	if (!ip) panic("hello.txt not found");
+	pos = 0;
 	while ((s = iread(ip, pos, buf, sizeof(buf)))) {
 		tty_write(TTY_COM0, buf, s);
 		pos += s;

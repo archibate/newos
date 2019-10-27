@@ -47,8 +47,10 @@ void bwrite(struct buf *b);
 void brelse(struct buf *b);
 void blk_readitem(int blkno, size_t index, void *buf, size_t size);
 void blk_writeitem(int blkno, size_t index, const void *buf, size_t size);
+struct inode *create_inode(struct inode *pip);
 struct super_block *get_super(void);
 struct inode *idup(struct inode *ip);
+void iupdate(struct inode *ip);
 void iput(struct inode *ip);
 struct inode *iget(int ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
@@ -56,5 +58,6 @@ size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
 struct inode *namei(const char *path);
+struct inode *creati(const char *path, int excl);
 
 #endif
