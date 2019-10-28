@@ -11,6 +11,8 @@
 #define READ	0
 #define WRITE	1
 
+#define S_CHECK(mode, access) ((mode) & ((access) << 6))
+
 struct buf {
 	char b_data[BSIZE];
 	int b_count;
@@ -52,12 +54,12 @@ struct super_block *get_super(void);
 struct inode *idup(struct inode *ip);
 void iupdate(struct inode *ip);
 void iput(struct inode *ip);
-struct inode *iget(int ino);
+struct inode *iget(ino_t ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
 struct inode *namei(const char *path);
-struct inode *creati(const char *path, int excl);
+struct inode *creati(const char *path, int excl, mode_t mode);
 
 #endif

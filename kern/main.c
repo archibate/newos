@@ -39,8 +39,6 @@ main(void)
 
 	/** do some tests begin **/
 	free(malloc(100));
-	kernel_thread(initial_thread, "Hello, th1!");
-	kernel_thread(initial_thread, "Hello, th2!");
 	struct inode *ip;
 	struct dir_entry de;
 	char buf[233];
@@ -52,7 +50,9 @@ main(void)
 		}
 	}
 	iput(ip);
-	ip = creati("hello.txt", 1);
+	ip = creati("hello.txt", 1, 0644 | S_IFREG);
+	if (!ip)
+		panic("failed to create hello.txt");
 	strcpy(buf, "Hello, World!\n");
 	iwrite(ip, 0, buf, sizeof(buf));
 	iput(ip);
@@ -97,6 +97,29 @@ main(void)
 		pos += s;
 	}
 	iput(ip);
+	ip = creati("/boot", 1, 0755 | S_IFDIR);
+	iput(ip);
+	ip = creati("/boot/grub.cfg", 1, 0644 | S_IFREG);
+	iput(ip);
+	ip = namei("/boot");
+	ip->i_mode &= ~S_IXUSR;
+	iput(ip);
+	if (namei("/boot/grub.cfg"))
+		panic("dir u-x doesn't work!");
+	ip = namei("/boot");
+	ip->i_mode |= S_IXUSR;
+	ip->i_mode &= ~S_IRUSR;
+	iput(ip);
+	ip = namei("/boot/grub.cfg");
+	if (!ip)
+		panic("dir u+x under u-r doesn't work!");
+	iput(ip);
+	ip = namei("/boot");
+	if (dir_read_entry(ip, &de, 0) != -1)
+		panic("dir u-r doesn't work!");
+	iput(ip);
+	kernel_thread(initial_thread, "Hello, th1!");
+	kernel_thread(initial_thread, "Hello, th2!");
 	/** do some tests end **/
 
 	asm volatile ("sti");

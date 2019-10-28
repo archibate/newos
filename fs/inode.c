@@ -6,7 +6,7 @@
 struct inode inodes[NINODES];
 static struct task *inode_buffer_wait;
 
-static struct inode *get_inode(int ino)
+static struct inode *get_inode(ino_t ino)
 {
 	struct inode *ip, *eip = NULL;
 again:
@@ -35,12 +35,20 @@ again:
 
 struct inode *idup(struct inode *ip)
 {
+	if (!ip)
+		panic("idup(NULL) from %p -> %p",
+				__builtin_return_address(1),
+				__builtin_return_address(0));
 	ip->i_count++;
 	return ip;
 }
 
 void iput(struct inode *ip)
 {
+	if (!ip)
+		panic("iput(NULL) from %p -> %p",
+				__builtin_return_address(1),
+				__builtin_return_address(0));
 	if (ip->i_count-- <= 0)
 		panic("trying to free free inode");
 	wake_up(&inode_buffer_wait);
@@ -51,7 +59,7 @@ void iupdate(struct inode *ip)
 	ip->i_dirt = 1;
 }
 
-static int check_inode_exist(int ino)
+static int check_inode_exist(ino_t ino)
 {
 	char c = 0;
 	struct super_block *sb = get_super();
@@ -59,7 +67,7 @@ static int check_inode_exist(int ino)
 	return !!(c & 1 << ino % 8);
 }
 
-static int alloc_inode(struct inode *pip)
+static ino_t alloc_inode(struct inode *pip)
 {
 	struct super_block *sb = get_super();
 	for (int t = 0; t < sb->s_imap_blknr; t++) {
@@ -117,11 +125,11 @@ static void update_inode(struct inode *ip)
 
 struct inode *create_inode(struct inode *pip)
 {
-	int ino = alloc_inode(pip);
+	ino_t ino = alloc_inode(pip);
 	return iget(ino);
 }
 
-struct inode *iget(int ino)
+struct inode *iget(ino_t ino)
 {
 	if (!check_inode_exist(ino))
 		return NULL;
@@ -134,6 +142,10 @@ struct inode *iget(int ino)
 
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 {
+	if (!ip)
+		panic("rw_inode(NULL) from %p -> %p",
+				__builtin_return_address(1),
+				__builtin_return_address(0));
 	if (pos > ip->i_size) {
 		printk("WARNING: i%s: pos > ip->i_size",
 				rw == READ ? "read" : "write");
@@ -194,10 +206,14 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size)
 {
+	if (!S_CHECK(ip->i_mode, S_IROTH))
+		return 0;
 	return rw_inode(READ, ip, pos, buf, size);
 }
 
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size)
 {
+	if (!S_CHECK(ip->i_mode, S_IWOTH))
+		return 0;
 	return rw_inode(WRITE, ip, pos, (void *)buf, size);
 }

@@ -27,5 +27,8 @@
 #ifndef ino_t
 #define ino_t __ino_t
 #endif
+#ifndef mode_t
+#define mode_t __mode_t
+#endif
 
 #endif

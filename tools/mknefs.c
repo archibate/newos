@@ -116,7 +116,7 @@ void dir_write_entry(FILE *f, const char *name, int ino)
 	increase_i_nlink(ino);
 }
 
-int set_inode(int ino, FILE *f)
+int set_inode(int ino, FILE *f, int mode)
 {
 	struct nefs_inode inode;
 	memset(&inode, 0, sizeof(inode));
@@ -146,6 +146,7 @@ s_eof:
 	fwrite(s_zone_buf, BSIZE, 1, fp);
 eof:
 	inode.i_nefs_size = ftell(f);
+	inode.i_nefs_mode = mode;
 	update_inode(ino, &inode);
 	return ino;
 }
@@ -162,21 +163,28 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 			break;
 		int ino = alloc_inode();
 		char *destname = strtok(buf, " \t\r\n");
-		if (!*destname || !strcmp(destname, "!END")) {
+		if (!*destname || !strcmp(destname, "}"))
 			break;
-		} else if (!strcmp(destname, "!DIR")) {
-			destname = strtok(NULL, " \t\r\n");
+		/*if (destname[0] == '@') {
+			i_mode = strtol(destname, 8, NULL);
+			destname = strtok(buf, " \t\r\n");
+		}*/
+		char *srcpath = strtok(NULL, " \t\r\n");
+		if (!strcmp(srcpath, "{")) {
 			parse_file_list(ino, dir, fl);
 		} else {
-			char *srcpath = strtok(NULL, " \t\r\n");
 			FILE *sf = fopen(srcpath, "r");
-			set_inode(ino, sf);
+			if (!sf) {
+				perror(srcpath);
+				sf = tmpfile();
+			}
+			set_inode(ino, sf, 0644 | S_IFREG);
 			fclose(sf);
 		}
 		dir_write_entry(dir_tmp, destname, ino);
 	}
 
-	set_inode(dir, dir_tmp);
+	set_inode(dir, dir_tmp, 0755 | S_IFDIR);
 	fclose(dir_tmp);
 }
 
