@@ -1,4 +1,5 @@
 #include <kern/gdt.h>
+#include <sys/intrin.h>
 
 struct segdesc gdt[NGDTS] =
 {
@@ -20,20 +21,11 @@ gdt_init(void)
 		.limit = sizeof(gdt) - 1,
 		.base = (unsigned long) gdt,
 	};
-	asm volatile ("lgdt (%0)" :: "r" (&gdtr));
-	asm volatile (
-			"mov %0, %%ss\n"
-			"mov %0, %%ds\n"
-			"mov %0, %%es\n"
-			"mov %0, %%fs\n"
-			"mov %0, %%gs\n"
-			:: "a" (0x10)
-		     );
-	asm volatile (
-			"push %0\n"
-			"push $1f\n"
-			"retf\n"
-			"1:\n"
-			:: "a" (0x08)
-		     );
+	lgdt(&gdtr);
+	set_ss(0x10);
+	set_ds(0x10);
+	set_es(0x10);
+	set_fs(0x10);
+	set_gs(0x10);
+	set_cs(0x08);
 }

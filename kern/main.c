@@ -3,6 +3,7 @@
 #include <kern/tty.h>
 #include <kern/fs.h>
 #include <kern/mm.h>
+#include <sys/intrin.h>
 #include <string.h>
 #include <malloc.h>
 
@@ -122,17 +123,19 @@ main(void)
 	kernel_thread(initial_thread, "Hello, th1!");
 	kernel_thread(initial_thread, "Hello, th2!");
 	switch_to_mm(current->mm = create_mm());
-	mm_new_area(current->mm, 0x23333000, 0x1000, 0, 0, NULL, 0);
-	strcpy((char *)0x23333333, "Hello, Memory Manager!");
-	printk("2233 said [%s]", (volatile char *)0x23333333);
-	struct vm_area_struct *vm = mm_find_area(current->mm, 0x23333000, 0x23333000);
+	ip = namei("melty.txt");
+	if (!ip) panic("cannot namei(melty.txt)");
+	mm_new_area(current->mm, 0x23333000, 0x1000, PROT_READ | PROT_WRITE, 0, ip, 0);
+	iput(ip);
+	printk("2233 said [%.41s]", (volatile char *)0x23333000);
+	struct vm_area_struct *vm = mm_find_area(current->mm, 0x23333000, 0x23333fff);
 	if (!vm || vm == (void *)-1)
 		panic("cannot find area");
 	mm_free_area(vm);
-	//printk("2233 said [%s]", (volatile char *)0x23333333); // this should cause fault
+	//printk("2233 said [%s]", (volatile char *)0x23333333); // this should be a fault
 	/** do some tests end **/
 
-	asm volatile ("sti");
+	sti();
 	for (;;)
-		asm volatile ("hlt");
+		hlt();
 }

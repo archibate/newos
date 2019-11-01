@@ -47,7 +47,7 @@ physaddr_t page2pa(struct page_info *page);
 struct page_info *pa2page(physaddr_t pa);
 struct page_info *alloc_page(void);
 struct page_info *alloc_page_zero(void);
-struct page_info *duplicate_page(struct page_info *page);
+struct page_info *dup_page(struct page_info *page);
 void put_page(struct page_info *page);
 void *boot_alloc(size_t n);
 

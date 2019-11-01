@@ -11,7 +11,7 @@ edit_heap_range(void *begin, void *end) // FIXME: problem may come from this
 		for (void *p = PAGEUP(begin); p < PAGEUP(end); p += PGSIZE)
 			page_insert(kern_pd, alloc_page(), p, PG_W);
 	else if (end > begin)
-		for (void *p = PAGEUP(begin); p > PAGEUP(end); p -= PGSIZE)
+		for (void *p = PAGEUP(end); p > PAGEUP(begin); p -= PGSIZE)
 			page_remove(kern_pd, p);
 }
 

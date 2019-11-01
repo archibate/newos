@@ -1,6 +1,7 @@
 #include <sys/reg.h>
 #include <kern/kernel.h>
 #include <kern/irq.h>
+#include <sys/intrin.h>
 #include <stddef.h>
 
 static const char *const exception_string[] = {
@@ -29,13 +30,8 @@ static const char *const exception_string[] = {
 static void
 dump_context(unsigned long *reg)
 {
-	unsigned long cr0, cr2, cr3, cr4;
-	asm volatile ("mov %%cr0, %0" : "=r" (cr0));
-	asm volatile ("mov %%cr2, %0" : "=r" (cr2));
-	asm volatile ("mov %%cr3, %0" : "=r" (cr3));
-	asm volatile ("mov %%cr4, %0" : "=r" (cr4));
 	printk("CR0=%p  CR2=%p  CR3=%p  CR4=%p",
-		cr0, cr2, cr3, cr4);
+		scr0(), scr2(), scr3(), scr4());
 	printk("EAX=%p  EBX=%p  ECX=%p  EDX=%p",
 		reg[EAX], reg[EBX], reg[ECX], reg[EDX]);
 	printk("ESP=%p  EBP=%p  ESI=%p  EDI=%p",

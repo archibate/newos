@@ -1,6 +1,7 @@
 #include <kern/mm.h>
 #include <kern/asm/cmos.h>
 #include <kern/kernel.h>
+#include <sys/intrin.h>
 #include <stddef.h>
 
 size_t total_pages;
@@ -19,15 +20,15 @@ void memtest_init(void)
 	mem = (unsigned *)(memkb << 20);
 
 	// store a copy of CR0
-	asm volatile ("movl %%cr0, %0" : "=r" (cr0));
+	cr0 = scr0();
 
 	// invalidate the cache
 	// write-back and invalidate the cache
-	asm volatile ("wbinvd");
+	wbinvd();
 
 	// plug cr0 with just PE/CD/NW
 	// cache disable(486+), no-writeback(486+), 32bit mode(386+)
-	asm volatile ("movl %0, %%cr0" :: "r" (cr0 | 0x60000001));
+	lcr0(cr0 | 0x60000001);
 
 	while (memkb < 4096) {
 
@@ -51,7 +52,7 @@ void memtest_init(void)
 		mem += 1024*1024;
 	}
 
-	asm volatile ("movl %%eax, %%cr0" :: "a" (cr0));
+	lcr0(cr0);
 
 	total_pages = memkb << 8;
 	mem = (unsigned *)0x413; // BIOS memory

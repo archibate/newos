@@ -1,5 +1,5 @@
 #include <kern/idt.h>
-#include <kern/tty.h>
+#include <sys/intrin.h>
 
 struct gatedesc idt[NIDTS];
 
@@ -16,5 +16,5 @@ idt_init(void)
 		.limit = sizeof(idt) - 1,
 		.base = (unsigned long) idt,
 	};
-	asm volatile ("lidt (%0)" :: "r" (&idtr));
+	lidt(&idtr);
 }

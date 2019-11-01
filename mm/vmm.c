@@ -1,7 +1,10 @@
 #include <kern/mm.h>
 #include <kern/fs.h>
-#include <kern/sched.h>
 #include <kern/kernel.h>
+#include <kern/sched.h>
+#include <sys/intrin.h>
+#include <sys/reg.h>
+#include <string.h>
 #include <malloc.h>
 
 struct mm_struct *create_mm(void)
@@ -96,9 +99,9 @@ void vm_area_free_page(struct vm_page *pg)
 	free(pg);
 }
 
-static int vm_perm(struct vm_area_struct *vm)
+static int vm_mmu_perm(struct vm_area_struct *vm)
 {
-	int perm = PG_P | PG_U;
+	int perm = PG_U;
 	if (vm->vm_prot & PROT_WRITE)
 		perm |= PG_W;
 	return perm;
@@ -106,23 +109,32 @@ static int vm_perm(struct vm_area_struct *vm)
 
 int mm_page_fault(
 		struct mm_struct *mm,
-		viraddr_t va)
+		viraddr_t va, int errcd)
 {
-	printk("mm_page_fault(%p)", va);
+	//printk("mm_page_fault(%p, %d)", va, errcd);
 	struct vm_page *pg;
 	struct vm_area_struct *vm;
 	vm = mm_find_area(current->mm, va, va);
 	if (!vm) return 0;
 
 	int index = (va - vm->vm_begin) >> 12;
+	int perm = vm_mmu_perm(vm);
+	if (errcd & ~perm) return 0;
 	pg = vm_area_new_page(vm, index);
-	page_insert(mm->pd, pa2page(pg->pg_paddr), (void *)va, vm_perm(vm));
+	struct page_info *page = dup_page(pa2page(pg->pg_paddr));
+	if (vm->vm_file) {
+		off_t offset = vm->vm_file_offset + (pg->pg_index << 12);
+		iread(vm->vm_file, offset, page2kva(page), PGSIZE);
+	} else {
+		memset(page2kva(page), 0, PGSIZE);
+	}
+	page_insert(mm->pd, page, (void *)va, perm);
+		printk("!!");
 	return 1;
 }
 
 int do_page_fault(unsigned long *reg)
 {
-	viraddr_t va;
-	asm volatile ("mov %%cr2, %0" : "=r" (va));
-	return va && mm_page_fault(current->mm, va);
+	viraddr_t va = scr2();
+	return va && mm_page_fault(current->mm, va, reg[ERRCODE]);
 }

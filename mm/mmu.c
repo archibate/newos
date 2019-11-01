@@ -1,35 +1,34 @@
 #include <kern/mm.h>
+#include <kern/kernel.h>
+#include <sys/intrin.h>
 
 void
 mmu_enable(int enable)
 {
-	unsigned long cr0;
-	asm volatile ("mov %%cr0, %0" : "=r" (cr0));
+	unsigned long cr0 = scr0();
 	if (enable)
-		cr0 |= 0x80000000;
+		cr0 |= 0x80010000;
 	else
 		cr0 &= 0x7fffffff;
-	asm volatile ("mov %0, %%cr0" :: "r" (cr0));
+	lcr0(cr0);
 }
 
 void
 mmu_set_pgdir(pde_t *pd)
 {
-	asm volatile ("mov %0, %%cr3" :: "r" (paddr(pd)));
+	lcr3(paddr(pd));
 }
 
 pde_t *
 mmu_get_pgdir(void)
 {
-	physaddr_t pdpa;
-	asm volatile ("mov %%cr3, %0" : "=r" (pdpa));
-	return kvaddr(pdpa);
+	return kvaddr(scr3());
 }
 
 void
 tlb_invalidate(pde_t *pd, void *va)
 {
-	asm volatile ("invlpg (%0)" :: "r" (va) : "cc", "memory");
+	invlpg(va);
 }
 
 pte_t *
@@ -59,7 +58,7 @@ page_insert(pde_t *pd, struct page_info *page, void *va, int perm)
 {
 	pte_t *pte = pgdir_walk(pd, va, 1);
 	if (*pte & PG_P) {
-		//printk("WARNING: page_insert: twice map at va=%p,pa=%p", va, *pte & PGMASK);
+		printk("WARNING: page_insert: twice map va=%p, pa=%p", va, *pte & PGMASK);
 		put_page(pa2page(*pte & PGMASK));
 	}
 	*pte = page2pa(page) | perm | PG_P;

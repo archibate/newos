@@ -46,7 +46,7 @@ alloc_page_zero(void)
 }
 
 struct page_info *
-duplicate_page(struct page_info *page)
+dup_page(struct page_info *page)
 {
 	page->refcnt++;
 	return page;
@@ -58,7 +58,7 @@ put_page(struct page_info *page)
 	if (--page->refcnt > 0)
 		return;
 	if (page->next != ALLOCATED_MAGIC)
-		panic("bad free_page");
+		panic("bad free_page pa=%p", page2pa(page));
 	page->next = page_free_head;
 	page_free_head = page;
 }
