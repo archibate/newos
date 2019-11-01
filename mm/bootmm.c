@@ -16,7 +16,7 @@ void *boot_alloc(size_t n)
 
 void switch_pgdir(pde_t *pd)
 {
-	memcpy(pd, mmu_get_pgdir(), KERNEL_END >> 22);
+	memcpy(pd, mmu_get_pgdir(), (KERNEL_END >> 22) * sizeof(pde_t));
 	mmu_set_pgdir(pd);
 }
 
@@ -34,7 +34,7 @@ bootmm_init(void)
 	kern_ptes = boot_alloc(npts * PGSIZE);
 	pde_t pde = paddr(kern_ptes) | PG_P | PG_W;
 	pte_t pte = 0x0 | PG_P | PG_W;
-	for (int i = 0; i < npts; i++) {
+	for (size_t i = 0; i < npts; i++) {
 		kern_pd[i] = pde;
 		kern_pd[(KERNEL_BASE >> 22) + i] = pde;
 		pde += PGSIZE;

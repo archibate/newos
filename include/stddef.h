@@ -20,5 +20,6 @@
 #define offsetof(type, memb) ((size_t)&((type *)NULL)->memb)
 #define array_sizeof(a) ((sizeof(a) / sizeof((a)[0])))
 #define static_assert(x) switch (0) { case 0: case (x):; }
+#define container_of(ptr, type, memb) ((type *)(void *)(ptr) - offsetof(type, memb))
 
 #endif

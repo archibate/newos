@@ -14,6 +14,8 @@ static int dir_find_entry(struct inode *dir, struct dir_entry *de,
 {
 	if (!S_ISDIR(dir->i_mode))
 		return -1;
+	if (!S_CHECK(dir->i_mode, S_IXOTH))
+		return -1;
 	for (size_t pos = 0; pos + NEFS_DIR_ENTRY_SIZE <= dir->i_size;
 			pos += NEFS_DIR_ENTRY_SIZE) {
 		if (rw_inode(READ, dir, pos, de, NEFS_DIR_ENTRY_SIZE)
@@ -101,8 +103,8 @@ struct inode *_namei(const char **ppath, struct inode **pip)
 		if (*path == 0)
 			break;
 		namelen = strchrnul(path, '/') - path;
-		if (path[0] == '.' && (namelen == 1 || ip == current->root &&
-					namelen == 2 && path[1] == '.'))
+		if (path[0] == '.' && (namelen == 1 ||
+			(ip == current->root && namelen == 2 && path[1] == '.')))
 			continue;
 		if (*pip) iput(*pip);
 		*pip = ip;
@@ -154,12 +156,7 @@ struct inode *namei(const char *path)
 {
 	struct inode *pip, *ip;
 	ip = _namei(&path, &pip);
-	if (pip) {
+	if (pip)
 		iput(pip);
-		if (ip && !S_CHECK(pip->i_mode, S_IXOTH)) {
-			iput(ip);
-			return NULL;
-		}
-	}
 	return ip;
 }

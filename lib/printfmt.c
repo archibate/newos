@@ -73,7 +73,6 @@ static const char *const error_string[] =
 	[ENOANO] = "No anode",
 	[EBADRQC] = "Invalid request code",
 	[EBADSLT] = "Invalid slot",
-	[EDEADLOCK] = "File locking deadlock error",
 	[EBFONT] = "Bad font file format",
 	[ENOSTR] = "Device not a stream",
 	[ENODATA] = "No data available",
@@ -278,7 +277,8 @@ process_precision:
 				err = va_arg(ap, int);
 				if (err < 0)
 					err = -err;
-				if (err >= array_sizeof(error_string) || (p = error_string[err]) == NULL)
+				if ((unsigned)err >= array_sizeof(error_string)
+						|| (p = error_string[err]) == NULL)
 					printfmt(putch, putdat, "error %d", err);
 				else
 					printfmt(putch, putdat, "%s", p);

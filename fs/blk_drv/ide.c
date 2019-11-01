@@ -6,23 +6,26 @@
 #define PHYS_BSIZE  		512
 #define PBPB    (BSIZE/PHYS_BSIZE)
 
-static void ide_wait(void)
+static int ide_wait(void)
 {
 	int timeout = 40000;
 	int r;
 
 	while ((r = inb(IDE_STAT)) & IDE_BSY) {
 		if (timeout-- <= 0)
-			panic("ide_wait timeout");
+			return 0;
 	}
 
 	if (r & (IDE_DF|IDE_ERR))
-		panic("ide_wait got error");
+		return 0;
+
+	return 1;
 }
 
 static void ide_seek(int ide, int sectnr, int nsects)
 {
-	ide_wait();
+	if (!ide_wait())
+		panic("IDE wait error");
 
 	int lba = sectnr;
 
@@ -49,7 +52,8 @@ void ll_rw_block(struct buf *b, int rw)
 	else
 		panic("bad disk rw command");
 
-	ide_wait();
+	if (!ide_wait())
+		panic("ll_rw_block: seek error: rw=%d, blkno=%d", rw, b->b_blkno);
 	if (rw == READ) {
 		b->b_uptodate = 1;
 		insl(IDE_DAT, b->b_data, BSIZE/4);

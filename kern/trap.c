@@ -46,12 +46,16 @@ dump_context(unsigned long *reg)
 		reg[EIP], reg[EFLAGS], reg[INTRNO], reg[ERRCODE]);
 }
 
+extern int do_page_fault(unsigned long *reg);
+
 void
 do_trap(unsigned long eax, ...)
 {
 	unsigned long *reg = &eax;
 	unsigned long nr = reg[INTRNO];
 	if (nr < array_sizeof(exception_string)) {
+		if (nr == 0x0e && do_page_fault(reg))
+			return;
 		dump_context(reg);
 		panic("INT %#x: %s", nr, exception_string[nr]);
 	} else if (nr >= 0x20 && nr <= 0x20 + NIRQS) {

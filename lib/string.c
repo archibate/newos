@@ -7,7 +7,7 @@
 // Primespipe runs 3x faster this way.
 #define ASM 1
 
-int
+size_t
 strlen(const char *s)
 {
 	int n;
@@ -17,7 +17,7 @@ strlen(const char *s)
 	return n;
 }
 
-int
+size_t
 strnlen(const char *s, size_t size)
 {
 	int n;

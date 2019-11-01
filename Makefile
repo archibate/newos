@@ -1,6 +1,10 @@
 COPT=-ggdb -gstabs+ $(if $(OPTIM), -O$(OPTIM))
 CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
-	-fno-stack-protector -Iinclude
+	-fno-stack-protector -Iinclude -Wall -Wextra \
+	-Wno-unused -Wno-main -Wno-frame-address \
+	-Wno-builtin-declaration-mismatch \
+	-Werror=int-conversion -Werror=implicit-int \
+	-Werror=implicit-function-declaration
 QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
 QEMUCMD=qemu-system-i386 $(QEMUOPT)
 SRCDIRS=kern mm fs lib
@@ -13,8 +17,8 @@ OBJS+=build/tools/ebss.c.o
 .PHONY: default
 default: run
 
-.PHONY: image-test
-image-test: build/boot.img
+.PHONY: image-dump
+image-dump: build/boot.img
 	@hexdump -C $< | less
 
 .PHONY: run

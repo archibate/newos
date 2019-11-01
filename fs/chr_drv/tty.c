@@ -13,10 +13,10 @@ static int
 tty_getc(struct tty_struct *tty)
 {
 	int c;
-	while (RING_EMPTY(&tty->read_q))
+	while (ring_empty(&tty->read_q))
 		block_on(&tty->read_wait);
 	// tty_intr filled one, we pop it
-	RING_GET(&tty->read_q, c);
+	ring_get(&tty->read_q, c);
 	return c;
 }
 
@@ -26,11 +26,11 @@ tty_intr(int num)
 	int c;
 	struct tty_struct *tty = &ttys[num];
 	while (tty->getc(&c)) {
-		if (RING_FULL(&tty->read_q)) {
+		if (ring_full(&tty->read_q)) {
 			tty_putc(tty, '\a');
 		} else {
 			tty_putc(tty, c);
-			RING_PUT(&tty->read_q, c);
+			ring_put(&tty->read_q, c);
 			if (c == '\n')
 				wake_up(&tty->read_wait);
 		}
@@ -40,10 +40,10 @@ tty_intr(int num)
 void
 tty_write(int num, const char *buf, size_t n)
 {
-	int c, i = 0;
+	size_t i = 0;
 	struct tty_struct *tty = &ttys[num];
 	while (i < n) {
-		c = buf[i++];
+		int c = buf[i++];
 		tty_putc(tty, c);
 	}
 }
@@ -51,7 +51,7 @@ tty_write(int num, const char *buf, size_t n)
 size_t
 tty_read(int num, char *buf, size_t n)
 {
-	int c, i = 0;
+	size_t i = 0;
 	struct tty_struct *tty = &ttys[num];
 	while (i < n) {
 		int c = tty_getc(tty);

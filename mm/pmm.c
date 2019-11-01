@@ -67,7 +67,7 @@ void
 pmm_init(void)
 {
 	pages = boot_alloc(sizeof(struct page_info) * npages);
-	for (int i = KERNEL_PMAP >> 12; i < npages - 1; i++)
+	for (size_t i = KERNEL_PMAP >> 12; i < npages - 1; i++)
 		pages[i].next = &pages[i + 1];
 	pages[npages - 1].next = NULL;
 	page_free_head = &pages[KERNEL_PMAP >> 12];

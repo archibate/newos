@@ -160,11 +160,12 @@ void free(void *p)
 {
 	H *b = get_block(p);
 	if (!(first_block && (H *)p >= first_block + 1
-				&& p < sbrk(0) && p == b->ptr))
+				&& p < sbrk(0) && p == b->ptr)) {
 		if (p == b->ptr)
 			panic("bad free %p < %p < %p", first_block + 1, p, sbrk(0));
 		else
 			panic("bad free %p (%p)", p, b->ptr);
+	}
 
 	b->ptr = NULL;
 	if (b->prev && !b->prev->ptr) {

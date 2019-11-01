@@ -3,7 +3,7 @@
 
 // Get size_t.
 #include <stddef.h>
-#include <kern/ringbuf.h>
+#include <ds/ring.h>
 
 #define TTY_VGA  0
 #define TTY_COM0 1
@@ -11,7 +11,7 @@
 
 #define TTY_BUFSIZ 512
 
-typedef RINGBUF(char, TTY_BUFSIZ) tty_queue_t;
+typedef ring_buffer(char, TTY_BUFSIZ) tty_queue_t;
 
 struct tty_struct
 {

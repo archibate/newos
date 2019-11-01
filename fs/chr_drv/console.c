@@ -44,6 +44,7 @@ vga_putc(int c)
 		break;
 	case '\n':
 		vga_pos += VGA_COLS;
+		__attribute__((fallthrough));
 	case '\r':
 		vga_pos -= vga_pos % VGA_COLS;
 		break;

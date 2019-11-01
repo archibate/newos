@@ -29,6 +29,7 @@ struct task {
 
 	struct inode *cwd;
 	struct inode *root;
+	struct mm_struct *mm;
 };
 
 #define NTASKS	64

@@ -10,11 +10,11 @@ typedef unsigned long __uintptr_t, __size_t, __clock_t, __time_t, __suseconds_t;
 typedef unsigned long long __uint64_t, __uint_least64_t, __uint_fast64_t,
 	__uintmax_t;
 
-typedef signed char __int8_t, __int_fast8_t;
-typedef signed short __int16_t;
-typedef signed int __int32_t, __int_least8_t, __int_least16_t,
+typedef char __int8_t, __int_fast8_t;
+typedef short __int16_t;
+typedef int __int32_t, __int_least8_t, __int_least16_t,
 	__int_least32_t, __int_fast16_t, __int_fast32_t, __pid_t;
-typedef signed long __intptr_t, __ssize_t, __ptrdiff_t;
-typedef signed long long __int64_t, __int_least64_t, __int_fast64_t, __intmax_t;
+typedef long __intptr_t, __ssize_t, __off_t, __ptrdiff_t;
+typedef long long __int64_t, __int_least64_t, __int_fast64_t, __intmax_t;
 
 #endif

@@ -15,15 +15,15 @@ mmu_enable(int enable)
 void
 mmu_set_pgdir(pde_t *pd)
 {
-	asm volatile ("mov %0, %%cr3" :: "r" (pd));
+	asm volatile ("mov %0, %%cr3" :: "r" (paddr(pd)));
 }
 
 pde_t *
 mmu_get_pgdir(void)
 {
-	pde_t *pd;
-	asm volatile ("mov %%cr3, %0" : "=r" (pd));
-	return pd;
+	physaddr_t pdpa;
+	asm volatile ("mov %%cr3, %0" : "=r" (pdpa));
+	return kvaddr(pdpa);
 }
 
 void

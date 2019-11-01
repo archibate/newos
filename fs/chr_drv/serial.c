@@ -20,6 +20,7 @@ rs_putc(int c)
 	for (int i = 0; !(inb(COM0+COM_LSR) & COM_LSR_TXRDY) && i < 12800; i++)
 		delay();
 	outb(COM0+COM_RX, c);
+	return 0;
 }
 
 static int

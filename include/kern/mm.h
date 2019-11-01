@@ -3,6 +3,12 @@
 
 // Get size_t.
 #include <stddef.h>
+// Get off_t.
+#include <sys/types.h>
+// Get uintptr_t.
+#include <stdint.h>
+// Get list data structure.
+#include <ds/list.h>
 
 #define PGSIZE	0x1000
 #define PGMASK	0xfffff000
@@ -19,7 +25,7 @@
 #define kvaddr(pa) ((void *)(pa) + KERNEL_BASE)
 #define paddr(va) ((physaddr_t)(va) - KERNEL_BASE)
 
-typedef size_t physaddr_t, pte_t, pde_t;
+typedef uintptr_t physaddr_t, viraddr_t, pte_t, pde_t;
 
 struct page_info
 {
@@ -64,5 +70,64 @@ extern pte_t *kern_ptes;
 
 #define PGDOWN(x) ((typeof(x))(((size_t)(x)) & PGMASK))
 #define PAGEUP(x) ((typeof(x))(((size_t)(x) + PGSIZE - 1) & PGMASK))
+
+#define PROT_READ	1
+#define PROT_WRITE	2
+#define PROT_EXEC	4
+#define PROT_NONE	0
+
+#define MAP_SHARED	1
+#define MAP_PRIVATE	2
+#define MAP_FIXED	3
+
+struct mm_struct
+{
+	struct list_head mm_areas;
+
+	pde_t *pd;
+};
+
+struct vm_area_struct
+{
+	struct list_node vm_list;
+
+	viraddr_t vm_begin, vm_end;
+	int vm_prot, vm_flags;
+
+	struct mm_struct *vm_mm;
+
+	struct inode *vm_file;
+	off_t vm_file_offset;
+
+	struct list_head vm_pages;
+};
+
+struct vm_page
+{
+	struct list_node pg_list;
+
+	physaddr_t pg_paddr;
+
+	unsigned pg_index;
+	struct vm_area_struct *pg_area;
+};
+
+struct mm_struct *create_mm(void);
+void switch_to_mm(struct mm_struct *mm);
+void free_mm(struct mm_struct *mm);
+struct vm_area_struct *mm_find_area(
+		struct mm_struct *mm,
+		viraddr_t begin,
+		viraddr_t end);
+struct vm_area_struct *mm_new_area(
+		struct mm_struct *mm,
+		viraddr_t begin, size_t size,
+		int prot, int flags,
+		struct inode *file, off_t offset);
+void mm_free_area(struct vm_area_struct *vm);
+struct vm_page *vm_area_new_page(
+		struct vm_area_struct *vm,
+		unsigned index);
+void vm_area_free_page(struct vm_page *pg);
 
 #endif

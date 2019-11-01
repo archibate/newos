@@ -1,3 +1,24 @@
 #!/usr/bin/bochs -qf
-boot: c
+
+# how much memory the emulated machine will have
+megs: 32
+
+# filename of ROM images
+romimage: file=$BXSHARE/BIOS-bochs-latest
+vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
+
+# what disk images will be used 
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 ata0-master: type=disk, path=build/boot.img, mode=flat
+
+# choose the boot disk.
+boot: c
+
+# where do we send log messages?
+log: build/bochsout.txt
+
+# disable the mouse
+mouse: enabled=0
+
+# enable key mapping, using US layout as default.
+keyboard: keymap=$BXSHARE/keymaps/x11-pc-us.map

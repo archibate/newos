@@ -70,10 +70,10 @@ static int check_inode_exist(ino_t ino)
 static ino_t alloc_inode(struct inode *pip)
 {
 	struct super_block *sb = get_super();
-	for (int t = 0; t < sb->s_imap_blknr; t++) {
+	for (size_t t = 0; t < sb->s_imap_blknr; t++) {
 		struct buf *b = bread(sb->s_imap_begblk + t);
-		for (int i = 0; i < BSIZE; i++) {
-			for (int j = 0; j < 8; j++) {
+		for (size_t i = 0; i < BSIZE; i++) {
+			for (size_t j = 0; j < 8; j++) {
 				if (!(b->b_data[i] & 1 << j)) {
 					b->b_data[i] |= 1 << j;
 					bwrite(b);
@@ -90,9 +90,9 @@ static ino_t alloc_inode(struct inode *pip)
 static int alloc_zone(struct inode *ip)
 {
 	struct super_block *sb = get_super();
-	for (int t = 0; t < sb->s_zmap_blknr; t++) {
+	for (size_t t = 0; t < sb->s_zmap_blknr; t++) {
 		struct buf *b = bread(sb->s_zmap_begblk + t);
-		for (int i = 0; i < BSIZE; i++) {
+		for (size_t i = 0; i < BSIZE; i++) {
 			for (int j = 0; j < 8; j++) {
 				if (!(b->b_data[i] & 1 << j)) {
 					b->b_data[i] |= 1 << j;
@@ -164,9 +164,11 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 	size_t sz_left = size;
 	struct buf *s_blk = NULL;
 	size_t iz = pos / BSIZE;
-	int *zid;
+	nefs_zone_t *zid;
 	while (sz_left) {
 		if (!s_blk && iz >= NEFS_NR_DIRECT) {
+			if (!ip->i_s_zone)
+				ip->i_s_zone = alloc_zone(ip);
 			s_blk = bread(sb->s_data_begblk + ip->i_s_zone);
 			iz -= NEFS_NR_DIRECT;
 		}
@@ -179,7 +181,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 		if (!s_blk)
 			zid = ip->i_zone + iz;
 		else
-			zid = (int *)s_blk->b_data + iz;
+			zid = (nefs_zone_t *)s_blk->b_data + iz;
 		if (!*zid) {
 			*zid = alloc_zone(ip);
 			if (s_blk)

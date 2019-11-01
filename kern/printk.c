@@ -22,5 +22,6 @@ vprintk(const char *fmt, va_list ap)
 	size_t len = strnlen(buf, sizeof(buf) - 2);
 	buf[len++] = '\n';
 	tty_write(TTY_COM0, buf, len);
+	tty_write(TTY_VGA, buf, len);
 	return ret;
 }
