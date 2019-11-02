@@ -1,5 +1,5 @@
-#ifndef _KERN_NEFS_H
-#define _KERN_NEFS_H 1
+#ifndef _KIP_NEFS_H
+#define _KIP_NEFS_H 1
 
 /* Encoding of the file mode.  */
 

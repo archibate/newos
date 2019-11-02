@@ -34,9 +34,10 @@ struct vm_area_struct *mm_find_area(
 		viraddr_t end)
 {
 	struct vm_area_struct *vm;
-	list_foreach(vm, &mm->mm_areas, vm_list)
+	list_foreach(vm, &mm->mm_areas, vm_list) {
 		if (vm->vm_begin <= begin && vm->vm_end >= end)
 			return vm;
+	}
 	return NULL;
 }
 
@@ -111,10 +112,10 @@ int mm_page_fault(
 		struct mm_struct *mm,
 		viraddr_t va, int errcd)
 {
-	//printk("mm_page_fault(%p, %d)", va, errcd);
+	printk("mm_page_fault(%p, %d)", va, errcd);
 	struct vm_page *pg;
 	struct vm_area_struct *vm;
-	vm = mm_find_area(current->mm, va, va);
+	vm = mm_find_area(mm, va, va);
 	if (!vm) return 0;
 
 	int index = (va - vm->vm_begin) >> 12;
@@ -128,8 +129,8 @@ int mm_page_fault(
 	} else {
 		memset(page2kva(page), 0, PGSIZE);
 	}
+	printk("%p->%p / %p", vm->vm_begin, vm->vm_end, va);
 	page_insert(mm->pd, page, (void *)va, perm);
-		printk("!!");
 	return 1;
 }
 

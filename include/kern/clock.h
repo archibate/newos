@@ -3,6 +3,6 @@
 
 #include <time.h>
 
-clock_t clock_tick;
+extern clock_t clock_tick;
 
 #endif

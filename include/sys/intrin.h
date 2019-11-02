@@ -188,6 +188,20 @@ sldt(void)
 }
 
 static inline void
+ltr(unsigned long tr)
+{
+	asm volatile ("ltr %%ax" :: "a" (tr) : "cc", "memory");
+}
+
+static inline unsigned short
+str(void)
+{
+	unsigned short tr;
+	asm volatile ("str %%ax" : "=a" (tr) :: "cc", "memory");
+	return tr;
+}
+
+static inline void
 lldt(unsigned long ldtr)
 {
 	asm volatile ("lldt %%ax" :: "a" (ldtr) : "cc", "memory");

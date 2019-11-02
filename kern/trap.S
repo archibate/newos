@@ -347,6 +347,7 @@ int_route:
 	mov ds, ebx
 	mov es, ebx
 	call do_trap
+return_to_user:
 	pop eax
 	pop ebx
 	pop ecx
@@ -360,3 +361,8 @@ int_route:
 	pop ds
 	add esp, 8
 	iretd
+
+global __move_to_user
+__move_to_user:
+	mov esp, [esp + 4]
+	jmp return_to_user

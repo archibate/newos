@@ -4,6 +4,8 @@ set -e
 chmod +x $0
 gcc -D_ARGV0=\"$0\" $0 -o /tmp/$$
 /tmp/$$ $*
+x=$?
+rm -f /tmp/$$
 exit
 true */
 #endif

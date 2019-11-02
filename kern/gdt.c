@@ -22,10 +22,10 @@ gdt_init(void)
 		.base = (unsigned long) gdt,
 	};
 	lgdt(&gdtr);
-	set_ss(0x10);
-	set_ds(0x10);
-	set_es(0x10);
-	set_fs(0x10);
-	set_gs(0x10);
-	set_cs(0x08);
+	set_ss(SEG_KDATA);
+	set_ds(SEG_KDATA);
+	set_es(SEG_KDATA);
+	set_fs(SEG_KDATA);
+	set_gs(SEG_KDATA);
+	set_cs(SEG_KCODE);
 }

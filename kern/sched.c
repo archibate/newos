@@ -1,5 +1,6 @@
 #include <kern/sched.h>
 #include <kern/kernel.h>
+#include <kern/tss.h>
 #include <kern/fs.h>
 #include <malloc.h>
 #include <string.h>
@@ -20,6 +21,7 @@ switch_to(int i)
 		previous = current;
 		current = task[i];
 		switch_context(previous->kregs, current->kregs);
+		tss0.ts_esp0 = (unsigned long)(current->stack + STACK_SIZE);
 	}
 }
 
@@ -151,14 +153,6 @@ new_task(struct task *parent)
 	p->cwd = idup(parent->cwd);
 	p->stack = malloc(STACK_SIZE);
 	return p;
-}
-
-void del_task(struct task *p)
-{
-	iput(p->root);
-	iput(p->cwd);
-	free(p->stack);
-	memset(p, 0, sizeof(struct task));
 }
 
 __attribute__((noreturn)) void

@@ -13,5 +13,6 @@ _start:
 	hlt
 
 section .bss
-	resb 16384
+	resb 32768
+global boot_stack_top
 boot_stack_top:

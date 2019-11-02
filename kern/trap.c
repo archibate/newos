@@ -28,7 +28,7 @@ static const char *const exception_string[] = {
 };
 
 static void
-dump_context(unsigned long *reg)
+dump_context(const unsigned long *reg)
 {
 	printk("CR0=%p  CR2=%p  CR3=%p  CR4=%p",
 		scr0(), scr2(), scr3(), scr4());
@@ -43,6 +43,7 @@ dump_context(unsigned long *reg)
 }
 
 extern int do_page_fault(unsigned long *reg);
+extern void do_syscall(unsigned long *reg);
 
 void
 do_trap(unsigned long eax, ...)
@@ -56,6 +57,8 @@ do_trap(unsigned long eax, ...)
 		panic("INT %#x: %s", nr, exception_string[nr]);
 	} else if (nr >= 0x20 && nr <= 0x20 + NIRQS) {
 		do_irq(nr - 0x20);
+	} else if (nr == 0x80) {
+		do_syscall(reg);
 	} else {
 		panic("Unknown INT %#x", nr);
 	}

@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 #include <sys/types.h>
-#include <kern/nefs.h>
+#include <kip/nefs.h>
 
 #define BSIZE	1024
 #define NBUFS	128

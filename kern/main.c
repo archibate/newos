@@ -3,6 +3,7 @@
 #include <kern/tty.h>
 #include <kern/fs.h>
 #include <kern/mm.h>
+#include <kern/exec.h>
 #include <sys/intrin.h>
 #include <string.h>
 #include <malloc.h>
@@ -27,6 +28,7 @@ main(void)
 	*(int*)0xb8000 = 0x0f6b0f4f;
 	INIT(gdt);
 	INIT(idt);
+	INIT(tss);
 	INIT(irq);
 	INIT(rs);
 	INIT(vga);
@@ -40,8 +42,9 @@ main(void)
 	INIT(fs);
 
 	/** do some tests begin **/
-	free(malloc(100));
 	struct inode *ip;
+#if 1
+	free(malloc(100));
 	struct dir_entry de;
 	char buf[233];
 	printk("ls of /");
@@ -82,9 +85,9 @@ main(void)
 	iread(ip, ip->i_size - 2, buf, 9);
 	printk("[%.7s]", buf);
 	iput(ip);
-	printk("contents of /usr/src/snake.c");
-	ip = namei("../usr/src/snake.c");
-	if (!ip) panic("../usr/src/snake.c not found");
+	printk("contents of /usr/src/ascii.c");
+	ip = namei("../usr/src/ascii.c");
+	if (!ip) panic("../usr/src/ascii.c not found");
 	size_t s, pos = 0;
 	while ((s = iread(ip, pos, buf, sizeof(buf)))) {
 		tty_write(TTY_COM0, buf, s);
@@ -133,6 +136,14 @@ main(void)
 		panic("cannot find area");
 	mm_free_area(vm);
 	//printk("2233 said [%s]", (volatile char *)0x23333333); // this should be a fault
+#endif
+	ip = namei("/bin/xiaomin");
+	if (!ip) panic("cannot open /bin/xiaomin");
+	if (do_execve(ip) == -1) panic("cannot exec /bin/xiaomin");
+	else printk("execve loaded /bin/xiaomin");
+	iput(ip);
+	printk("before move_to_user: %p", current->mm->mm_areas.first);
+	move_to_user();
 	/** do some tests end **/
 
 	sti();

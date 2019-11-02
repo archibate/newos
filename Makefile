@@ -13,6 +13,8 @@ OBJS=build/tools/stext.c.o
 OBJS+=$(SRCS:%=build/%.o)
 OBJS+=$(shell gcc -m32 -print-libgcc-file-name)
 OBJS+=build/tools/ebss.c.o
+USRSRCS=$(shell find usr -name '*.c' -type f)
+USRS=$(USRSRCS:%.c=build/%)
 
 .PHONY: default
 default: run
@@ -23,18 +25,23 @@ image-dump: build/boot.img
 
 .PHONY: run
 run: build/boot.img
-	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw
+	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log
 
 .PHONY: bochs
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USRS)
 	@echo + [gen] $@
 	@mkdir -p $(@D)
-	@cat $^ > $@
-	@tools/mknefs.c $@ -r $$[1 + `du $(word 2, $^) | awk '{print $$1}'`] \
-		-L NewOS -f $(word 3, $^)
+ifdef BXIMAGE
+	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
+	@dd if=$< of=$@ bs=2048 count=1 conv=notrunc
+	@dd if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=$$[1 + `du $(word 2, $^) | awk '{print $$1}'`]
+else
+	@cat $< $(word 2, $^) > $@
+endif
+	@tools/mknefs.c $@ -r $$[1 + `du $(word 2, $^) | awk '{print $$1}'`] -L NewOS -f $(word 3, $^)
 
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
 
@@ -66,6 +73,9 @@ build/%.c.o: %.c
 	@mkdir -p $(@D)
 	@gcc $(CFLAGS) -D_KERNEL -c -o $@ $<
 
+build/usr/%: build/usr/%.c.o
+	@ld -m elf_i386 -static -e _start -Ttext 0x40000000 -o $@ $^
+
 .PHONY: info
 info:
 	@echo CFLAGS=$(CFLAGS)
@@ -76,4 +86,4 @@ info:
 build/vmlinux: $(OBJS)
 	@echo + [ld] $@
 	@mkdir -p $(@D)
-	@ld -m elf_i386 -e _start -Ttext 0x100000 -o $@ $^
+	@ld -m elf_i386 -static -e _start -Ttext 0x100000 -o $@ $^

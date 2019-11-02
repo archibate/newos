@@ -4,6 +4,8 @@ set -e
 chmod +x $0
 gcc -lpthread -D_ARGV0=\"$0\" $0 -o /tmp/$$
 /tmp/$$ $*
+x=$?
+rm -f /tmp/$$
 exit
 true */
 #endif
@@ -30,6 +32,8 @@ const char message[] =
 #include <time.h>
 #ifdef _WIN32
 #include <conio.h>
+#include <windows.h>
+#define _sleep(x) Sleep(x)
 #else
 #include <unistd.h>
 #include <pthread.h>
@@ -92,7 +96,9 @@ void init_conio(void)
 void clear(void)
 {
 #ifdef _WIN32
-	system("cls");
+	COORD c = {0, 0};
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleCursorPosition(hConsole, c);
 #else
 	printf("\033[2J");
 #endif
@@ -142,7 +148,9 @@ void show(void)
 {
 	int x, y;
 	clear();
+#ifndef _WIN32
 	puts(message);
+#endif
 	for (y = 0; y < Y+2; y++) {
 		for (x = 0; x < X+2; x++) {
 			printf("%c ", M(x, y));
@@ -172,6 +180,7 @@ void move(void)
 			break;
 		case '*':
 			mkfood();
+			score += 1;
 			tail = malloc(sizeof(struct node));
 			tail->next = head->next;
 			head->next = tail;

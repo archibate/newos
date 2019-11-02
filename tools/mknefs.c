@@ -4,6 +4,8 @@ set -e
 chmod +x $0
 gcc -D_ARGV0=\"$0\" $0 -o /tmp/$$
 /tmp/$$ $*
+x=$?
+rm -f /tmp/$$
 exit
 true */
 #endif
@@ -18,7 +20,7 @@ true */
 #include <string.h>
 #include <assert.h>
 #include <strings.h>
-#include "../include/kern/nefs.h"
+#include "../include/kip/nefs.h"
 
 #define BSIZE 1024
 
@@ -172,6 +174,12 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 		char *srcpath = strtok(NULL, " \t\r\n");
 		if (!strcmp(srcpath, "{")) {
 			parse_file_list(ino, dir, fl);
+		} else if (!strcmp(srcpath, "->")) {
+			FILE *sf = tmpfile();
+			char *lnkpath = strtok(NULL, " \t\r\n");
+			fputs(lnkpath, sf);
+			set_inode(ino, sf, 0644 | S_IFLNK);
+			fclose(sf);
 		} else {
 			FILE *sf = fopen(srcpath, "r");
 			if (!sf) {

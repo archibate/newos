@@ -9,6 +9,8 @@
 #include <stdint.h>
 // Get list data structure.
 #include <ds/list.h>
+// Get user register indeies.
+#include <sys/reg.h>
 
 #define PGSIZE	0x1000
 #define PGMASK	0xfffff000
@@ -68,12 +70,13 @@ extern physaddr_t base_mem_end;
 extern pde_t *kern_pd;
 extern pte_t *kern_ptes;
 
-#define PGDOWN(x) ((typeof(x))(((size_t)(x)) & PGMASK))
-#define PAGEUP(x) ((typeof(x))(((size_t)(x) + PGSIZE - 1) & PGMASK))
+#define PGOFFS(x) ((uintptr_t)(x) & (PGSIZE - 1))
+#define PGDOWN(x) ((typeof(x))(((uintptr_t)(x)) & PGMASK))
+#define PAGEUP(x) ((typeof(x))(((uintptr_t)(x) + PGSIZE - 1) & PGMASK))
 
-#define PROT_READ	1
+#define PROT_EXEC	1
 #define PROT_WRITE	2
-#define PROT_EXEC	4
+#define PROT_READ	4
 #define PROT_NONE	0
 
 #define MAP_SHARED	1
@@ -83,8 +86,9 @@ extern pte_t *kern_ptes;
 struct mm_struct
 {
 	struct list_head mm_areas;
-
 	pde_t *pd;
+
+	unsigned long regs[NREGS];
 };
 
 struct vm_area_struct

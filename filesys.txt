@@ -3,8 +3,14 @@ root {
 	melty.txt tools/meltyland.txt
 }
 usr {
+	bin -> /bin
+	sbin -> /sbin
 	src {
 		snake.c tools/snake.c
 		ascii.c tools/ascii.c
 	}
+}
+sbin -> bin
+bin {
+	xiaomin build/usr/die
 }
