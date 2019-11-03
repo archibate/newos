@@ -34,13 +34,13 @@ vga_update_cursor(void)
 static int
 vga_putc(int c)
 {
-	if (!(c & ~0xff))
+	if (!(c & 0xff00))
 		c |= vga_color;
 
 	switch (c & 0xff) {
 	case '\b':
 		if (vga_pos > 0)
-			vga_buf[--vga_pos] = (c & 0xff) | ' ';
+			vga_buf[--vga_pos] = (c & 0xff00) | ' ';
 		break;
 	case '\n':
 		vga_pos += VGA_COLS;

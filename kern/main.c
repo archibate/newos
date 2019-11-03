@@ -32,6 +32,7 @@ main(void)
 	INIT(irq);
 	INIT(rs);
 	INIT(vga);
+	INIT(muxcon);
 	printk("Kernel Started");
 	INIT(memtest);
 	INIT(bootmm);

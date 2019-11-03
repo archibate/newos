@@ -32,6 +32,7 @@ void fs_init(void)
 	current->cwd = namei("/root");
 
 	creati("/dev/tty", 1, S_IFDIR | 0755, 0);
+	creati("/dev/tty/mux", 1, S_IFCHR | 0644, TTY_MUX);
 	creati("/dev/tty/com0", 1, S_IFCHR | 0644, TTY_COM0);
 	creati("/dev/tty/vga", 1, S_IFCHR | 0644, TTY_VGA);
 }

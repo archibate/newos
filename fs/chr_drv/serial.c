@@ -40,8 +40,11 @@ rs_getc(int *pc)
 static void
 rs_intr(void)
 {
-	if (serial_exists)
+	extern void muxcon_intr(int tty);
+	if (serial_exists) {
 		tty_intr(TTY_COM0);
+		muxcon_intr(TTY_COM0);
+	}
 }
 
 void

@@ -1,7 +1,7 @@
 #include <kern/tty.h>
 #include <kern/sched.h>
 
-static struct tty_struct ttys[NTTYS];
+struct tty_struct ttys[NTTYS];
 
 static void
 tty_putc(struct tty_struct *tty, int c)

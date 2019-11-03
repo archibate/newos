@@ -37,8 +37,8 @@ build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USER_B
 	@mkdir -p $(@D)
 	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
 	@dd if=$< of=$@ bs=2048 count=1 conv=notrunc
-	@dd if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=$$[1 + `du $(word 2, $^) | awk '{print $$1}'`]
-	@tools/mknefs.c $@ -r $$[1 + `du $(word 2, $^) | awk '{print $$1}'`] -L NewOS -f $(word 3, $^)
+	@dd if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
+	@tools/mknefs.c $@ -r `tools/blks.c $(word 2, $^) | awk '{print $$1}'` -L NewOS -f $(word 3, $^)
 
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
 
@@ -46,8 +46,8 @@ build/boot/kerninfo.inc: build/vmlinux build/vmlinux.bin Makefile
 	@echo + [gen] $@
 	@mkdir -p $(@D)
 	@echo kern_addr equ `readelf -l $< | grep '^\s*LOAD.*R E' | awk '{print $$4; exit}'` > $@
-	@echo kern_size equ 1024 \* $$[(1 + `du $(word 2, $^) | awk '{print $$1}'`)] >> $@
-	@echo kmem_size equ $$[`readelf -l $< | grep '^\s*LOAD' | awk '{print $$6, "+"}'` 0] >> $@
+	@echo kern_size equ 1024 \* `tools/blks.c $(word 2, $^)` >> $@
+	@echo kmem_size equ $$[`readelf -l build/vmlinux | grep '^\s*LOAD' | tail -n1 | awk '{print $$4" + "$$6}'`] - kern_addr >> $@
 
 build/vmlinux.bin: build/vmlinux
 	@echo + [gen] $@
