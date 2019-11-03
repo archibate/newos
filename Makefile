@@ -1,3 +1,4 @@
+DISP=1
 COPT=-ggdb -gstabs+ $(if $(OPTIM), -O$(OPTIM))
 CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-fno-stack-protector -Iinclude -Wall -Wextra \
@@ -7,14 +8,14 @@ CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-Werror=implicit-function-declaration
 QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
 QEMUCMD=qemu-system-i386 $(QEMUOPT)
-SRCDIRS=kern mm fs lib
-SRCS=$(shell find $(SRCDIRS) -name '*.[cS]' -type f)
-OBJS=build/tools/stext.c.o
-OBJS+=$(SRCS:%=build/%.o)
-OBJS+=$(shell gcc -m32 -print-libgcc-file-name)
-OBJS+=build/tools/ebss.c.o
-USRSRCS=$(shell find usr -name '*.c' -type f)
-USRS=$(USRSRCS:%.c=build/%)
+KERN_DIRS=kern mm fs libc/pure
+KERN_SRCS=$(shell find $(KERN_DIRS) -name '*.[cS]' -type f)
+KERN_OBJS=build/tools/stext.c.o $(KERN_SRCS:%=build/%.o) \
+	 $(shell gcc -m32 -print-libgcc-file-name) build/tools/ebss.c.o
+USER_SRCS=$(shell find usr -name '*.c' -type f)
+USER_BINS=$(USER_SRCS:%.c=build/%)
+LIBC_SRCS=$(shell find libc -name '*.[cS]' -type f)
+LIBC_OBJS=$(LIBC_SRCS:%=build/%.o)
 
 .PHONY: default
 default: run
@@ -31,16 +32,12 @@ run: build/boot.img
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USRS)
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USER_BINS)
 	@echo + [gen] $@
 	@mkdir -p $(@D)
-ifdef BXIMAGE
 	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
 	@dd if=$< of=$@ bs=2048 count=1 conv=notrunc
 	@dd if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=$$[1 + `du $(word 2, $^) | awk '{print $$1}'`]
-else
-	@cat $< $(word 2, $^) > $@
-endif
 	@tools/mknefs.c $@ -r $$[1 + `du $(word 2, $^) | awk '{print $$1}'`] -L NewOS -f $(word 3, $^)
 
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
@@ -73,17 +70,24 @@ build/%.c.o: %.c
 	@mkdir -p $(@D)
 	@gcc $(CFLAGS) -D_KERNEL -c -o $@ $<
 
-build/usr/%: build/usr/%.c.o
+build/usr/%: build/usr/%.c.o build/libc.a
 	@ld -m elf_i386 -static -e _start -Ttext 0x40000000 -o $@ $^
 
 .PHONY: info
 info:
 	@echo CFLAGS=$(CFLAGS)
 	@echo QEMUCMD=$(QEMUCMD)
-	@echo SRCDIRS=$(SRCDIRS)
-	@echo SRCS=$(SRCS)
+	@echo KERN_DIRS=$(KERN_DIRS)
+	@echo KERN_SRCS=$(KERN_SRCS)
+	@echo LIBC_SRCS=$(LIBC_SRCS)
+	@echo USER_SRCS=$(USER_SRCS)
 
-build/vmlinux: $(OBJS)
+build/vmlinux: $(KERN_OBJS)
 	@echo + [ld] $@
 	@mkdir -p $(@D)
 	@ld -m elf_i386 -static -e _start -Ttext 0x100000 -o $@ $^
+
+build/libc.a: $(LIBC_OBJS)
+	@echo + [ar] $@
+	@mkdir -p $(@D)
+	@ar cqs $@ $^

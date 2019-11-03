@@ -5,8 +5,12 @@
 #include <stddef.h>
 // Get va_list.
 #include <stdarg.h>
+// Get SEEK_*
+#include <bits/unistd.h>
 
 typedef struct _io_buf FILE;
+
+extern FILE *stdin, *stdout, *stderr;
 
 int printf(const char *fmt, ...);
 int fprintf(FILE *fp, const char *fmt, ...);

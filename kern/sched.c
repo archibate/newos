@@ -1,6 +1,7 @@
 #include <kern/sched.h>
 #include <kern/kernel.h>
 #include <kern/tss.h>
+#include <kern/mm.h>
 #include <kern/fs.h>
 #include <malloc.h>
 #include <string.h>
@@ -15,13 +16,13 @@ __attribute__((fastcall)) void switch_context(
 void
 switch_to(int i)
 {
-	struct mm *previous_mm;
 	struct task *previous;
 	if (current != task[i]) {
 		previous = current;
 		current = task[i];
-		switch_context(previous->kregs, current->kregs);
 		tss0.ts_esp0 = (unsigned long)(current->stack + STACK_SIZE);
+		if (current->mm) switch_to_mm(current->mm);
+		switch_context(previous->kregs, current->kregs);
 	}
 }
 
@@ -64,11 +65,12 @@ sched_timer_callback(void)
 	schedule();
 }
 
-void
-do_pause(void)
+int
+sys_pause(void)
 {
 	current->state = TASK_SLEEPING;
 	schedule();
+	return 0;
 }
 
 void
@@ -120,6 +122,8 @@ sched_init(void)
 {
 	initial_task.priority = 1;
 	current = task[0] = &initial_task;
+	extern char boot_stack_top[0];
+	current->stack = boot_stack_top - STACK_SIZE;
 }
 
 static int last_pid = 0;
@@ -156,18 +160,18 @@ new_task(struct task *parent)
 }
 
 __attribute__((noreturn)) void
-kthread_exit(int status)
+sys_exit(int status)
 {
 	current->state = TASK_ZOMBIE;
 	schedule();
-	panic("kthread_exit schedule returned");
+	panic("sys_exit's schedule returned");
 }
 
 __attribute__((noreturn)) static void
-__kthread_exit(void)
+__sys_exit(void)
 {
 	register int ret asm ("eax");
-	kthread_exit(ret);
+	sys_exit(ret);
 }
 
 struct task *
@@ -176,7 +180,7 @@ kernel_thread(void *start, void *arg)
 	struct task *p = new_task(current);
 	void **sp = p->stack + STACK_SIZE;
 	*--sp = arg;
-	*--sp = __kthread_exit;
+	*--sp = __sys_exit;
 	*--sp = start;
 	p->kregs[K_ESP] = (unsigned long) sp;
 	return p;

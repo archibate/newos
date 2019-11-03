@@ -54,9 +54,10 @@ void bwrite(struct buf *b)
 
 void brelse(struct buf *b)
 {
-	if (b->b_count-- <= 0)
+	if (b->b_count <= 0)
 		panic("trying to free free buffer");
-	wake_up(&buffer_wait);
+	if (--b->b_count <= 0)
+		wake_up(&buffer_wait);
 }
 
 // two easy-for-use APIs

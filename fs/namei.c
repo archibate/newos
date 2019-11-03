@@ -118,7 +118,22 @@ struct inode *_namei(const char **ppath, struct inode **pip)
 	return ip;
 }
 
-struct inode *creati(const char *path, int excl, mode_t mode)
+static struct inode *new_inode(struct inode *pip, mode_t mode, int nod)
+{
+	struct inode *ip;
+	ip = create_inode(pip);
+	ip->i_mode = mode;
+	if (S_ISDIR(mode)) {
+		dir_add_entry(ip, ip, ".", 1);
+		dir_add_entry(ip, pip, "..", 2);
+	} else if (S_ISFIFO(mode) || S_ISSOCK(mode)
+		|| S_ISCHR(mode) || S_ISBLK(mode)) {
+		ip->i_zone[0] = nod;
+	}
+	return ip;
+}
+
+struct inode *creati(const char *path, int excl, mode_t mode, int nod)
 {
 	char *p;
 	size_t namelen;
@@ -140,12 +155,7 @@ struct inode *creati(const char *path, int excl, mode_t mode)
 		goto out;
 	if (!S_ISDIR(pip->i_mode)) // inner one not directory
 		goto out;
-	ip = create_inode(pip);
-	ip->i_mode = mode;
-	if (S_ISDIR(ip->i_mode)) {
-		dir_add_entry(ip, ip, ".", 1);
-		dir_add_entry(ip, pip, "..", 2);
-	}
+	ip = new_inode(pip, mode, nod);
 	dir_add_entry(pip, ip, path, namelen);
 out:
 	iput(pip);

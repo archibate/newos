@@ -59,7 +59,7 @@ vga_putc(int c)
 	}
 
 	if (vga_pos >= VGA_SIZE) {
-		memcpy(vga_buf, vga_buf + VGA_COLS,
+		memmove(vga_buf, vga_buf + VGA_COLS,
 				(VGA_SIZE - VGA_COLS) * sizeof(short));
 		for (int i = VGA_SIZE - VGA_COLS; i < VGA_SIZE; i++)
 			vga_buf[i] = 0x0700 | ' ';

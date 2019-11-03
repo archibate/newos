@@ -49,9 +49,10 @@ void iput(struct inode *ip)
 		panic("iput(NULL) from %p -> %p",
 				__builtin_return_address(1),
 				__builtin_return_address(0));
-	if (ip->i_count-- <= 0)
+	if (ip->i_count <= 0)
 		panic("trying to free free inode");
-	wake_up(&inode_buffer_wait);
+	if (--ip->i_count <= 0)
+		wake_up(&inode_buffer_wait);
 }
 
 void iupdate(struct inode *ip)
@@ -146,6 +147,9 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 		panic("rw_inode(NULL) from %p -> %p",
 				__builtin_return_address(1),
 				__builtin_return_address(0));
+	if (S_ISCHR(ip->i_mode))
+		return chr_drv_rw(rw, ip->i_zone[0], pos, buf, size);
+
 	if (pos > ip->i_size) {
 		printk("WARNING: i%s: pos > ip->i_size",
 				rw == READ ? "read" : "write");

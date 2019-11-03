@@ -112,7 +112,6 @@ int mm_page_fault(
 		struct mm_struct *mm,
 		viraddr_t va, int errcd)
 {
-	printk("mm_page_fault(%p, %d)", va, errcd);
 	struct vm_page *pg;
 	struct vm_area_struct *vm;
 	vm = mm_find_area(mm, va, va);
@@ -129,13 +128,12 @@ int mm_page_fault(
 	} else {
 		memset(page2kva(page), 0, PGSIZE);
 	}
-	printk("%p->%p / %p", vm->vm_begin, vm->vm_end, va);
 	page_insert(mm->pd, page, (void *)va, perm);
 	return 1;
 }
 
-int do_page_fault(unsigned long *reg)
+int do_page_fault(unsigned long *regs)
 {
 	viraddr_t va = scr2();
-	return va && mm_page_fault(current->mm, va, reg[ERRCODE]);
+	return va >= KERNEL_END && mm_page_fault(current->mm, va, regs[ERRCODE]);
 }

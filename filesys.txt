@@ -14,3 +14,5 @@ sbin -> bin
 bin {
 	xiaomin build/usr/die
 }
+dev {
+}

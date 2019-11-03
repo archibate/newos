@@ -346,6 +346,8 @@ int_route:
 	mov ebx, 0x10
 	mov ds, ebx
 	mov es, ebx
+	mov fs, ebx
+	mov gs, ebx
 	call do_trap
 return_to_user:
 	pop eax

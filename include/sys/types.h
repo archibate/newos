@@ -21,8 +21,17 @@
 #ifndef suseconds_t
 #define suseconds_t __suseconds_t
 #endif
+#ifndef id_t
+#define id_t __id_t
+#endif
 #ifndef pid_t
 #define pid_t __pid_t
+#endif
+#ifndef uid_t
+#define uid_t __uid_t
+#endif
+#ifndef gid_t
+#define gid_t __gid_t
 #endif
 #ifndef ino_t
 #define ino_t __ino_t

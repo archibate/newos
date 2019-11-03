@@ -9,6 +9,7 @@
 #define TASK_ZOMBIE	3
 #define TASK_STOPPED	4
 
+#define NR_OPEN		64
 #define STACK_SIZE	8192
 
 #define K_ESP		0
@@ -30,6 +31,7 @@ struct task {
 	struct inode *cwd;
 	struct inode *root;
 	struct mm_struct *mm;
+	struct file *filp[NR_OPEN];
 };
 
 #define NTASKS	64

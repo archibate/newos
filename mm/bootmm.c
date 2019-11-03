@@ -44,6 +44,7 @@ bootmm_init(void)
 		}
 	}
 	kern_ptes[0] = 0; // nuke NULL
+	kern_ptes[1] = 0; // STACK_SIZE
 	mmu_set_pgdir(kern_pd);
 	mmu_enable(1);
 }

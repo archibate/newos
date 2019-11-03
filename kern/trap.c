@@ -28,37 +28,37 @@ static const char *const exception_string[] = {
 };
 
 static void
-dump_context(const unsigned long *reg)
+dump_context(const unsigned long *regs)
 {
 	printk("CR0=%p  CR2=%p  CR3=%p  CR4=%p",
 		scr0(), scr2(), scr3(), scr4());
 	printk("EAX=%p  EBX=%p  ECX=%p  EDX=%p",
-		reg[EAX], reg[EBX], reg[ECX], reg[EDX]);
+		regs[EAX], regs[EBX], regs[ECX], regs[EDX]);
 	printk("ESP=%p  EBP=%p  ESI=%p  EDI=%p",
-		reg[ESP], reg[EBP], reg[ESI], reg[EDI]);
+		regs[ESP], regs[EBP], regs[ESI], regs[EDI]);
 	printk("CS=%#04X  SS=%#04X  DS=%#04X  ES=%#04X  FS=%#04X  GS=%#04X",
-		reg[CS], reg[SS], reg[DS], reg[ES], reg[FS], reg[GS]);
-	printk("EIP=%p  EFLAGS=%#08X  INTRNO=%d  ERRCODE=%d",
-		reg[EIP], reg[EFLAGS], reg[INTRNO], reg[ERRCODE]);
+		regs[CS], regs[SS], regs[DS], regs[ES], regs[FS], regs[GS]);
+	printk("EIP=%p  EFLAGS=%#08X  INTRNO=%d  ERRCODE=%#X",
+		regs[EIP], regs[EFLAGS], regs[INTRNO], regs[ERRCODE]);
 }
 
-extern int do_page_fault(unsigned long *reg);
-extern void do_syscall(unsigned long *reg);
+extern int do_page_fault(unsigned long *regs);
+extern void do_syscall(unsigned long *regs);
 
 void
 do_trap(unsigned long eax, ...)
 {
-	unsigned long *reg = &eax;
-	unsigned long nr = reg[INTRNO];
+	unsigned long *regs = &eax;
+	unsigned long nr = regs[INTRNO];
 	if (nr < array_sizeof(exception_string)) {
-		if (nr == 0x0e && do_page_fault(reg))
+		if (nr == 0x0e && do_page_fault(regs))
 			return;
-		dump_context(reg);
+		dump_context(regs);
 		panic("INT %#x: %s", nr, exception_string[nr]);
 	} else if (nr >= 0x20 && nr <= 0x20 + NIRQS) {
 		do_irq(nr - 0x20);
 	} else if (nr == 0x80) {
-		do_syscall(reg);
+		do_syscall(regs);
 	} else {
 		panic("Unknown INT %#x", nr);
 	}

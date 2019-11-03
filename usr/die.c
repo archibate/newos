@@ -1,5 +1,16 @@
+#include <fcntl.h>
+#include <unistd.h>
+
+#define CONSOLE "/dev/tty/com0"
+
 int main(void)
 {
-	asm volatile ("int $0x80" :: "a" (1), "c" ("Hello from user!\n"), "d" (17));
-	for (;;);
+	open(CONSOLE, O_RDONLY);
+	open(CONSOLE, O_WRONLY);
+	dup(1);
+
+	for (;;) {
+		write(1, "Hello from user!\n", 17);
+		pause();
+	}
 }

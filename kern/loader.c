@@ -46,7 +46,7 @@ static int mm_load_exec_elf(struct mm_struct *mm, struct inode *ip)
 			PROT_READ | PROT_WRITE, MAP_PRIVATE, NULL, 0);
 
 	mm->regs[EBP] = ebss;
-	mm->regs[ESP] = ebss + USER_STACK_SIZE;
+	mm->regs[ESP] = ebss + USER_STACK_SIZE - 16;
 	mm->regs[EIP] = e.e_entry;
 	mm->regs[EFLAGS] = 0x202;
 	mm->regs[SS] = SEG_UDATA;
