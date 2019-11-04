@@ -69,6 +69,15 @@ int do_execve(struct inode *ip, char *const *argv, char *const *envp)
 	int ret = __do_execve(ip, kargv, kenvp);
 	free(kargv);
 	free(kenvp);
+	if (!ret) {
+		for (int i = 0; i < NR_OPEN; i++) {
+			struct file *f = current->filp[i];
+			if (f && (f->f_fdargs & FD_CLOEXEC)) {
+				fs_close(f);
+				current->filp[i] = NULL;
+			}
+		}
+	}
 	return ret;
 }
 

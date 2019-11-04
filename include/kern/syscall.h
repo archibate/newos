@@ -139,7 +139,7 @@ _syscall3(1, ssize_t, read, int, void *, size_t);
 _syscall3(2, ssize_t, write, int, const void *, size_t);
 _syscall3(3, off_t, lseek, int, off_t, int);
 _syscall1(4, int, close, int);
-_syscall1(5, int, dup, int);
+_syscall3(5, int, fcntl, int, int, int);
 _syscall2(6, int, dup2, int, int);
 _syscall3(7, int, open, const char *, int, mode_t);
 _syscall0(8, int, pause);

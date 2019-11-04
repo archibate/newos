@@ -30,6 +30,8 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 	f->f_ip = ip;
 	f->f_offset = flags & O_APPEND ? ip->i_size : 0;
 	f->f_flags = flags;
+	if (flags & O_CLOEXEC)
+		f->f_fdargs |= FD_CLOEXEC;
 	return f;
 }
 
@@ -49,7 +51,7 @@ void fs_close(struct file *f)
 
 size_t fs_read(struct file *f, void *buf, size_t size)
 {
-	if (!(f->f_flags & O_RDONLY))
+	if ((f->f_flags & (O_RDONLY | O_DIRECTORY)) != O_RDONLY)
 		return 0;
 	size = iread(f->f_ip, f->f_offset, buf, size);
 	f->f_offset += size;
@@ -58,7 +60,7 @@ size_t fs_read(struct file *f, void *buf, size_t size)
 
 size_t fs_write(struct file *f, const void *buf, size_t size)
 {
-	if (!(f->f_flags & O_WRONLY))
+	if ((f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY)
 		return 0;
 	size = iwrite(f->f_ip, f->f_offset, buf, size);
 	f->f_offset += size;

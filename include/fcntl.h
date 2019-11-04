@@ -18,5 +18,6 @@
 int creat(const char *path, mode_t mode);
 int open(const char *path, int flags, ...);
 int openat(int fd, const char *path, int flags, ...);
+int fcntl(int fd, int cmd, ...);
 
 #endif

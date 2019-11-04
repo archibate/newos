@@ -3,9 +3,9 @@
 #include <kern/fs.h>
 #include <errno.h>
 
-int alloc_fd(void)
+int alloc_fd(unsigned begin)
 {
-	for (int i = 0; i < NR_OPEN; i++)
+	for (unsigned i = begin; i < NR_OPEN; i++)
 		if (!current->filp[i])
 			return i;
 	return -1;
@@ -16,7 +16,7 @@ int sys_open(const char *path, int flags, mode_t mode)
 	struct file *f = fs_open(path, flags, mode);
 	if (!f)
 		return -1;
-	int fd = alloc_fd();
+	int fd = alloc_fd(0);
 	if (fd == -1) {
 		fs_close(f);
 		return fd;
@@ -25,25 +25,13 @@ int sys_open(const char *path, int flags, mode_t mode)
 	return fd;
 }
 
-int sys_dup(int fd)
-{
-	if ((unsigned)fd >= NR_OPEN)
-		return -1;
-	struct file *f = current->filp[fd];
-	if (!f)
-		return -1;
-	fd = alloc_fd();
-	if (fd == -1)
-		return -1;
-	current->filp[fd] = fs_dup(f);
-	return fd;
-}
-
 int sys_dup2(int fd, int fd2)
 {
 	if ((unsigned)fd >= NR_OPEN)
 		return -1;
 	if ((unsigned)fd2 >= NR_OPEN)
+		return -1;
+	if (fd == fd2)
 		return -1;
 	struct file *f = current->filp[fd];
 	if (!f)
@@ -55,6 +43,33 @@ int sys_dup2(int fd, int fd2)
 	return 0;
 }
 
+int sys_fcntl(int fd, int cmd, int arg)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return -1;
+	struct file *f = current->filp[fd];
+	if (!f)
+		return -1;
+
+	switch (cmd) {
+	case F_DUPFD:
+		fd = alloc_fd(arg);
+		if (fd == -1)
+			return -1;
+		current->filp[fd] = fs_dup(f);
+		return fd;
+
+	case F_GETFL:
+		return f->f_flags;
+	case F_SETFD:
+		f->f_fdargs = arg;
+		return 0;
+	case F_GETFD:
+		return f->f_fdargs;
+	}
+	return -1;
+}
+
 int sys_close(int fd)
 {
 	if ((unsigned)fd >= NR_OPEN)
@@ -63,6 +78,7 @@ int sys_close(int fd)
 	if (!f)
 		return -1;
 	fs_close(f);
+	current->filp[fd] = NULL;
 	return 0;
 }
 

@@ -38,6 +38,7 @@ struct file {
 	struct inode *f_ip;
 	off_t f_offset;
 	int f_flags;
+	int f_fdargs;
 };
 
 #define super_block nefs_super_block

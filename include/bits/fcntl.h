@@ -10,5 +10,15 @@
 #define	O_TRUNC		16
 #define	O_APPEND	32
 #define	O_DIRECTORY	64
+#define	O_CLOEXEC	128
+#define	O_NOFOLLOW	256
+
+#define F_DUPFD	0
+#define F_GETFD	1
+#define F_SETFD	2
+#define F_GETFL	3
+#define F_DUPFD_CLOEXEC	5
+
+#define FD_CLOEXEC	1
 
 #endif
