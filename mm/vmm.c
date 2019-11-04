@@ -7,6 +7,14 @@
 #include <string.h>
 #include <malloc.h>
 
+static int vm_mmu_perm(struct vm_area_struct *vm)
+{
+	int perm = PG_U;
+	if (vm->vm_prot & PROT_WRITE)
+		perm |= PG_W;
+	return perm;
+}
+
 struct mm_struct *create_mm(void)
 {
 	struct mm_struct *mm = calloc(sizeof(struct mm_struct), 1);
@@ -14,18 +22,73 @@ struct mm_struct *create_mm(void)
 	return mm;
 }
 
-void switch_to_mm(struct mm_struct *mm)
-{
-	switch_pgdir(mm->pd);
-}
-
 void free_mm(struct mm_struct *mm)
 {
 	struct vm_area_struct *vm;
 	put_page(kva2page(mm->pd));
 	list_foreach(vm, &mm->mm_areas, vm_list)
-		mm_free_area(vm);
+		mm_del_area(vm);
 	free(mm);
+}
+
+static struct vm_page *dup_mm_vm_page(
+		struct vm_area_struct *vm2,
+		struct vm_page *pg)
+{
+	struct vm_page *pg2;
+	struct page_info *page2;
+	pg2 = malloc(sizeof(struct vm_page));
+	memcpy(pg2, pg, sizeof(struct vm_page));
+	pg2->pg_list.pprev = NULL;
+	pg2->pg_list.next = NULL;
+	pg2->pg_area = vm2;
+	page2 = alloc_page();
+	memcpy(page2kva(page2), kvaddr(pg2->pg_paddr), PGSIZE);
+	pg2->pg_paddr = page2pa(page2);
+	viraddr_t va = vm2->vm_begin + (pg2->pg_index << 12);
+	page_insert(vm2->vm_mm->pd, page2, (void *)va, vm_mmu_perm(vm2));
+	return pg2;
+}
+
+static struct vm_area_struct *dup_mm_vm_area(
+		struct mm_struct *mm2,
+		struct vm_area_struct *vm)
+{
+	struct vm_area_struct *vm2;
+	struct vm_page *pg, *pg2;
+	struct list_node **pprev;
+	vm2 = malloc(sizeof(struct vm_area_struct));
+	memcpy(vm2, vm, sizeof(struct vm_area_struct));
+	vm2->vm_list.pprev = NULL;
+	vm2->vm_list.next = NULL;
+	vm2->vm_pages = LIST_INIT;
+	vm2->vm_file = vm->vm_file ? idup(vm->vm_file) : NULL;
+	vm2->vm_mm = mm2;
+	pprev = &vm2->vm_pages.first;
+	list_foreach(pg, &vm->vm_pages, pg_list) {
+		pg2 = dup_mm_vm_page(vm2, pg);
+		*pprev = &pg2->pg_list;
+		pg2->pg_list.pprev = pprev;
+		pprev = &pg2->pg_list.next;
+	}
+	*pprev = NULL;
+	return vm2;
+}
+
+struct mm_struct *mm_fork(
+		struct mm_struct *mm)
+{
+	struct vm_area_struct *vm, *vm2;
+	struct mm_struct *mm2 = create_mm();
+	struct list_node **pprev = &mm2->mm_areas.first;
+	list_foreach(vm, &mm->mm_areas, vm_list) {
+		vm2 = dup_mm_vm_area(mm2, vm);
+		*pprev = &vm2->vm_list;
+		vm2->vm_list.pprev = pprev;
+		pprev = &vm2->vm_list.next;
+	}
+	*pprev = NULL;
+	return mm2;
 }
 
 struct vm_area_struct *mm_find_area(
@@ -63,13 +126,13 @@ struct vm_area_struct *mm_new_area(
 	return vm;
 }
 
-void mm_free_area(struct vm_area_struct *vm)
+void mm_del_area(struct vm_area_struct *vm)
 {
 	struct vm_page *pg;
 	if (vm->vm_file)
 		iput(vm->vm_file);
 	list_foreach(pg, &vm->vm_pages, pg_list)
-		vm_area_free_page(pg);
+		vm_area_del_page(pg);
 	__list_remove(&vm->vm_list);
 	free(vm);
 }
@@ -90,7 +153,7 @@ struct vm_page *vm_area_new_page(
 	return pg;
 }
 
-void vm_area_free_page(struct vm_page *pg)
+void vm_area_del_page(struct vm_page *pg)
 {
 	struct vm_area_struct *vm = pg->pg_area;
 	struct mm_struct *mm = vm->vm_mm;
@@ -98,14 +161,6 @@ void vm_area_free_page(struct vm_page *pg)
 	page_remove(mm->pd, (void *)vaddr);
 	__list_remove(&pg->pg_list);
 	free(pg);
-}
-
-static int vm_mmu_perm(struct vm_area_struct *vm)
-{
-	int perm = PG_U;
-	if (vm->vm_prot & PROT_WRITE)
-		perm |= PG_W;
-	return perm;
 }
 
 int mm_page_fault(
@@ -132,8 +187,9 @@ int mm_page_fault(
 	return 1;
 }
 
-int do_page_fault(unsigned long *regs)
+int do_page_fault(reg_t *regs)
 {
 	viraddr_t va = scr2();
+	printk("do_page_fault %p %d", va, regs[ERRCODE]);
 	return va >= KERNEL_END && mm_page_fault(current->mm, va, regs[ERRCODE]);
 }

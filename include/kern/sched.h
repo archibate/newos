@@ -2,6 +2,8 @@
 
 // Get pid_t.
 #include <sys/types.h>
+// Get register indexes.
+#include <sys/reg.h>
 
 #define TASK_RUNNING	0
 #define TASK_SLEEPING	1
@@ -33,6 +35,8 @@ struct task {
 	struct mm_struct *mm;
 	struct file *filp[NR_OPEN];
 };
+
+#define task_regs(p) ((reg_t *)((p)->stack + STACK_SIZE - REGS_SIZE))
 
 #define NTASKS	64
 

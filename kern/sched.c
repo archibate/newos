@@ -13,6 +13,15 @@ struct task *current;
 __attribute__((fastcall)) void switch_context(
 		unsigned long *prev, unsigned long *next);
 
+static void switch_from_to(struct task *prev, struct task *next)
+{
+	if (next->mm)
+		switch_to_mm(next->mm);
+
+	tss0.ts_esp0 = (unsigned long)(next->stack + STACK_SIZE);
+	switch_context(prev->kregs, next->kregs);
+}
+
 void
 switch_to(int i)
 {
@@ -20,9 +29,7 @@ switch_to(int i)
 	if (current != task[i]) {
 		previous = current;
 		current = task[i];
-		tss0.ts_esp0 = (unsigned long)(current->stack + STACK_SIZE);
-		if (current->mm) switch_to_mm(current->mm);
-		switch_context(previous->kregs, current->kregs);
+		switch_from_to(previous, current);
 	}
 }
 
@@ -155,7 +162,7 @@ new_task(struct task *parent)
 	p->priority = parent->priority;
 	p->root = idup(parent->root);
 	p->cwd = idup(parent->cwd);
-	p->stack = malloc(STACK_SIZE);
+	p->stack = alloc_kernel_stack();
 	return p;
 }
 
@@ -178,7 +185,7 @@ struct task *
 kernel_thread(void *start, void *arg)
 {
 	struct task *p = new_task(current);
-	void **sp = p->stack + STACK_SIZE;
+	void **sp = p->stack + STACK_SIZE - REGS_SIZE - 4;
 	*--sp = arg;
 	*--sp = __sys_exit;
 	*--sp = start;

@@ -12,7 +12,7 @@ struct list_head
 	struct list_node *first;
 };
 
-#define LIST_INIT { .first = NULL }
+#define LIST_INIT ((struct list_head){ .first = NULL })
 
 struct list_node
 {

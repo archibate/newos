@@ -4,7 +4,7 @@
 #include <kip/elf.h>
 #include <string.h>
 
-static int mm_load_exec_elf(struct mm_struct *mm, struct inode *ip)
+static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 {
 	struct elf32_ehdr e;
 	struct elf32_phdr ph;
@@ -45,21 +45,21 @@ static int mm_load_exec_elf(struct mm_struct *mm, struct inode *ip)
 	mm_new_area(mm, ebss, USER_STACK_SIZE,
 			PROT_READ | PROT_WRITE, MAP_PRIVATE, NULL, 0);
 
-	mm->regs[EBP] = ebss;
-	mm->regs[ESP] = ebss + USER_STACK_SIZE - 16;
-	mm->regs[EIP] = e.e_entry;
-	mm->regs[EFLAGS] = 0x202;
-	mm->regs[SS] = SEG_UDATA;
-	mm->regs[DS] = SEG_UDATA;
-	mm->regs[ES] = SEG_UDATA;
-	mm->regs[FS] = SEG_UDATA;
-	mm->regs[GS] = SEG_UDATA;
-	mm->regs[CS] = SEG_UCODE;
+	regs[EBP] = ebss;
+	regs[ESP] = ebss + USER_STACK_SIZE - 16;
+	regs[EIP] = e.e_entry;
+	regs[EFLAGS] = 0x202;
+	regs[SS] = SEG_UDATA;
+	regs[DS] = SEG_UDATA;
+	regs[ES] = SEG_UDATA;
+	regs[FS] = SEG_UDATA;
+	regs[GS] = SEG_UDATA;
+	regs[CS] = SEG_UCODE;
 
 	return 0;
 }
 
-int mm_load_exec(struct mm_struct *mm, struct inode *ip)
+int mm_load_exec(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 {
 	union {
 		char buf[4];
@@ -68,7 +68,7 @@ int mm_load_exec(struct mm_struct *mm, struct inode *ip)
 	memset(&u, 0, sizeof(u));
 	iread(ip, 0, &u.buf, sizeof(u));
 	if (u.magic == ELF_MAGIC)
-		return mm_load_exec_elf(mm, ip);
+		return mm_load_exec_elf(mm, regs, ip);
 	else if (u.buf[0] == '#' && u.buf[1] == '!')
 		panic("sh!bang not supported yet");
 	return -1;

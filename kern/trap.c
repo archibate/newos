@@ -28,7 +28,7 @@ static const char *const exception_string[] = {
 };
 
 static void
-dump_context(const unsigned long *regs)
+dump_context(const reg_t *regs)
 {
 	printk("CR0=%p  CR2=%p  CR3=%p  CR4=%p",
 		scr0(), scr2(), scr3(), scr4());
@@ -42,14 +42,14 @@ dump_context(const unsigned long *regs)
 		regs[EIP], regs[EFLAGS], regs[INTRNO], regs[ERRCODE]);
 }
 
-extern int do_page_fault(unsigned long *regs);
-extern void do_syscall(unsigned long *regs);
+extern int do_page_fault(reg_t *regs);
+extern void do_syscall(reg_t *regs);
 
 void
-do_trap(unsigned long eax, ...)
+do_trap(reg_t eax, ...)
 {
-	unsigned long *regs = &eax;
-	unsigned long nr = regs[INTRNO];
+	reg_t *regs = &eax;
+	unsigned nr = regs[INTRNO];
 	if (nr < array_sizeof(exception_string)) {
 		if (nr == 0x0e && do_page_fault(regs))
 			return;

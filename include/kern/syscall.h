@@ -143,6 +143,7 @@ _syscall1(5, int, dup, int);
 _syscall2(6, int, dup2, int, int);
 _syscall3(7, int, open, const char *, int, mode_t);
 _syscall0(8, int, pause);
+_syscall0(9, pid_t, fork);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

@@ -9,8 +9,6 @@
 #include <stdint.h>
 // Get list data structure.
 #include <ds/list.h>
-// Get user register indeies.
-#include <sys/reg.h>
 
 #define PGSIZE	0x1000
 #define PGMASK	0xfffff000
@@ -21,6 +19,7 @@
 #define KERNEL_BASE 0x0
 #define KERNEL_CODE 0x100000
 #define KERNEL_PMAP 0x400000
+#define KERNEL_STKS 0x18000000
 #define KERNEL_HEAP 0x20000000
 #define KERNEL_END  0x40000000
 
@@ -65,6 +64,8 @@ kva2page(void *va)
 	return pa2page(paddr(va));
 }
 
+void *alloc_kernel_stack(void);
+
 extern size_t total_pages;
 extern physaddr_t base_mem_end;
 extern pde_t *kern_pd;
@@ -87,8 +88,6 @@ struct mm_struct
 {
 	struct list_head mm_areas;
 	pde_t *pd;
-
-	unsigned long regs[NREGS];
 };
 
 struct vm_area_struct
@@ -117,7 +116,6 @@ struct vm_page
 };
 
 struct mm_struct *create_mm(void);
-void switch_to_mm(struct mm_struct *mm);
 void free_mm(struct mm_struct *mm);
 struct vm_area_struct *mm_find_area(
 		struct mm_struct *mm,
@@ -128,10 +126,17 @@ struct vm_area_struct *mm_new_area(
 		viraddr_t begin, size_t size,
 		int prot, int flags,
 		struct inode *file, off_t offset);
-void mm_free_area(struct vm_area_struct *vm);
+void mm_del_area(struct vm_area_struct *vm);
 struct vm_page *vm_area_new_page(
 		struct vm_area_struct *vm,
 		unsigned index);
-void vm_area_free_page(struct vm_page *pg);
+void vm_area_del_page(struct vm_page *pg);
+struct mm_struct *mm_fork(
+		struct mm_struct *mm);
+static void switch_to_mm(
+		struct mm_struct *mm)
+{
+	switch_pgdir(mm->pd);
+}
 
 #endif

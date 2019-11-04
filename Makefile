@@ -1,4 +1,3 @@
-DISP=1
 COPT=-ggdb -gstabs+ $(if $(OPTIM), -O$(OPTIM))
 CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-fno-stack-protector -Iinclude -Wall -Wextra \

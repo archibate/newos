@@ -36,5 +36,6 @@ off_t write(int fd, const void *buf, size_t size);
 int dup2(int fd, int fd2);
 int dup(int fd);
 int pause(void);
+pid_t fork(void);
 
 #endif

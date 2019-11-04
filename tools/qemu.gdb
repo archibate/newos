@@ -1,11 +1,10 @@
 #!/usr/bin/cgdb -x
 # vim: ft=gdb ts=4 sts=4 tw=4
 
-define cn
-		file build/vmlinux
-		target remote localhost:1234
-end
-cn
+add-symbol-file build/vmlinux
+add-symbol-file build/usr/die
+
+target remote localhost:1234
 
 define toboot
 	set architecture i8086
