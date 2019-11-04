@@ -6,6 +6,7 @@
 #include <kip/nefs.h>
 #include <bits/fcntl.h>
 #include <bits/unistd.h>
+#include <ds/list.h>
 
 #define BSIZE	1024
 #define NBUFS	128

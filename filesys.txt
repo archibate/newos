@@ -12,7 +12,7 @@ usr {
 }
 sbin -> bin
 bin {
-	xiaomin build/usr/die
+	xiaomin build/usr/forktest
 }
 dev {
 }

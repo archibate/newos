@@ -11,8 +11,8 @@ KERN_DIRS=kern mm fs libc/pure
 KERN_SRCS=$(shell find $(KERN_DIRS) -name '*.[cS]' -type f)
 KERN_OBJS=build/tools/stext.c.o $(KERN_SRCS:%=build/%.o) \
 	 $(shell gcc -m32 -print-libgcc-file-name) build/tools/ebss.c.o
-USER_SRCS=$(shell find usr -name '*.c' -type f)
-USER_BINS=$(USER_SRCS:%.c=build/%)
+USER_SRCS=$(shell find usr -name '*.[cS]' -type f)
+USER_BINS=$(shell echo $(USER_SRCS:%=build/%) | sed 's/\.[cS]//g')
 LIBC_SRCS=$(shell find libc -name '*.[cS]' -type f)
 LIBC_OBJS=$(LIBC_SRCS:%=build/%.o)
 
@@ -72,6 +72,9 @@ build/%.c.o: %.c
 build/usr/%: build/usr/%.c.o build/libc.a
 	@ld -m elf_i386 -static -e _start -Ttext 0x40000000 -o $@ $^
 
+build/usr/%: build/usr/%.S.o build/libc.a
+	@ld -m elf_i386 -static -e _start -Ttext 0x40000000 -o $@ $^
+
 .PHONY: info
 info:
 	@echo CFLAGS=$(CFLAGS)
@@ -80,6 +83,7 @@ info:
 	@echo KERN_SRCS=$(KERN_SRCS)
 	@echo LIBC_SRCS=$(LIBC_SRCS)
 	@echo USER_SRCS=$(USER_SRCS)
+	@echo USER_BINS=$(USER_BINS)
 
 build/vmlinux: $(KERN_OBJS)
 	@echo + [ld] $@

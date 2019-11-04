@@ -58,7 +58,7 @@ page_insert(pde_t *pd, struct page_info *page, void *va, int perm)
 {
 	pte_t *pte = pgdir_walk(pd, va, 1);
 	if (*pte & PG_P) {
-		printk("WARNING: page_insert: twice map va=%p, pa=%p", va, *pte & PGMASK);
+		//printk("WARNING: page_insert: twice map va=%p, pa=%p", va, *pte & PGMASK);
 		put_page(pa2page(*pte & PGMASK));
 	}
 	*pte = page2pa(page) | perm | PG_P;

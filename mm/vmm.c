@@ -42,11 +42,14 @@ static struct vm_page *dup_mm_vm_page(
 	pg2->pg_list.pprev = NULL;
 	pg2->pg_list.next = NULL;
 	pg2->pg_area = vm2;
-	page2 = alloc_page();
-	memcpy(page2kva(page2), kvaddr(pg2->pg_paddr), PGSIZE);
-	pg2->pg_paddr = page2pa(page2);
 	viraddr_t va = vm2->vm_begin + (pg2->pg_index << 12);
-	page_insert(vm2->vm_mm->pd, page2, (void *)va, vm_mmu_perm(vm2));
+	page_insert(vm2->vm_mm->pd, dup_page(pa2page(pg2->pg_paddr)),
+			(void *)va, vm_mmu_perm(vm2) & ~PG_W);
+	va = pg->pg_area->vm_begin + (pg->pg_index << 12);
+	page_insert(pg->pg_area->vm_mm->pd, dup_page(pa2page(pg->pg_paddr)),
+			(void *)va, vm_mmu_perm(pg->pg_area) & ~PG_W);
+	pg2->cow_next = pg->cow_next;
+	pg->cow_next = pg2;
 	return pg2;
 }
 
@@ -149,6 +152,7 @@ struct vm_page *vm_area_new_page(
 	pg->pg_area = vm;
 	pg->pg_paddr = page2pa(alloc_page());
 	pg->pg_index = index;
+	pg->cow_next = pg;
 	list_insert_head(&pg->pg_list, &vm->vm_pages);
 	return pg;
 }
@@ -174,14 +178,30 @@ int mm_page_fault(
 
 	int index = (va - vm->vm_begin) >> 12;
 	int perm = vm_mmu_perm(vm);
-	if (errcd & ~perm) return 0;
+	if ((errcd & (PG_W | PG_U)) & ~perm) return 0;
 	pg = vm_area_new_page(vm, index);
 	struct page_info *page = dup_page(pa2page(pg->pg_paddr));
-	if (vm->vm_file) {
-		off_t offset = vm->vm_file_offset + (pg->pg_index << 12);
-		iread(vm->vm_file, offset, page2kva(page), PGSIZE);
-	} else {
-		memset(page2kva(page), 0, PGSIZE);
+	if (!pg->pg_ready) {
+		if (vm->vm_file) {
+			off_t offset = vm->vm_file_offset + (pg->pg_index << 12);
+			iread(vm->vm_file, offset, page2kva(page), PGSIZE);
+		} else {
+			memset(page2kva(page), 0, PGSIZE);
+		}
+		pg->pg_ready = 1;
+	}
+	if ((perm & PG_W) && pg->cow_next != pg) {
+		int i;
+		struct vm_page *tail;
+		for (i = 5000, tail = pg; i && tail->cow_next != pg;
+				i--, tail = tail->cow_next);
+		if (!i) panic("COW list too long / loop");
+		tail->cow_next = pg->cow_next;
+		pg->cow_next = pg;
+		struct page_info *page2 = alloc_page();
+		pg->pg_paddr = page2pa(page2);
+		memcpy(page2kva(page2), page2kva(page), PGSIZE);
+		page = page2;
 	}
 	page_insert(mm->pd, page, (void *)va, perm);
 	return 1;
@@ -190,6 +210,6 @@ int mm_page_fault(
 int do_page_fault(reg_t *regs)
 {
 	viraddr_t va = scr2();
-	printk("do_page_fault %p %d", va, regs[ERRCODE]);
+	//printk("%d do_page_fault %p %d", current->pid, va, regs[ERRCODE]);
 	return va >= KERNEL_END && mm_page_fault(current->mm, va, regs[ERRCODE]);
 }

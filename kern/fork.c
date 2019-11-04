@@ -27,5 +27,6 @@ pid_t sys_fork(void)
 	struct task *child;
 	child = kernel_thread(fork_start, NULL);
 	do_fork(child, current);
+	//printk("%d %d sys_fork", current->pid, child->pid);
 	return child->pid;
 }

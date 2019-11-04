@@ -113,6 +113,10 @@ struct vm_page
 
 	unsigned pg_index;
 	struct vm_area_struct *pg_area;
+
+	struct vm_page *cow_next;
+
+	int pg_ready;
 };
 
 struct mm_struct *create_mm(void);
