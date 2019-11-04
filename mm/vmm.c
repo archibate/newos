@@ -31,6 +31,13 @@ void free_mm(struct mm_struct *mm)
 	free(mm);
 }
 
+static void update_vm_page(struct vm_page *pg, int permask)
+{
+	viraddr_t va = pg->pg_area->vm_begin + (pg->pg_index << 12);
+	page_insert(pg->pg_area->vm_mm->pd, dup_page(pa2page(pg->pg_paddr)),
+			(void *)va, vm_mmu_perm(pg->pg_area) & ~permask);
+}
+
 static struct vm_page *dup_mm_vm_page(
 		struct vm_area_struct *vm2,
 		struct vm_page *pg)
@@ -42,12 +49,8 @@ static struct vm_page *dup_mm_vm_page(
 	pg2->pg_list.pprev = NULL;
 	pg2->pg_list.next = NULL;
 	pg2->pg_area = vm2;
-	viraddr_t va = vm2->vm_begin + (pg2->pg_index << 12);
-	page_insert(vm2->vm_mm->pd, dup_page(pa2page(pg2->pg_paddr)),
-			(void *)va, vm_mmu_perm(vm2) & ~PG_W);
-	va = pg->pg_area->vm_begin + (pg->pg_index << 12);
-	page_insert(pg->pg_area->vm_mm->pd, dup_page(pa2page(pg->pg_paddr)),
-			(void *)va, vm_mmu_perm(pg->pg_area) & ~PG_W);
+	update_vm_page(pg2, PG_W);
+	update_vm_page(pg, PG_W);
 	pg2->cow_next = pg->cow_next;
 	pg->cow_next = pg2;
 	return pg2;
@@ -167,6 +170,34 @@ void vm_area_del_page(struct vm_page *pg)
 	free(pg);
 }
 
+static void do_cow_vm_page(struct vm_page *pg)
+{
+	int i;
+	struct vm_page *tail;
+	for (i = 5000, tail = pg; i && tail->cow_next != pg;
+			i--, tail = tail->cow_next);
+	if (!i) panic("COW list too long / loop");
+	tail->cow_next = pg->cow_next;
+	pg->cow_next = pg;
+
+	struct page_info *page = pa2page(pg->pg_paddr);
+	struct page_info *page2 = alloc_page();
+	pg->pg_paddr = page2pa(page2);
+	memcpy(page2kva(page2), page2kva(page), PGSIZE);
+}
+
+static void do_load_page(struct vm_page *pg)
+{
+	struct vm_area_struct *vm = pg->pg_area;
+	if (vm->vm_file) {
+		off_t offset = vm->vm_file_offset + (pg->pg_index << 12);
+		iread(vm->vm_file, offset, kvaddr(pg->pg_paddr), PGSIZE);
+	} else {
+		memset(kvaddr(pg->pg_paddr), 0, PGSIZE);
+	}
+	pg->pg_ready = 1;
+}
+
 int mm_page_fault(
 		struct mm_struct *mm,
 		viraddr_t va, int errcd)
@@ -175,35 +206,15 @@ int mm_page_fault(
 	struct vm_area_struct *vm;
 	vm = mm_find_area(mm, va, va);
 	if (!vm) return 0;
-
-	int index = (va - vm->vm_begin) >> 12;
 	int perm = vm_mmu_perm(vm);
 	if ((errcd & (PG_W | PG_U)) & ~perm) return 0;
-	pg = vm_area_new_page(vm, index);
-	struct page_info *page = dup_page(pa2page(pg->pg_paddr));
-	if (!pg->pg_ready) {
-		if (vm->vm_file) {
-			off_t offset = vm->vm_file_offset + (pg->pg_index << 12);
-			iread(vm->vm_file, offset, page2kva(page), PGSIZE);
-		} else {
-			memset(page2kva(page), 0, PGSIZE);
-		}
-		pg->pg_ready = 1;
-	}
-	if ((perm & PG_W) && pg->cow_next != pg) {
-		int i;
-		struct vm_page *tail;
-		for (i = 5000, tail = pg; i && tail->cow_next != pg;
-				i--, tail = tail->cow_next);
-		if (!i) panic("COW list too long / loop");
-		tail->cow_next = pg->cow_next;
-		pg->cow_next = pg;
-		struct page_info *page2 = alloc_page();
-		pg->pg_paddr = page2pa(page2);
-		memcpy(page2kva(page2), page2kva(page), PGSIZE);
-		page = page2;
-	}
-	page_insert(mm->pd, page, (void *)va, perm);
+
+	pg = vm_area_new_page(vm, (va - vm->vm_begin) >> 12);
+	if (!pg->pg_ready)
+		do_load_page(pg);
+	if ((perm & PG_W) && pg->cow_next != pg)
+		do_cow_vm_page(pg);
+	page_insert(mm->pd, dup_page(pa2page(pg->pg_paddr)), (void *)va, perm);
 	return 1;
 }
 

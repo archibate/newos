@@ -15,11 +15,10 @@
 
 int initial_thread(const char *path)
 {
-	struct inode *ip = namei(path);
-	if (!ip) panic("cannot open %s", path);
-	if (do_execve(ip) == -1) panic("cannot exec %s", path);
-	iput(ip);
-	move_to_user();
+	char *argv[] = {(char *)path, "-s", NULL};
+	char *envp[] = {"PATH=/bin", "HOME=/root", NULL};
+	sys_execve(path, argv, envp);
+	panic("cannot exec %s", path);
 }
 
 void

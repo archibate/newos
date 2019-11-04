@@ -12,7 +12,8 @@ usr {
 }
 sbin -> bin
 bin {
-	xiaomin build/usr/forktest
+	xiaomin build/usr/exectest
+	argvtest build/usr/argvtest
 }
 dev {
 }

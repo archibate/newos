@@ -7,8 +7,9 @@
 
 #define USER_STACK_SIZE (1024*4096)
 
+int do_execve(struct inode *ip, char *const *argv, char *const *envp);
+int sys_execve(const char *path, char *const *argv, char *const *envp);
 int mm_load_exec(struct mm_struct *mm, reg_t *regs, struct inode *ip);
-int do_execve(struct inode *ip);
 __attribute__((noreturn)) static void move_to_user(void)
 {
 	__attribute__((noreturn)) extern void __move_to_user(reg_t *regs);

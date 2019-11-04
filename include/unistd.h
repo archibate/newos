@@ -3,6 +3,9 @@
 
 #include <bits/types.h>
 
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 #ifndef size_t
 #define size_t __size_t
 #endif
@@ -28,8 +31,6 @@
 #define pid_t __pid_t
 #endif
 
-#include <bits/types.h>
-
 ssize_t read(int fd, void *buf, size_t size);
 ssize_t write(int fd, const void *buf, size_t size);
 off_t write(int fd, const void *buf, size_t size);
@@ -37,5 +38,6 @@ int dup2(int fd, int fd2);
 int dup(int fd);
 int pause(void);
 pid_t fork(void);
+int execve(const char *path, char *const *argv, char *const *envp);
 
 #endif

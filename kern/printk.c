@@ -21,6 +21,7 @@ vprintk(const char *fmt, va_list ap)
 	int ret = vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
 	size_t len = strnlen(buf, sizeof(buf) - 2);
 	buf[len++] = '\n';
+	buf[len++] = 0;
 	tty_write(TTY_MUX, buf, len);
 	return ret;
 }

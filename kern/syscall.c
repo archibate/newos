@@ -4,9 +4,9 @@
 #include <kern/tty.h>
 #include <errno.h>
 
-int sys_debug(int x)
+int sys_debugi(int x)
 {
-	printk("%d sys_debug %d", current->pid, x);
+	printk("%d sys_debugi %d", current->pid, x);
 	return x;
 }
 

@@ -12,9 +12,8 @@ static void do_fork(struct task *child, struct task *parent)
 	memcpy(task_regs(child), task_regs(parent), REGS_SIZE);
 
 	task_regs(child)[EAX] = 0;
-	child->filp[0] = FS_DUP(parent->filp[0]);
-	child->filp[1] = FS_DUP(parent->filp[1]);
-	child->filp[2] = FS_DUP(parent->filp[2]);
+	for (int i = 0; i < NR_OPEN; i++)
+		child->filp[i] = FS_DUP(parent->filp[i]);
 }
 
 int fork_start(void *unused)

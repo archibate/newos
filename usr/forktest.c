@@ -1,7 +1,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-int main(void)
+int main(char *const *argv)
 {
 	open("/dev/tty/mux", O_RDONLY);
 	open("/dev/tty/mux", O_WRONLY);

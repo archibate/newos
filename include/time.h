@@ -2,6 +2,7 @@
 #define _TIME_H 1
 
 #include <bits/time.h>
+#include <bits/types.h>
 
 struct tm
 {
@@ -16,6 +17,8 @@ struct tm
 	int tm_isdst;			/* DST.		[-1/0/1]*/
 };
 
-typedef unsigned long clock_t;
+typedef __clock_t clock_t;
+
+#define CLOCKS_PER_SEC ((clock_t) __CLOCKS_PER_SEC)
 
 #endif
