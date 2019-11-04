@@ -2,6 +2,7 @@
 #define _UNISTD_H
 
 #include <bits/types.h>
+#include <bits/unistd.h>
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -34,6 +35,7 @@
 ssize_t read(int fd, void *buf, size_t size);
 ssize_t write(int fd, const void *buf, size_t size);
 off_t write(int fd, const void *buf, size_t size);
+off_t lseek(int fd, off_t offset, int whence);
 int dup2(int fd, int fd2);
 int dup(int fd);
 int close(int fd);
@@ -46,5 +48,8 @@ int execvp(const char *file, char *const *argv);
 int execle(const char *path, const char *arg, ...);
 int execl(const char *path, const char *arg, ...);
 int execlp(const char *file, const char *arg, ...);
+__attribute__((noreturn)) void _exit(int status);
+void *sbrk(intptr_t incptr);
+int brk(void *addr);
 
 #endif

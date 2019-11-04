@@ -45,8 +45,11 @@ static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 	mm_new_area(mm, ebss, USER_STACK_SIZE,
 			PROT_READ | PROT_WRITE, MAP_PRIVATE, NULL, 0);
 
-	regs[EBP] = ebss;
-	regs[ESP] = ebss + USER_STACK_SIZE - 16;
+	mm->ebss = ebss;
+	mm->ebrk = ebss;
+	mm->stop = ebss + USER_STACK_SIZE;
+	regs[EBP] = mm->ebss;
+	regs[ESP] = mm->stop - 16;
 	regs[EIP] = e.e_entry;
 	regs[EFLAGS] = 0x202;
 	regs[SS] = SEG_UDATA;

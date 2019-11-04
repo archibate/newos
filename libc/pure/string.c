@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 // Using assembly for memset/memmove

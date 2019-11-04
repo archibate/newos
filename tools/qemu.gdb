@@ -1,8 +1,8 @@
 #!/usr/bin/cgdb -x
 # vim: ft=gdb ts=4 sts=4 tw=4
 
-add-symbol-file build/vmlinux
-add-symbol-file build/usr/die
+#add-symbol-file build/vmlinux
+add-symbol-file build/usr/stdiotest
 
 target remote localhost:1234
 

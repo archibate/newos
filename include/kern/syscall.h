@@ -1,6 +1,8 @@
 #pragma once
 
 #include <sys/types.h>
+// Get intptr_t.
+#include <stdint.h>
 
 #ifndef __user
 #define __user
@@ -146,6 +148,7 @@ _syscall0(8, int, pause);
 _syscall0(9, pid_t, fork);
 _syscall1(10, int, debugi, int);
 _syscall3(11, int, execve, const char *, char *const *, char *const *);
+_syscall1(12, void *, sbrk, intptr_t);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

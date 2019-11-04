@@ -3,10 +3,6 @@
 
 int main(char *const *argv)
 {
-	open("/dev/tty/mux", O_RDONLY);
-	open("/dev/tty/mux", O_WRONLY);
-	dup(1);
-
 	write(1, "Hello from user!\n", 17);
 	if (fork() == 0) {
 		write(1, "Hello from child!\n", 18);

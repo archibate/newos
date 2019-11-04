@@ -54,12 +54,12 @@ do_trap(reg_t eax, ...)
 		if (nr == 0x0e && do_page_fault(regs))
 			return;
 		dump_context(regs);
-		panic("INT %#x: %s", nr, exception_string[nr]);
+		panic("INT %#02x: %s", nr, exception_string[nr]);
 	} else if (nr >= 0x20 && nr <= 0x20 + NIRQS) {
 		do_irq(nr - 0x20);
 	} else if (nr == 0x80) {
 		do_syscall(regs);
 	} else {
-		panic("Unknown INT %#x", nr);
+		panic("Unknown INT %#02x", nr);
 	}
 }

@@ -88,6 +88,8 @@ struct mm_struct
 {
 	struct list_head mm_areas;
 	pde_t *pd;
+
+	viraddr_t ebss, ebrk, stop;
 };
 
 struct vm_area_struct

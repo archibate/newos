@@ -67,13 +67,10 @@ build/%.S.bin: %.S
 build/%.c.o: %.c
 	@echo - [cc] $<
 	@mkdir -p $(@D)
-	@gcc $(CFLAGS) -D_KERNEL -c -o $@ $<
+	@gcc $(CFLAGS) -c -o $@ $<
 
-build/usr/%: build/usr/%.c.o build/libc.a
-	@ld -m elf_i386 -static -e _start -Ttext 0x40000000 -o $@ $^
-
-build/usr/%: build/usr/%.S.o build/libc.a
-	@ld -m elf_i386 -static -e _start -Ttext 0x40000000 -o $@ $^
+build/usr/%: build/usr/%.c.o build/libc.a user.ld
+	@ld -m elf_i386 -static -T $(word 3, $^) -o $@ $< $(word 2, $^)
 
 .PHONY: info
 info:

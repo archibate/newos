@@ -1,4 +1,4 @@
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef _KERNEL
 #include <kern/kernel.h>
@@ -39,7 +39,7 @@ brk(void *addr)
 	fprintf(stderr, __VA_ARGS__); \
 	fputc('\n', stderr); \
 	abort(); \
-}
+} while (0)
 #endif
 
 typedef struct header

@@ -2,7 +2,7 @@
 #define _BITS_TYPES_H 1
 
 typedef unsigned char __uint8_t, __uint_fast8_t;
-typedef unsigned short __uint16_t, __wchar_t;
+typedef unsigned short __uint16_t;
 typedef unsigned int __uint32_t, __uint_least8_t, __uint_least16_t,
 	__uint_least32_t, __uint_fast16_t, __uint_fast32_t, __wint_t,
 	__ino_t, __mode_t, __id_t, __uid_t, __gid_t;
@@ -14,7 +14,7 @@ typedef char __int8_t, __int_fast8_t;
 typedef short __int16_t;
 typedef int __int32_t, __int_least8_t, __int_least16_t,
 	__int_least32_t, __int_fast16_t, __int_fast32_t, __pid_t;
-typedef long __intptr_t, __ssize_t, __off_t, __ptrdiff_t;
+typedef long __intptr_t, __ssize_t, __off_t, __ptrdiff_t, __wchar_t;
 typedef long long __int64_t, __int_least64_t, __int_fast64_t, __intmax_t;
 
 #endif

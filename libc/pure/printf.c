@@ -150,7 +150,7 @@ printnum(void (*putch)(int, void*), void *putdat, const char *table,
 {
 	// first recursively print all preceding (more significant) digits
 	if (num >= base) {
-		printnum(putch, putdat, table, num / base, base, width - 1, padc);
+		printnum(putch, putdat, table, (unsigned long)num / base, base, width - 1, padc);
 	} else {
 		// print any needed pad characters before first digit
 		while (--width > 0)
@@ -158,7 +158,7 @@ printnum(void (*putch)(int, void*), void *putdat, const char *table,
 	}
 
 	// then print this (the least significant) digit
-	putch(table[num % base], putdat);
+	putch(table[(unsigned long)num % base], putdat);
 }
 
 // Get an unsigned int of various possible sizes from a varargs list,
@@ -414,6 +414,25 @@ snprintf(char *buf, size_t n, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	rc = vsnprintf(buf, n, fmt, ap);
+	va_end(ap);
+
+	return rc;
+}
+
+int
+vsprintf(char *buf, const char *fmt, va_list ap)
+{
+	return vsnprintf(buf, 0x7fffffff, fmt, ap);
+}
+
+int
+sprintf(char *buf, const char *fmt, ...)
+{
+	va_list ap;
+	int rc;
+
+	va_start(ap, fmt);
+	rc = vsprintf(buf, fmt, ap);
 	va_end(ap);
 
 	return rc;

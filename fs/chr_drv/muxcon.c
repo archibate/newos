@@ -1,4 +1,5 @@
 #include <kern/tty.h>
+#include <kern/kernel.h>
 
 int muxcon_putc(int c)
 {
