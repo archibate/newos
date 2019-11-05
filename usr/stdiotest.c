@@ -4,7 +4,7 @@
 int main(void)
 {
 	printf("Hello, World!\n");
-	printf("> ");
+	printf("stdiotest> ");
 	char buf[233];
 	if (fgets(buf, sizeof(buf), stdin))
 		printf("You entered [%s]\n", buf);

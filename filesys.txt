@@ -12,9 +12,10 @@ usr {
 }
 sbin -> bin
 bin {
-	xiaomin build/usr/sh
-	waittest build/usr/waittest
-	stdiotest build/usr/stdiotest
+	0755 xiaomin build/usr/sh
+	0755 waittest build/usr/waittest
+	0755 stdiotest build/usr/stdiotest
+	0755 sigtest build/usr/sigtest
 }
 dev {
 }

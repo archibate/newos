@@ -149,7 +149,12 @@ _syscall0(9, pid_t, fork);
 _syscall1(10, int, debugi, int);
 _syscall3(11, int, execve, const char *, char *const *, char *const *);
 _syscall1(12, void *, sbrk, intptr_t);
-_syscall3(13, int, waitpid, pid_t, int *, int);
+_syscall3(13, pid_t, waitpid, pid_t, int *, int);
+_syscall0(14, long, sgetmask);
+_syscall1(15, long, ssetmask, long);
+_syscall3(16, long, signal_r, int, void *, void *);
+_syscall2(17, int, kill, pid_t, int);
+_syscall1(18, int, raise, int);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

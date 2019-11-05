@@ -11,15 +11,17 @@ struct task *task[NTASKS];
 struct task *current;
 
 __attribute__((fastcall)) void switch_context(
-		unsigned long *prev, unsigned long *next);
+		reg_t *prev, reg_t *next);
 
-static void switch_from_to(struct task *prev, struct task *next)
+static void switch_to_current_from(struct task *previous)
 {
-	if (next->mm)
-		switch_to_mm(next->mm);
+	if (current->mm) {
+		switch_to_mm(current->mm);
+		check_signal();
+	}
 
-	tss0.ts_esp0 = (unsigned long)(next->stack + STACK_SIZE);
-	switch_context(prev->kregs, next->kregs);
+	tss0.ts_esp0 = (unsigned long)(current->stack + STACK_SIZE);
+	switch_context(previous->kregs, current->kregs);
 }
 
 void
@@ -29,7 +31,7 @@ switch_to(int i)
 	if (current != task[i]) {
 		previous = current;
 		current = task[i];
-		switch_from_to(previous, current);
+		switch_to_current_from(previous);
 	}
 }
 
@@ -38,7 +40,7 @@ schedule(void)
 {
 	for (int i = NTASKS - 1; i > 0; i--) {
 		struct task *p = task[i];
-		if (p && p->state == TASK_SLEEPING && p->signal)
+		if (p && p->state == TASK_SLEEPING && task_signal(p))
 			p->state = 0;
 	}
 

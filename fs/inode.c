@@ -2,6 +2,7 @@
 #include <kern/sched.h>
 #include <kern/kernel.h>
 #include <string.h>
+#include <errno.h>
 
 struct inode inodes[NINODES];
 static struct task *inode_buffer_wait;
@@ -153,6 +154,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 	if (pos > ip->i_size) {
 		printk("WARNING: i%s: pos > ip->i_size",
 				rw == READ ? "read" : "write");
+		errno = EINVAL;
 		return 0;
 	}
 	if (pos + size > ip->i_size) {
@@ -177,6 +179,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 			iz -= NEFS_NR_DIRECT;
 		}
 		if (s_blk && iz >= BSIZE / 4) {
+			errno = EFBIG;
 			break;
 		}
 		size_t n = sz_left;
@@ -212,14 +215,18 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size)
 {
-	if (!S_CHECK(ip->i_mode, S_IROTH))
+	if (!S_CHECK(ip->i_mode, S_IROTH)) {
+		errno = EPERM;
 		return 0;
+	}
 	return rw_inode(READ, ip, pos, buf, size);
 }
 
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size)
 {
-	if (!S_CHECK(ip->i_mode, S_IWOTH))
+	if (!S_CHECK(ip->i_mode, S_IWOTH)) {
+		errno = EPERM;
 		return 0;
+	}
 	return rw_inode(WRITE, ip, pos, (void *)buf, size);
 }

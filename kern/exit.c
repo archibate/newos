@@ -17,7 +17,7 @@ static void tell_parent(int pid)
 		for (int i = 0; i < NTASKS; i++) {
 			if (!task[i] || task[i]->pid != pid)
 				continue;
-			task[i]->signal |= SIG(SIGCHLD);
+			task[i]->signal |= _S(SIGCHLD);
 			return;
 		}
 	}
@@ -25,7 +25,7 @@ static void tell_parent(int pid)
 }
 
 __attribute__((noreturn)) void
-sys_exit(int status)
+do_exit(int exit_code)
 {
 	for (int i = 0; i < NR_OPEN; i++)
 		if (current->filp[i])
@@ -38,10 +38,16 @@ sys_exit(int status)
 	current->mm = NULL;
 
 	current->state = TASK_ZOMBIE;
-	current->exit_stat = _MAKE_WSTAT(status);
+	current->exit_code = exit_code;
 	tell_parent(current->ppid);
 	schedule();
 	panic("sys_exit schedule does return");
+}
+
+__attribute__((noreturn)) void
+sys_exit(int status)
+{
+	do_exit((status & 0xff) << 8);
 }
 
 int sys_waitpid(pid_t pid, int *stat_loc, int options)
@@ -58,9 +64,14 @@ repeat:
 			if (task[i]->pid != pid)
 				continue;
 		}
-		if (task[i]->state == TASK_ZOMBIE) {
+		if (task[i]->state == TASK_STOPPED) {
+			if (!(options & WUNTRACED))
+				continue;
+			*stat_loc = 0x7f;
+			return task[i]->pid;
+		} else if (task[i]->state == TASK_ZOMBIE) {
 			flag = task[i]->pid;
-			*stat_loc = task[i]->exit_stat;
+			*stat_loc = task[i]->exit_code;
 			free_task(task[i]);
 			task[i] = NULL;
 			return flag;
@@ -73,7 +84,7 @@ repeat:
 			return 0;
 		current->state = TASK_SLEEPING;
 		schedule();
-		if (!(current->signal &= ~SIG(SIGCHLD)))
+		if (!(current->signal &= ~_S(SIGCHLD)))
 			goto repeat;
 		errno = EINTR;
 		return -1;

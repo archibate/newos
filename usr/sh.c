@@ -21,8 +21,10 @@ true */
 #include <string.h>
 #include <stdlib.h>
 
+
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #ifdef _DEBUG
-#define debug printf
+#define debug(...) eprintf(__VA_ARGS__)
 #else
 #define debug(...) do {} while (0)
 #endif
@@ -40,7 +42,7 @@ void open_push(const char *path, int fd, int flags);
 
 void error(const char *s)
 {
-	fprintf(stderr, "error: %s\n", s);
+	eprintf("error: %s\n", s);
 	errcnt++;
 }
 
@@ -203,7 +205,6 @@ void execute(void)
 	if (!argv[0])
 		return;
 
-
 	pid_t pid = fork();
 	if (pid == 0) {
 		do_opens();
@@ -219,13 +220,43 @@ void execute(void)
 		perror("waitpid");
 		return;
 	}
-	if (stat) printf("%d ", WEXITSTATUS(stat));
+	if (WIFEXITED(stat)) {
+		stat = WEXITSTATUS(stat);
+		if (stat)
+			eprintf("%d ", stat);
+	} else if (WIFSIGNALED(stat)) {
+		stat = WTERMSIG(stat);
+		switch (stat) {
+		case SIGINT:
+			eprintf("Interrupted\n");
+			break;
+		case SIGABRT:
+			eprintf("Aborted\n");
+			break;
+		case SIGTERM:
+			eprintf("Terminated\n");
+			break;
+		case SIGSEGV:
+			eprintf("Segmentation Fault\n");
+			break;
+		case SIGILL:
+			eprintf("Illegal Opcode\n");
+			break;
+		case SIGFPE:
+			eprintf("Floating point exception\n");
+			break;
+		default:
+			eprintf("Terminated on signal %d\n", stat);
+		}
+	} else if (WIFSTOPPED(stat)) {
+		eprintf("Stopped\n");
+	}
 }
 
 int main(void)
 {
 	while (!feof(stdin)) {
-		printf("> ");
+		eprintf("# ");
 		parse_input();
 		execute();
 		clear_state();

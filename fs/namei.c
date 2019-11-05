@@ -2,6 +2,7 @@
 #include <kern/kernel.h>
 #include <kern/sched.h>
 #include <string.h>
+#include <errno.h>
 
 static int match(struct dir_entry *de, const char *name, size_t namelen)
 {
@@ -12,10 +13,14 @@ static int match(struct dir_entry *de, const char *name, size_t namelen)
 static int dir_find_entry(struct inode *dir, struct dir_entry *de,
 		const char *name, size_t namelen)
 {
-	if (!S_ISDIR(dir->i_mode))
+	if (!S_ISDIR(dir->i_mode)) {
+		errno = ENOTDIR;
 		return -1;
-	if (!S_CHECK(dir->i_mode, S_IXOTH))
+	}
+	if (!S_CHECK(dir->i_mode, S_IXOTH)) {
+		errno = EPERM;
 		return -1;
+	}
 	for (size_t pos = 0; pos + NEFS_DIR_ENTRY_SIZE <= dir->i_size;
 			pos += NEFS_DIR_ENTRY_SIZE) {
 		if (rw_inode(READ, dir, pos, de, NEFS_DIR_ENTRY_SIZE)
@@ -25,13 +30,20 @@ static int dir_find_entry(struct inode *dir, struct dir_entry *de,
 			if (match(de, name, namelen))
 				return pos / NEFS_DIR_ENTRY_SIZE;
 	}
+	errno = ENOENT;
 	return -1;
 }
 
 int dir_read_entry(struct inode *dir, struct dir_entry *de, int i)
 {
-	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size)
+	if (!S_ISDIR(dir->i_mode)) {
+		errno = ENOTDIR;
 		return -1;
+	}
+	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size) {
+		errno = EINVAL;
+		return -1;
+	}
 	if (iread(dir, i * NEFS_DIR_ENTRY_SIZE, de, NEFS_DIR_ENTRY_SIZE)
 			!= NEFS_DIR_ENTRY_SIZE)
 		return -1;
@@ -59,12 +71,16 @@ static int dir_add_entry(struct inode *dir, struct inode *ip,
 
 static int dir_del_entry(struct inode *dir, int i)
 {
-	if (!S_ISDIR(dir->i_mode))
+	if (!S_ISDIR(dir->i_mode)) {
+		errno = ENOTDIR;
 		return -1;
+	}
 	nefs_ino_t ino;
 	static const char zero[NEFS_DIR_ENTRY_SIZE];
-	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size)
+	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size) {
+		errno = EINVAL;
 		return -1;
+	}
 	if (iread(dir, i * NEFS_DIR_ENTRY_SIZE, &ino, sizeof(ino)) != sizeof(ino))
 		return -1;
 	if (ino != 0) {
@@ -103,9 +119,9 @@ struct inode *_namei(const char **ppath, struct inode **pip)
 		if (*path == 0)
 			break;
 		namelen = strchrnul(path, '/') - path;
-		if (path[0] == '.' && (namelen == 1 ||
+		/*if (path[0] == '.' && (namelen == 1 ||
 			(ip == current->root && namelen == 2 && path[1] == '.')))
-			continue;
+			continue;*/
 		if (*pip) iput(*pip);
 		*pip = ip;
 		if (-1 == dir_find_entry(ip, &de, path, namelen)) {
@@ -143,6 +159,7 @@ struct inode *creati(const char *path, int excl, mode_t mode, int nod)
 		if (pip) iput(pip);
 		if (excl) {
 			iput(ip);
+			errno = EEXIST;
 			return NULL;
 		}
 		return ip;
@@ -151,10 +168,15 @@ struct inode *creati(const char *path, int excl, mode_t mode, int nod)
 	namelen = p - path;
 	while (*p == '/')
 		p++;
-	if (*p) // no inner directory, /path/_to_/file
+	if (*p) { // no inner directory, /path/_to_/file
+		errno = ENOENT;
 		goto out;
-	if (!S_ISDIR(pip->i_mode)) // inner one not directory
+	}
+	if (!S_ISDIR(pip->i_mode)) { // inner one not directory
+		errno = ENOTDIR;
 		goto out;
+	}
+	errno = 0;
 	ip = new_inode(pip, mode, nod);
 	dir_add_entry(pip, ip, path, namelen);
 out:

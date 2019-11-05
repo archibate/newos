@@ -159,6 +159,7 @@ eof:
 void parse_file_list(int dir, int parent_dir, FILE *fl)
 {
 	FILE *dir_tmp = tmpfile();
+	mode_t mode = -1;
 
 	dir_write_entry(dir_tmp, ".", dir);
 	dir_write_entry(dir_tmp, "..", parent_dir);
@@ -168,6 +169,14 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 			break;
 		int ino = alloc_inode();
 		char *destname = strtok(buf, " \t\r\n");
+		if (destname[0] == '0') {
+			char *tp;
+			int m = strtol(destname + 1, &tp, 8);
+			if (!*tp) {
+				mode = m;
+				destname = strtok(NULL, " \t\r\n");
+			}
+		}
 		if (!*destname || !strcmp(destname, "}"))
 			break;
 		/*if (destname[0] == '@') {
@@ -181,7 +190,8 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 			FILE *sf = tmpfile();
 			char *lnkpath = strtok(NULL, " \t\r\n");
 			fputs(lnkpath, sf);
-			set_inode(ino, sf, 0644 | S_IFLNK);
+			if (mode == -1) mode = 0755;
+			set_inode(ino, sf, mode | S_IFLNK);
 			fclose(sf);
 		} else {
 			FILE *sf = fopen(srcpath, "r");
@@ -189,7 +199,8 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 				perror(srcpath);
 				sf = tmpfile();
 			}
-			set_inode(ino, sf, 0644 | S_IFREG);
+			if (mode == -1) mode = 0644;
+			set_inode(ino, sf, mode | S_IFREG);
 			fclose(sf);
 		}
 		dir_write_entry(dir_tmp, destname, ino);

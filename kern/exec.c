@@ -2,6 +2,7 @@
 #include <kern/kernel.h>
 #include <string.h>
 #include <malloc.h>
+#include <errno.h>
 
 static size_t length_arr2d(char *const *src)
 {
@@ -85,6 +86,14 @@ int sys_execve(const char *path, char *const *argv, char *const *envp)
 {
 	struct inode *ip = namei(path);
 	if (!ip) return -1;
+	if (S_ISDIR(ip->i_mode)) {
+		errno = EISDIR;
+		return -1;
+	}
+	if (!S_CHECK(ip->i_mode, S_IXOTH)) {
+		errno = EPERM;
+		return -1;
+	}
 	int ret = do_execve(ip, argv, envp);
 	iput(ip);
 	if (ret != -1) move_to_user();

@@ -4,11 +4,13 @@
 #include <kip/elf.h>
 #include <string.h>
 
+#define iload(...) rw_inode(READ, __VA_ARGS__)
+
 static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 {
 	struct elf32_ehdr e;
 	struct elf32_phdr ph;
-	iread(ip, 0, &e, sizeof(e));
+	iload(ip, 0, &e, sizeof(e));
 	if (e.e_magic != ELF_MAGIC)
 		return -1;
 	if (e.e_bits != ELF_32)
@@ -23,7 +25,7 @@ static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 	viraddr_t ebss = 0;
 
 	for (size_t i = 0; i < e.e_phnum; i++) {
-		iread(ip, e.e_phoff + i * e.e_phentsz, &ph, sizeof(ph));
+		iload(ip, e.e_phoff + i * e.e_phentsz, &ph, sizeof(ph));
 		if (ph.p_type != PT_LOAD)
 			continue;
 		size_t filesz = PAGEUP(ph.p_filesz);
@@ -69,7 +71,7 @@ int mm_load_exec(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 		int magic;
 	} u;
 	memset(&u, 0, sizeof(u));
-	iread(ip, 0, &u.buf, sizeof(u));
+	iload(ip, 0, &u.buf, sizeof(u));
 	if (u.magic == ELF_MAGIC)
 		return mm_load_exec_elf(mm, regs, ip);
 	else if (u.buf[0] == '#' && u.buf[1] == '!')

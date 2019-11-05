@@ -7,7 +7,8 @@
 // Get signal indexes.
 #include <bits/signal.h>
 
-#define SIG(sig) (1 << ((sig) - 1))
+#define _S(sig) (1 << ((sig) - 1))
+#define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
 
 #define TASK_RUNNING	0
 #define TASK_SLEEPING	1
@@ -31,11 +32,12 @@ struct task {
 	int counter;
 	int priority;
 	pid_t pid, ppid;
-	unsigned long kregs[NR_KREGS];
+	reg_t kregs[NR_KREGS];
 	void *stack;
 
-	int exit_stat;
-	int signal;
+	int exit_code;
+	sigset_t signal, blocked;
+	struct sigaction sigact[_NSIG];
 
 	struct inode *cwd;
 	struct inode *root;
@@ -44,6 +46,7 @@ struct task {
 };
 
 #define task_regs(p) ((reg_t *)((p)->stack + STACK_SIZE - REGS_SIZE))
+#define task_signal(p) ((p)->signal & ~(_BLOCKABLE & (p)->blocked))
 
 #define NTASKS	64
 
@@ -61,4 +64,9 @@ int get_pid_index(pid_t pid);
 struct task *new_task(struct task *parent);
 struct task *kernel_thread(void *start, void *arg);
 __attribute__((noreturn)) void sys_exit(int status);
+__attribute__((noreturn)) void do_exit(int exit_code);
+int do_kill(struct task *p, int sig);
+int sys_kill(pid_t pid, int sig);
+int sys_raise(int sig);
 void sched_timer_callback(void);
+void check_signal(void);
