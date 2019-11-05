@@ -12,3 +12,8 @@ void *alloc_kernel_stack(void)
 	ks_top += i + PGSIZE;
 	return stack;
 }
+
+void free_kernel_stack(void *p)
+{
+	// TODO
+}

@@ -34,6 +34,7 @@ int vfprintf(FILE *fp, const char *fmt, va_list ap);
 int vdprintf(int fd, const char *fmt, va_list ap);
 int vsprintf(char *str, const char *fmt, va_list ap);
 int vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
+void perror(const char *msg);
 
 FILE *fopen(const char *path, const char *mode);
 FILE *freopen(const char *path, const char *mode, FILE *fp);

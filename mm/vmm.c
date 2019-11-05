@@ -94,6 +94,9 @@ struct mm_struct *mm_fork(
 		pprev = &vm2->vm_list.next;
 	}
 	*pprev = NULL;
+	mm2->ebss = mm->ebss;
+	mm2->ebrk = mm->ebrk;
+	mm2->stop = mm->stop;
 	return mm2;
 }
 
@@ -160,6 +163,17 @@ struct vm_page *vm_area_new_page(
 	return pg;
 }
 
+static struct vm_page *get_cow_tail(struct vm_page *pg)
+{
+	int i;
+	struct vm_page *tail;
+	for (i = 5000, tail = pg; i && tail && tail->cow_next != pg;
+			i--, tail = tail->cow_next);
+	if (!i) panic("COW list too long / loop");
+	if (!tail) panic("COW list tail pointed NULL");
+	return tail;
+}
+
 void vm_area_del_page(struct vm_page *pg)
 {
 	struct vm_area_struct *vm = pg->pg_area;
@@ -167,16 +181,15 @@ void vm_area_del_page(struct vm_page *pg)
 	viraddr_t vaddr = vm->vm_begin + (pg->pg_index << 12);
 	page_remove(mm->pd, (void *)vaddr);
 	__list_remove(&pg->pg_list);
+	struct vm_page *tail = get_cow_tail(pg);
+	tail->cow_next = pg->cow_next;
+	pg->cow_next = NULL;
 	free(pg);
 }
 
 static void do_cow_vm_page(struct vm_page *pg)
 {
-	int i;
-	struct vm_page *tail;
-	for (i = 5000, tail = pg; i && tail->cow_next != pg;
-			i--, tail = tail->cow_next);
-	if (!i) panic("COW list too long / loop");
+	struct vm_page *tail = get_cow_tail(pg);
 	tail->cow_next = pg->cow_next;
 	pg->cow_next = pg;
 

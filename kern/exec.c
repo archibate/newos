@@ -87,6 +87,6 @@ int sys_execve(const char *path, char *const *argv, char *const *envp)
 	if (!ip) return -1;
 	int ret = do_execve(ip, argv, envp);
 	iput(ip);
-	if (!ret) move_to_user();
+	if (ret != -1) move_to_user();
 	return ret;
 }

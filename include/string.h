@@ -23,5 +23,6 @@ void *memchr(const void *s, int c, size_t n);
 long strtol(const char *s, char **endptr, int base);
 char *strdup(const char *s);
 char *strndup(const char *s, size_t n);
+char *strerror(int err);
 
 #endif

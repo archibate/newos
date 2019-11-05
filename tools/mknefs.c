@@ -2,7 +2,7 @@
 true /*
 set -e
 chmod +x $0
-gcc -D_ARGV0=\"$0\" $0 -o /tmp/$$
+gcc -DABS_PATH=`pwd` -D_ARGV0=\"$0\" $0 -o /tmp/$$
 /tmp/$$ $*
 x=$?
 rm -f /tmp/$$
@@ -12,6 +12,9 @@ true */
 #ifndef _ARGV0
 #define _ARGV0 (argv[0])
 #endif // }}}
+#define _TOS(x) #x
+#define TOS(x) _TOS(x)
+#define INC_KIP(x) TOS(ABS_PATH/include/x)
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #include <stdio.h>
 #include <stddef.h>
@@ -20,7 +23,7 @@ true */
 #include <string.h>
 #include <assert.h>
 #include <strings.h>
-#include "../include/kip/nefs.h"
+#include INC_KIP(kip/nefs.h)
 
 #define BSIZE 1024
 

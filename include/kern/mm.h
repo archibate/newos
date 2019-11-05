@@ -65,6 +65,7 @@ kva2page(void *va)
 }
 
 void *alloc_kernel_stack(void);
+void free_kernel_stack(void *p);
 
 extern size_t total_pages;
 extern physaddr_t base_mem_end;

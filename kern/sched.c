@@ -36,26 +36,23 @@ switch_to(int i)
 void
 schedule(void)
 {
-#if 0
-	// (DEP signal)
-	for (int i = NTASKS - 1; i >= 0; i--) {
+	for (int i = NTASKS - 1; i > 0; i--) {
 		struct task *p = task[i];
 		if (p && p->state == TASK_SLEEPING && p->signal)
 			p->state = 0;
 	}
-#endif
 
 	int next;
 	while (1) {
 		next = 0;
 		int c = -1;
-		for (int i = NTASKS - 1; i >= 0; i--) {
+		for (int i = NTASKS - 1; i > 0; i--) {
 			struct task *p = task[i];
 			if (p && p->state == 0 && p->counter > c)
 				c = p->counter, next = i;
 		}
 		if (c) break;
-		for (int i = NTASKS - 1; i >= 0; i--) {
+		for (int i = NTASKS - 1; i > 0; i--) {
 			struct task *p = task[i];
 			if (p)
 				p->counter = (p->counter >> 1) + p->priority;
@@ -117,7 +114,7 @@ int
 get_pid_index(pid_t pid)
 {
 	for (int i = 0; i < NTASKS; i++)
-		if (task[i]->pid == pid)
+		if (task[i] && task[i]->pid == pid)
 			return i;
 	return -1;
 }
@@ -164,14 +161,6 @@ new_task(struct task *parent)
 	p->cwd = idup(parent->cwd);
 	p->stack = alloc_kernel_stack();
 	return p;
-}
-
-__attribute__((noreturn)) void
-sys_exit(int status)
-{
-	current->state = TASK_ZOMBIE;
-	schedule();
-	panic("sys_exit's schedule returned");
 }
 
 __attribute__((noreturn)) static void
