@@ -80,6 +80,8 @@ size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
 struct inode *namei(const char *path);
 struct inode *creati(const char *path, int excl, mode_t mode, int nod);
+int linki(const char *path, struct inode *ip);
+int unlinki(const char *path, int rmdir);
 // file.c
 struct file *fs_open(const char *path, int flags, mode_t mode);
 struct file *fs_dup(struct file *f);

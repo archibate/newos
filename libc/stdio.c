@@ -158,18 +158,18 @@ static void parse_mode(const char * mode, int * flags_, int * mask_) {
 	int mask = 0644;
 
 	while (*x) {
-		if (*x == 'a') {
+		if (*x == 'r') {
+			flags |= O_RDONLY;
+		} else if (*x == 'a') {
 			flags |= O_WRONLY;
 			flags |= O_APPEND;
 			flags |= O_CREAT;
-		}
-		if (*x == 'w') {
+		} else if (*x == 'w') {
 			flags |= O_WRONLY;
 			flags |= O_CREAT;
 			flags |= O_TRUNC;
-			mask = 0666;
-		}
-		if (*x == '+') {
+			//mask = 0666;
+		} else if (*x == '+') {
 			flags |= O_RDWR;
 			flags &= ~(O_APPEND); /* uh... */
 		}
@@ -340,7 +340,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE * stream) {
 	for (size_t i = 0; i < nmemb; ++i) {
 		int r = read_bytes(stream, tracking, size);
 		if (r < 0) {
-			return -1;
+			return 0;
 		}
 		tracking += r;
 		if (r < (int)size) {
@@ -357,7 +357,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE * stream) {
 
 	int r = write(stream->fd, (void*)ptr, out_size);
 	if (r < 0) {
-		return -1;
+		return 0;
 	}
 
 	return r / size;
@@ -394,7 +394,7 @@ int fgetc(FILE * stream) {
 	char buf[1];
 	int r;
 	r = fread(buf, 1, 1, stream);
-	if (r < 0) {
+	if (!r) {
 		stream->eof = 1;
 		return EOF;
 	} else if (r == 0) {

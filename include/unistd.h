@@ -51,5 +51,7 @@ int execlp(const char *file, const char *arg, ...);
 __attribute__((noreturn)) void _exit(int status);
 void *sbrk(intptr_t incptr);
 int brk(void *addr);
+int rmdir(const char *path);
+int unlink(const char *path);
 
 #endif

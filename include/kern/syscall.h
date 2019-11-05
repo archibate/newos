@@ -155,6 +155,9 @@ _syscall1(15, long, ssetmask, long);
 _syscall3(16, long, signal_r, int, void *, void *);
 _syscall2(17, int, kill, pid_t, int);
 _syscall1(18, int, raise, int);
+_syscall2(19, int, mkdir, const char *, mode_t);
+_syscall1(20, int, unlink, const char *);
+_syscall1(21, int, rmdir, const char *);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

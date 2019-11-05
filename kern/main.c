@@ -65,7 +65,7 @@ main(void)
 
 	//kernel_thread(test_thread_1, NULL);
 	//kernel_thread(test_thread_2, NULL);
-	kernel_thread(initial_thread, "/bin/xiaomin");
+	kernel_thread(initial_thread, "/bin/init");
 
 	sti();
 	for (;;)

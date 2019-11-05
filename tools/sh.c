@@ -17,13 +17,16 @@ true */
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
 
+
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #ifdef _DEBUG
-#define debug printf
+#define debug(...) eprintf(__VA_ARGS__)
 #else
-#define debug(...) do; while (0)
+#define debug(...) do {} while (0)
 #endif
 
 enum {
@@ -39,7 +42,7 @@ void open_push(const char *path, int fd, int flags);
 
 void error(const char *s)
 {
-	fprintf(stderr, "error: %s\n", s);
+	eprintf("error: %s\n", s);
 	errcnt++;
 }
 
@@ -213,17 +216,47 @@ void execute(void)
 		return;
 	}
 	int stat;
-	if (-1 == waitpid(pid, &stat, 0)) {
+	if (waitpid(pid, &stat, 0) < 0) {
 		perror("waitpid");
 		return;
 	}
-	if (stat) printf("%d ", WEXITSTATUS(stat));
+	if (WIFEXITED(stat)) {
+		stat = WEXITSTATUS(stat);
+		if (stat)
+			eprintf("%d ", stat);
+	} else if (WIFSIGNALED(stat)) {
+		stat = WTERMSIG(stat);
+		switch (stat) {
+		case SIGINT:
+			eprintf("Interrupted\n");
+			break;
+		case SIGABRT:
+			eprintf("Aborted\n");
+			break;
+		case SIGTERM:
+			eprintf("Terminated\n");
+			break;
+		case SIGSEGV:
+			eprintf("Segmentation Fault\n");
+			break;
+		case SIGILL:
+			eprintf("Illegal Opcode\n");
+			break;
+		case SIGFPE:
+			eprintf("Floating point exception\n");
+			break;
+		default:
+			eprintf("Terminated on signal %d\n", stat);
+		}
+	} else if (WIFSTOPPED(stat)) {
+		eprintf("Stopped\n");
+	}
 }
 
 int main(void)
 {
 	while (!feof(stdin)) {
-		printf("> ");
+		eprintf("# ");
 		parse_input();
 		execute();
 		clear_state();

@@ -12,10 +12,14 @@ usr {
 }
 sbin -> bin
 bin {
-	0755 xiaomin build/usr/sh
-	0755 waittest build/usr/waittest
-	0755 stdiotest build/usr/stdiotest
-	0755 sigtest build/usr/sigtest
+	0755 init build/usr/init
+	0755 sh build/usr/sh
+	0755 echo build/usr/echo
+	0755 cat build/usr/cat
+	0755 rm build/usr/rm
+	0755 mkdir build/usr/mkdir
+	0755 rmdir build/usr/rmdir
+	0755 touch build/usr/touch
 }
 dev {
 }

@@ -3,7 +3,24 @@
 #include <kern/fs.h>
 #include <errno.h>
 
-int alloc_fd(unsigned begin)
+int sys_mkdir(const char *path, mode_t mode)
+{
+	struct inode *ip = creati(path, 1, (mode & 0777) | S_IFDIR, 0);
+	if (ip) iput(ip);
+	return ip ? 0 : -1;
+}
+
+int sys_rmdir(const char *path)
+{
+	return unlinki(path, 1);
+}
+
+int sys_unlink(const char *path)
+{
+	return unlinki(path, 0);
+}
+
+static int alloc_fd(unsigned begin)
 {
 	for (unsigned i = begin; i < NR_OPEN; i++)
 		if (!current->filp[i])

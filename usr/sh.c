@@ -20,6 +20,7 @@ true */
 #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
@@ -209,7 +210,10 @@ void execute(void)
 	if (pid == 0) {
 		do_opens();
 		execvp(argv[0], argv); 
-		perror(argv[0]);
+		if (errno != ENOENT)
+			perror(argv[0]);
+		else
+			eprintf("%s: command not found\n", argv[0]);
 		exit(EXIT_FAILURE);
 	} else if (pid < 0) {
 		perror("fork");

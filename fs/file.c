@@ -2,15 +2,21 @@
 #include <kern/kernel.h>
 #include <malloc.h>
 #include <string.h>
+#include <string.h>
+#include <errno.h>
 
 struct file *fs_open(const char *path, int flags, mode_t mode)
 {
 	struct inode *ip;
 	if (flags & O_CREAT) {
-		if (!S_ISDIR(mode) && S_ISREG(mode))
+		if (!S_ISDIR(mode) && !S_ISREG(mode)) {
+			errno = EINVAL;
 			return NULL;
-		if (!!S_ISDIR(mode) != !!(flags & O_DIRECTORY))
+		}
+		if (!!S_ISDIR(mode) != !!(flags & O_DIRECTORY)) {
+			errno = EINVAL;
 			return NULL;
+		}
 		ip = creati(path, !!(flags & O_EXCL), mode, 0);
 		if (!ip)
 			return NULL;
@@ -18,7 +24,13 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 		ip = namei(path);
 		if (!ip)
 			return NULL;
-		if (!!S_ISDIR(ip->i_mode) != !!(flags & O_DIRECTORY)) {
+		if (S_ISDIR(ip->i_mode) && !(flags & O_DIRECTORY)) {
+			errno = EISDIR;
+			iput(ip);
+			return NULL;
+		}
+		if (!S_ISDIR(ip->i_mode) && (flags & O_DIRECTORY)) {
+			errno = ENOTDIR;
 			iput(ip);
 			return NULL;
 		}
@@ -51,8 +63,10 @@ void fs_close(struct file *f)
 
 size_t fs_read(struct file *f, void *buf, size_t size)
 {
-	if ((f->f_flags & (O_RDONLY | O_DIRECTORY)) != O_RDONLY)
+	if ((f->f_flags & (O_RDONLY | O_DIRECTORY)) != O_RDONLY) {
+		errno = EPERM;
 		return 0;
+	}
 	size = iread(f->f_ip, f->f_offset, buf, size);
 	f->f_offset += size;
 	return size;
@@ -60,8 +74,10 @@ size_t fs_read(struct file *f, void *buf, size_t size)
 
 size_t fs_write(struct file *f, const void *buf, size_t size)
 {
-	if ((f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY)
+	if ((f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY) {
+		errno = EPERM;
 		return 0;
+	}
 	size = iwrite(f->f_ip, f->f_offset, buf, size);
 	f->f_offset += size;
 	return size;
@@ -79,6 +95,7 @@ off_t fs_seek(struct file *f, off_t offset, int whence)
 		offset = f->f_ip->i_size + offset;
 		break;
 	default:
+		errno = EINVAL;
 		return -1;
 	}
 	if (offset < 0)
