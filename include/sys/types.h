@@ -39,5 +39,17 @@
 #ifndef mode_t
 #define mode_t __mode_t
 #endif
+#ifndef dev_t
+#define dev_t __dev_t
+#endif
+#ifndef nlink_t
+#define nlink_t __nlink_t
+#endif
+#ifndef blksize_t
+#define blksize_t __blksize_t
+#endif
+#ifndef blkcnt_t
+#define blkcnt_t __blkcnt_t
+#endif
 
 #endif

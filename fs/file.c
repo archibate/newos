@@ -89,10 +89,13 @@ off_t fs_seek(struct file *f, off_t offset, int whence)
 	case SEEK_SET:
 		break;
 	case SEEK_CUR:
-		offset = f->f_offset + offset;
+		offset += f->f_offset;
 		break;
 	case SEEK_END:
-		offset = f->f_ip->i_size + offset;
+		if (f->f_flags & O_DIRECTORY)
+			offset += f->f_ip->i_size / NEFS_DIR_ENTRY_SIZE;
+		else
+			offset += f->f_ip->i_size;
 		break;
 	default:
 		errno = EINVAL;
@@ -104,4 +107,22 @@ off_t fs_seek(struct file *f, off_t offset, int whence)
 		offset = (off_t)f->f_ip->i_size;
 	f->f_offset = offset;
 	return offset;
+}
+
+int fs_dirread(struct file *f, struct dirent *de)
+{
+	if ((f->f_flags & (O_RDONLY | O_DIRECTORY)) != (O_RDONLY | O_DIRECTORY)) {
+		errno = EPERM;
+		return 0;
+	}
+	// since dirent = nefs_dir_entry!
+	int ret = dir_read_entry(f->f_ip, de, f->f_offset);
+	if (ret != -1)
+		f->f_offset++;
+	return ret;
+}
+
+int fs_fstat(struct file *f, struct stat *st)
+{
+	return istat(f->f_ip, st);
 }

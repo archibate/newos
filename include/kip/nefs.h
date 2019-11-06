@@ -5,7 +5,7 @@
 #define INC_KIP(x) <x>
 #endif
 
-#include INC_KIP(bits/stat.h)
+#include INC_KIP(kip/stat.h)
 #include <stdint.h>
 
 #define NEFS_NR_DIRECT	11

@@ -20,6 +20,8 @@ bin {
 	0755 mkdir build/usr/mkdir
 	0755 rmdir build/usr/rmdir
 	0755 touch build/usr/touch
+	0755 ls build/usr/ls
+	0755 stat build/usr/stat
 }
 dev {
 }

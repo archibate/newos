@@ -53,5 +53,6 @@ void *sbrk(intptr_t incptr);
 int brk(void *addr);
 int rmdir(const char *path);
 int unlink(const char *path);
+int link(const char *path1, const char *path2);
 
 #endif

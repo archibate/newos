@@ -4,8 +4,10 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <kip/nefs.h>
+#include <bits/dirent.h>
 #include <bits/fcntl.h>
 #include <bits/unistd.h>
+#include <bits/stat.h>
 #include <ds/list.h>
 
 #define BSIZE	1024
@@ -16,6 +18,7 @@
 #define WRITE	1
 
 #define S_CHECK(mode, access) ((mode) & ((access) << 6))
+#define S_ISNOD(mode) (S_ISCHR(mode) || S_ISBLK(mode) || S_ISFIFO(mode) || S_ISSOCK(mode))
 
 struct buf {
 	char b_data[BSIZE];
@@ -76,6 +79,7 @@ struct inode *iget(ino_t ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
+int istat(struct inode *ip, struct stat *st);
 // namei.c
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
 struct inode *namei(const char *path);
@@ -89,5 +93,7 @@ size_t fs_read(struct file *f, void *buf, size_t size);
 size_t fs_write(struct file *f, const void *buf, size_t size);
 off_t fs_seek(struct file *f, off_t offset, int whence);
 void fs_close(struct file *f);
+int fs_dirread(struct file *f, struct dirent *de);
+int fs_fstat(struct file *f, struct stat *st);
 
 #endif

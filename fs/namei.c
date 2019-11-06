@@ -106,8 +106,23 @@ static int check_rmdir_inode(struct inode *ip, int rmdir)
 			errno = ENOTEMPTY;
 			return -1;
 		}
-		dir_del_entry(ip, 0, 233);
-		dir_del_entry(ip, 1, 233);
+		if (ip->i_nlink != 2) {
+			printk("ERROR: bad nlinks %d for empty dir", ip->i_nlink);
+			errno = ENOTEMPTY;
+			return -1;
+		}
+		if (dir_del_entry(ip, 0, 233) == -1) {
+			printk("ERROR: cannot delete . entry");
+			return -1;
+		}
+		if (dir_del_entry(ip, 1, 233) == -1) {
+			printk("ERROR: cannot delete .. entry");
+			return -1;
+		}
+		if (ip->i_nlink != 1) {
+			printk("WARNING: bad nlinks %d after del .", ip->i_nlink);
+			ip->i_nlink = 1;
+		}
 	}
 	return 0;
 }
@@ -118,8 +133,20 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 		errno = ENOTDIR;
 		return -1;
 	}
+	if (!S_CHECK(dir->i_mode, S_IWOTH)) {
+		errno = EPERM;
+		return -1;
+	}
 	nefs_ino_t ino;
-	if ((i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size) {
+	if (i == 0 && rmdir != 233) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (i == 1 && rmdir != 233) {
+		errno = ENOTEMPTY;
+		return -1;
+	}
+	if ((unsigned)(i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -160,8 +187,10 @@ struct inode *_namei(const char **ppath, struct inode **pip, const char **ppath2
 		ip = idup(current->root);
 	else if (*path != 0)
 		ip = idup(current->cwd);
-	else
+	else {
+		errno = EINVAL;
 		return NULL;
+	}
 	*ppath2 = path;
 	for (;; path += namelen) {
 		while (*path == '/')
@@ -193,8 +222,7 @@ static struct inode *new_inode(struct inode *pip, mode_t mode, int nod)
 	if (S_ISDIR(mode)) {
 		dir_add_entry(ip, ip, ".", 1);
 		dir_add_entry(ip, pip, "..", 2);
-	} else if (S_ISFIFO(mode) || S_ISSOCK(mode)
-		|| S_ISCHR(mode) || S_ISBLK(mode)) {
+	} else if (S_ISNOD(mode)) {
 		ip->i_zone[0] = nod;
 	}
 	return ip;
@@ -211,14 +239,20 @@ int unlinki(const char *path, int rmdir)
 		if (pip) iput(pip);
 		return -1;
 	}
+	if (!pip) {
+		errno = EINVAL;
+		iput(ip);
+		return -1;
+	}
 	i = dir_find_entry(pip, &de, name, strchrnul(name, '/') - name);
 	if (i == -1) {
 		printk("WARNING: namei BUG, entry [%s] not found!", name);
 		iput(ip);
+		iput(pip);
 		errno = ENOENT;
 		return -1;
 	}
-	i = dir_del_entry(pip, i, rmdir);
+	i = dir_del_entry(pip, i, !!rmdir);
 	iput(pip);
 	return i;
 }
@@ -239,6 +273,11 @@ static struct inode *_creati(
 			return NULL;
 		}
 		return ip;
+	}
+	if (!pip) {
+		iput(ip);
+		errno = EINVAL;
+		return NULL;
 	}
 	p = strchrnul(path, '/');
 	namelen = p - path;

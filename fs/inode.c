@@ -230,3 +230,15 @@ size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size)
 	}
 	return rw_inode(WRITE, ip, pos, (void *)buf, size);
 }
+
+int istat(struct inode *ip, struct stat *st)
+{
+	memset(st, 0, sizeof(struct stat));
+	st->st_ino = ip->i_ino;
+	st->st_mode = ip->i_mode;
+	st->st_nlink = ip->i_nlink;
+	if (S_ISNOD(ip->i_mode))
+		st->st_rdev = ip->i_zone[0];
+	st->st_size = ip->i_size;
+	return 0;
+}

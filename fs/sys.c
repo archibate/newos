@@ -20,6 +20,16 @@ int sys_unlink(const char *path)
 	return unlinki(path, 0);
 }
 
+int sys_link(const char *path1, const char *path2)
+{
+	struct inode *ip = namei(path1);
+	if (!ip)
+		return -1;
+	int ret = linki(path2, ip);
+	iput(ip);
+	return ret;
+}
+
 static int alloc_fd(unsigned begin)
 {
 	for (unsigned i = begin; i < NR_OPEN; i++)
@@ -134,4 +144,24 @@ off_t sys_lseek(int fd, off_t offset, int whence)
 	if (!f)
 		return -1;
 	return fs_seek(f, offset, whence);
+}
+
+int sys_dirread(int fd, struct dirent *de)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return -1;
+	struct file *f = current->filp[fd];
+	if (!f)
+		return -1;
+	return fs_dirread(f, de);
+}
+
+int sys_fstat(int fd, struct stat *st)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return -1;
+	struct file *f = current->filp[fd];
+	if (!f)
+		return -1;
+	return fs_fstat(f, st);
 }

@@ -1,6 +1,10 @@
 #pragma once
 
 #include <sys/types.h>
+// Get struct dirent.
+#include <bits/dirent.h>
+// Get struct stat.
+#include <bits/stat.h>
 // Get intptr_t.
 #include <stdint.h>
 
@@ -24,6 +28,9 @@
 #define _syscall1(i, rt, name, t1) \
 	_SYSCALL rt sys_##name(t1); \
 	case (i): regs[EAX] = (long)sys_##name((t1) regs[EBX]); regs[ECX] = errno; break;
+#define _syscallz(i, rt, name, t1) \
+	_SYSCALL rt sys_##name(t1); \
+	case (i): regs[EAX] = (long)sys_##name((t1) regs[EBX]); regs[ECX] = 0; break;
 #define _syscall2(i, rt, name, t1, t2) \
 	_SYSCALL rt sys_##name(t1, t2); \
 	case (i): regs[EAX] = (long)sys_##name((t1) regs[EBX], (t2) regs[ECX]); \
@@ -80,6 +87,14 @@
 		if (errno) errno = errno; \
 		return ret; \
 	})
+#define _syscallz(i, rt, name, t1) \
+	_SYSCALL rt name(t1 x1) \
+	_DEF_SYS({ \
+		rt ret; \
+		asm volatile ("int $0x80" \
+				: "=a" (ret) : "a" (i) , "b" (x1)); \
+		return ret; \
+	})
 #define _syscall2(i, rt, name, t1, t2) \
 	_SYSCALL rt name(t1 x1, t2 x2) \
 	_DEF_SYS({ \
@@ -87,7 +102,6 @@
 		asm volatile ("int $0x80" \
 				: "=a" (ret), "=c" (errno) : "a" (i) \
 				, "b" (x1), "c" (x2)); \
-		if (errno) errno = errno; \
 		return ret; \
 	})
 #define _syscall3(i, rt, name, t1, t2, t3) \
@@ -97,7 +111,6 @@
 		asm volatile ("int $0x80" \
 				: "=a" (ret), "=c" (errno) : "a" (i) \
 				, "b" (x1) , "c" (x2), "d" (x3)); \
-		if (errno) errno = errno; \
 		return ret; \
 	})
 #define _syscall4(i, rt, name, t1, t2, t3, t4) \
@@ -107,7 +120,6 @@
 		asm volatile ("int $0x80" \
 				: "=a" (ret), "=c" (errno) : "a" (i) \
 				, "b" (x1) , "c" (x2), "d" (x3), "S" (x4)); \
-		if (errno) errno = errno; \
 		return ret; \
 	})
 #define _syscall5(i, rt, name, t1, t2, t3, t4, t5) \
@@ -118,7 +130,6 @@
 				: "=a" (ret), "=c" (errno) : "a" (i) \
 				, "b" (x1) , "c" (x2), "d" (x3), "S" (x4) \
 				, "D" (x5)); \
-		if (errno) errno = errno; \
 		return ret; \
 	})
 #define _syscall6(i, rt, name, t1, t2, t3, t4, t5, t6) \
@@ -140,7 +151,7 @@ _syscallv(0, void, exit, int);
 _syscall3(1, ssize_t, read, int, void *, size_t);
 _syscall3(2, ssize_t, write, int, const void *, size_t);
 _syscall3(3, off_t, lseek, int, off_t, int);
-_syscall1(4, int, close, int);
+_syscallz(4, int, close, int);
 _syscall3(5, int, fcntl, int, int, int);
 _syscall2(6, int, dup2, int, int);
 _syscall3(7, int, open, const char *, int, mode_t);
@@ -158,6 +169,9 @@ _syscall1(18, int, raise, int);
 _syscall2(19, int, mkdir, const char *, mode_t);
 _syscall1(20, int, unlink, const char *);
 _syscall1(21, int, rmdir, const char *);
+_syscall2(22, int, link, const char *, const char *);
+_syscall2(23, int, dirread, int, struct dirent *);
+_syscall2(24, int, fstat, int, struct stat *);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:
