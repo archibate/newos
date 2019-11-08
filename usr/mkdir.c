@@ -2,16 +2,20 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-void do_mkdir(const char *path)
+int do_mkdir(const char *path)
 {
-	if (mkdir(path, 0755) == -1)
+	if (mkdir(path, 0755) == -1) {
 		perror(path);
+		return 1;
+	}
+	return 0;
 }
 
 int main(int argc, char **argv)
 {
-	if (argc == 1) fprintf(stderr, "mkdir: missing oprand\n");
+	int err = 0;
+	if (argc <= 1) fprintf(stderr, "mkdir: missing oprand\n");
 	else for (int i = 1; i < argc; i++)
-		do_mkdir(argv[i]);
-	return 0;
+		err = err || do_mkdir(argv[i]);
+	return err;
 }

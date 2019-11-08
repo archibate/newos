@@ -35,13 +35,21 @@ run: build/boot.img
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USER_BINS)
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/filesys.txt $(USER_BINS)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
-	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
+	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@ > /dev/null
 	@dd if=$< of=$@ bs=2048 count=1 conv=notrunc
 	@dd if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
 	@tools/mknefs.c $@ -r `tools/blks.c $(word 2, $^) | awk '{print $$1}'` -L NewOS -f $(word 3, $^)
+
+build/filesys.txt: filesys.txt usr
+	@echo + '[gen]' $@
+	@mkdir -p $(@D)
+	@cat $< > $@
+	@echo 'bin {' >> $@
+	@for x in $(USER_BINS); do echo 0755 `basename $$x` $$x >> $@; done
+	@echo '}' >> $@
 
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
 
@@ -63,15 +71,30 @@ build/%.S.o: %.S
 	@mkdir -p $(@D)
 	@nasm -felf -o $@ $<
 
+build/%.S.o.d: %.S
+	@echo - '[dep]' $<
+	@mkdir -p $(@D)
+	@nasm -M -MT $(@:%.d=%) -felf $< > $@
+
 build/%.S.bin: %.S
 	@echo - '[as]' $<
 	@mkdir -p $(@D)
 	@nasm -fbin -o $@ $<
 
+build/%.S.bin.d: %.S
+	@echo - '[dep]' $<
+	@mkdir -p $(@D)
+	@nasm -M -MT $(@:%.d=%) -fbin $< > $@
+
 build/%.c.o: %.c
 	@echo - '[cc]' $<
 	@mkdir -p $(@D)
 	@gcc $(CFLAGS) -c -o $@ $<
+
+build/%.c.o.d: %.c
+	@echo - '[dep]' $<
+	@mkdir -p $(@D)
+	@gcc -M -MT $(@:%.d=%) $(CFLAGS) -c -o $@ $<
 
 build/usr/%: build/usr/%.c.o build/libc.a user.ld
 	@ld -m elf_i386 -static -T $(word 3, $^) -o $@ $< $(word 2, $^)
@@ -86,6 +109,9 @@ info:
 	@echo USER_SRCS=$(USER_SRCS)
 	@echo USER_BINS=$(USER_BINS)
 
+.PHONY: kernel
+kernel: build/vmlinux
+
 build/vmlinux: $(KERN_OBJS)
 	@echo + '[ld]' $@
 	@mkdir -p $(@D)
@@ -95,3 +121,17 @@ build/libc.a: $(LIBC_OBJS)
 	@echo + '[ar]' $@
 	@mkdir -p $(@D)
 	@ar cqs $@ $^
+
+.PHONY: clean
+clean:
+	rm -rf build
+
+.PHONY: dep
+dep: build/dep
+
+build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_OBJS:%=%.d))
+	@echo + '[gen]' $@
+	@mkdir -p $(@D)
+	@cat $^ > $@
+
+include build/dep

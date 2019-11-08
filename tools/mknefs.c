@@ -167,6 +167,8 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 		char buf[512];
 		if (!fgets(buf, sizeof(buf), fl))
 			break;
+		if (buf[0] == '#')
+			continue;
 		int ino = alloc_inode();
 		char *destname = strtok(buf, " \t\r\n");
 		if (destname[0] == '0') {

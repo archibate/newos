@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 
-void cat(const char *path)
+int cat(const char *path)
 {
 	FILE *fp = !strcmp(path, "-") ? stdin : fopen(path, "r");
 	if (!fp) {
 		perror(path);
-		return;
+		return 1;
 	}
 
 	char buf[256];
@@ -15,12 +15,14 @@ void cat(const char *path)
 		fwrite(buf, size, 1, stdout);
 
 	if (fp != stdin) fclose(fp);
+	return 0;
 }
 
 int main(int argc, char **argv)
 {
-	if (argc == 1) cat("-");
+	int err = 0;
+	if (argc <= 1) err = cat("-");
 	else for (int i = 1; i < argc; i++)
-		cat(argv[i]);
-	return 0;
+		err = err || cat(argv[i]);
+	return err;
 }

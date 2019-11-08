@@ -1,11 +1,11 @@
+#include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <stdio.h>
 
 int main(void)
 {
-	int stat;
+	int stat = 1;
 	for (int i = 0; i < _NSIG; i++)
 		signal(i, SIG_IGN);
 
@@ -18,6 +18,7 @@ int main(void)
 	} else {
 		if (waitpid(pid, &stat, 0) == -1)
 			perror("waitpid");
+		stat = WEXITSTATUS(stat);
 		fprintf(stderr, "/bin/sh exited with %#x\n", stat);
 	}
 	return stat;

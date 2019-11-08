@@ -11,19 +11,5 @@ usr {
 	}
 }
 sbin -> bin
-bin {
-	0755 init build/usr/init
-	0755 sh build/usr/sh
-	0755 echo build/usr/echo
-	0755 cat build/usr/cat
-	0755 rm build/usr/rm
-	0755 mkdir build/usr/mkdir
-	0755 rmdir build/usr/rmdir
-	0755 touch build/usr/touch
-	0755 ls build/usr/ls
-	0755 stat build/usr/stat
-	0755 pwd build/usr/pwd
-	0755 permtest build/usr/permtest
-}
 dev {
 }

@@ -5,40 +5,43 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-void ls_stat(const char *path)
+int ls_stat(const char *path)
 {
 	struct stat st;
 	if (stat(path, &st) == -1) {
 		perror(path);
-		return;
+		return 1;
 	}
 	printf("%7d %s\n", st.st_ino, path);
+	return 0;
 }
 
-void ls(const char *path)
+int ls(const char *path)
 {
 	int i, fd = open(path, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
 		if (errno == ENOTDIR)
 			return ls_stat(path);
 		perror(path);
-		return;
+		return 1;
 	}
 	struct dirent de;
 	while (-1 != (i = dirread(fd, &de))) {
 		if (i) printf("%7d %s\n", de.d_ino, de.d_name);
 	}
 	close(fd);
+	return 0;
 }
 
 int main(int argc, char **argv)
 {
-	if (argc == 1) ls(".");
-	else if (argc == 2) ls(argv[1]);
+	int err = 0;
+	if (argc <= 1) err = ls(".");
+	else if (argc == 2) err = ls(argv[1]);
 	else for (int i = 1; i < argc; i++) {
 		if (i != 1) putchar('\n');
 		printf("%s:\n", argv[i]);
-		ls(argv[i]);
+		err = err || ls(argv[i]);
 	}
-	return 0;
+	return err;
 }

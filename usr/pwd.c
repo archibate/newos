@@ -1,7 +1,7 @@
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
+#include <malloc.h>
 
 #define FRAG 256
 
@@ -15,8 +15,8 @@ int main(void)
 	}
 	if (errno) {
 		perror("pwd");
-		return EXIT_FAILURE;
+		return 1;
 	}
 	puts(buf);
-	return EXIT_SUCCESS;
+	return 0;
 }
