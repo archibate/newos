@@ -37,7 +37,7 @@ static void do_signal(int sig)
 		if (sig == SIGCHLD)
 			return;
 		else
-			do_exit(0xff | ((sig & 0xff) << 16));
+			do_exit(0xffff | ((sig & 0xff) << 16));
 	}
 
 	reg_t *sp = (reg_t *)regs[ESP];

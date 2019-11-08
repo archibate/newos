@@ -17,7 +17,7 @@ int initial_thread(const char *path)
 {
 	char *argv[] = {(char *)path, "-s", NULL};
 	char *envp[] = {"PATH=/bin", "HOME=/root", NULL};
-	current->filp[0] = fs_open("/dev/tty/com0", O_RDONLY, 0); // mux in has BUG
+	current->filp[0] = fs_open("/dev/tty/com0", O_RDONLY, 0); // muxin has BUG
 	current->filp[1] = fs_open("/dev/tty/mux", O_WRONLY, 0);
 	current->filp[2] = current->filp[1] ? fs_dup(current->filp[1]) : NULL;
 	sys_execve(path, argv, envp);

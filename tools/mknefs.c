@@ -190,7 +190,7 @@ void parse_file_list(int dir, int parent_dir, FILE *fl)
 			FILE *sf = tmpfile();
 			char *lnkpath = strtok(NULL, " \t\r\n");
 			fputs(lnkpath, sf);
-			if (mode == -1) mode = 0755;
+			if (mode == -1) mode = 0777;
 			set_inode(ino, sf, mode | S_IFLNK);
 			fclose(sf);
 		} else {

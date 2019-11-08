@@ -22,6 +22,8 @@ bin {
 	0755 touch build/usr/touch
 	0755 ls build/usr/ls
 	0755 stat build/usr/stat
+	0755 pwd build/usr/pwd
+	0755 permtest build/usr/permtest
 }
 dev {
 }

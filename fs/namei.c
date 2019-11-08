@@ -18,7 +18,7 @@ static int dir_find_entry(struct inode *dir, struct dir_entry *de,
 		return -1;
 	}
 	if (!S_CHECK(dir->i_mode, S_IXOTH)) {
-		errno = EPERM;
+		errno = EACCES;
 		return -1;
 	}
 	for (size_t pos = 0; pos + NEFS_DIR_ENTRY_SIZE <= dir->i_size;
@@ -38,6 +38,10 @@ int dir_read_entry(struct inode *dir, struct dir_entry *de, int i)
 {
 	if (!S_ISDIR(dir->i_mode)) {
 		errno = ENOTDIR;
+		return -1;
+	}
+	if (!S_CHECK(dir->i_mode, S_IROTH)) {
+		errno = EACCES;
 		return -1;
 	}
 	if ((unsigned)(i + 1) * NEFS_DIR_ENTRY_SIZE > dir->i_size) {
@@ -61,8 +65,8 @@ static int dir_add_entry(struct inode *dir, struct inode *ip,
 	memcpy(de.d_name, name, namelen);
 	de.d_name[namelen] = 0;
 	dir->i_size -= dir->i_size % NEFS_DIR_ENTRY_SIZE;
-	if (iwrite(dir, dir->i_size, &de, NEFS_DIR_ENTRY_SIZE)
-		!= NEFS_DIR_ENTRY_SIZE)
+	if (rw_inode(WRITE, dir, dir->i_size, &de, NEFS_DIR_ENTRY_SIZE)
+		!= NEFS_DIR_ENTRY_SIZE) // NOTE here, no perm check performed
 		return -1;
 	ip->i_nlink++;
 	iupdate(ip);
@@ -72,16 +76,16 @@ static int dir_add_entry(struct inode *dir, struct inode *ip,
 static int dir_check_if_empty(struct inode *dir)
 {
 	struct dir_entry de;
-	dir_read_entry(dir, &de, 0);
+	rw_inode(READ, dir, 0, &de, NEFS_DIR_ENTRY_SIZE);
 	if (!de.d_ino || !!strcmp(de.d_name, ".")) {
 		printk("ERROR: BAD dir . entry");
 	}
-	dir_read_entry(dir, &de, 1);
+	rw_inode(READ, dir, NEFS_DIR_ENTRY_SIZE, &de, NEFS_DIR_ENTRY_SIZE);
 	if (!de.d_ino || !!strcmp(de.d_name, "..")) {
-		printk("ERROR: BAD dir . entry");
+		printk("ERROR: BAD dir .. entry");
 	}
 	for (size_t i = 2; i < dir->i_size / NEFS_DIR_ENTRY_SIZE; i++) {
-		dir_read_entry(dir, &de, i);
+		rw_inode(READ, dir, i * NEFS_DIR_ENTRY_SIZE, &de, NEFS_DIR_ENTRY_SIZE);
 		if (de.d_ino)
 			return 0;
 	}
@@ -133,11 +137,10 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 		errno = ENOTDIR;
 		return -1;
 	}
-	if (!S_CHECK(dir->i_mode, S_IWOTH)) {
-		errno = EPERM;
+	if (rmdir != 233 && !S_CHECK(dir->i_mode, S_IWOTH | S_IROTH)) {
+		errno = EACCES;
 		return -1;
 	}
-	nefs_ino_t ino;
 	if (i == 0 && rmdir != 233) {
 		errno = EINVAL;
 		return -1;
@@ -150,13 +153,14 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 		errno = EINVAL;
 		return -1;
 	}
-	if (iread(dir, i * NEFS_DIR_ENTRY_SIZE, &ino, sizeof(ino)) != sizeof(ino))
+	nefs_ino_t ino;
+	if (rw_inode(READ, dir, i * NEFS_DIR_ENTRY_SIZE, &ino, sizeof(ino)) != sizeof(ino))
 		return -1;
 	if (ino == 0) {
 		errno = ENOENT;
 		return -1;
 	}
-	struct inode *ip = iget(ino);
+	struct inode *ip = iget(dir->i_dev, ino);
 	if (!ip) {
 		printk("ERROR: de inode %d not exist", ino);
 	} else {
@@ -171,8 +175,8 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 		iupdate(ip);
 		iput(ip);
 	}
-	static const char zero[NEFS_DIR_ENTRY_SIZE];
-	iwrite(dir, i * NEFS_DIR_ENTRY_SIZE, &zero, sizeof(zero));
+	static char zero[NEFS_DIR_ENTRY_SIZE];
+	rw_inode(WRITE, dir, i * NEFS_DIR_ENTRY_SIZE, &zero, sizeof(zero));
 	return ino;
 }
 
@@ -182,7 +186,9 @@ struct inode *_namei(const char **ppath, struct inode **pip, const char **ppath2
 	struct dir_entry de;
 	struct inode *ip;
 	const char *path = *ppath;
+	int tmp;
 	*pip = NULL;
+	*ppath2 = path;
 	if (*path == '/')
 		ip = idup(current->root);
 	else if (*path != 0)
@@ -191,24 +197,26 @@ struct inode *_namei(const char **ppath, struct inode **pip, const char **ppath2
 		errno = EINVAL;
 		return NULL;
 	}
-	*ppath2 = path;
 	for (;; path += namelen) {
+		tmp = *path;
 		while (*path == '/')
 			path++;
-		if (*path == 0)
+		if (*path == 0) {
+			if (tmp == '/' && !S_ISDIR(ip->i_mode)) {
+				errno = ENOTDIR;
+				return NULL;
+			}
 			break;
-		*ppath2 = path;
-		namelen = strchrnul(path, '/') - path;
-		/*if (path[0] == '.' && (namelen == 1 ||
-			(ip == current->root && namelen == 2 && path[1] == '.')))
-			continue;*/
+		}
 		if (*pip) iput(*pip);
 		*pip = ip;
+		*ppath2 = path;
+		namelen = strchrnul(path, '/') - path;
 		if (-1 == dir_find_entry(ip, &de, path, namelen)) {
 			*ppath = path;
 			return NULL;
 		}
-		ip = iget(de.d_ino);
+		ip = iget(ip->i_dev, de.d_ino);
 	}
 	*ppath = path;
 	return ip;
@@ -291,6 +299,14 @@ static struct inode *_creati(
 		errno = ENOTDIR;
 		goto out;
 	}
+	if (lip && pip->i_dev != lip->i_dev) {
+		errno = EXDEV;
+		goto out;
+	}
+	if (!S_CHECK(pip->i_mode, S_IWOTH | S_IXOTH)) {
+		errno = EACCES;
+		goto out;
+	}
 	errno = 0;
 	ip = lip ? idup(lip) : new_inode(pip, mode, nod);
 	dir_add_entry(pip, ip, path, namelen);
@@ -307,6 +323,10 @@ struct inode *creati(const char *path, int excl, mode_t mode, int nod)
 int linki(const char *path, struct inode *ip)
 {
 	if (!ip) panic("linki(NULL)");
+	if (S_ISDIR(ip->i_mode)) {
+		errno = EISDIR;
+		return -1;
+	}
 	ip = _creati(path, 1, 0, 0, ip);
 	if (ip) iput(ip);
 	return ip ? 0 : -1;

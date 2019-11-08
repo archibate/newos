@@ -128,7 +128,7 @@ sched_init(void)
 {
 	initial_task.priority = 1;
 	current = task[0] = &initial_task;
-	extern char boot_stack_top[0];
+	extern char boot_stack_top[];
 	current->stack = boot_stack_top - STACK_SIZE;
 }
 

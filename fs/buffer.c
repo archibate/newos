@@ -6,12 +6,12 @@
 struct buf buffer[NBUFS];
 static struct task *buffer_wait;
 
-static struct buf *getblk(int blkno)
+static struct buf *getblk(dev_t dev, blkno_t blkno)
 {
 	struct buf *b, *eb = NULL;
 again:
 	for (b = buffer; b < buffer + NBUFS; b++) {
-		if (b->b_blkno == blkno) {
+		if (b->b_dev == dev && b->b_blkno == blkno) {
 			b->b_count++;
 			return b;
 		}
@@ -32,13 +32,14 @@ again:
 	b->b_count = 1;
 	b->b_dirt = 0;
 	b->b_uptodate = 0;
+	b->b_dev = dev;
 	b->b_blkno = blkno;
 	return b;
 }
 
-struct buf *bread(int blkno)
+struct buf *bread(dev_t dev, blkno_t blkno)
 {
-	struct buf *b = getblk(blkno);
+	struct buf *b = getblk(dev, blkno);
 	if (b->b_uptodate)
 		return b;
 	ll_rw_block(b, READ);
@@ -61,20 +62,20 @@ void brelse(struct buf *b)
 }
 
 // two easy-for-use APIs
-void blk_readitem(int blkno, size_t index, void *buf, size_t size)
+void blk_readitem(dev_t dev, blkno_t blkno, size_t index, void *buf, size_t size)
 {
 	if (BSIZE % size)
 		panic("blk_readitem: size not aligned");
-	struct buf *b = bread(blkno + (index * size) / BSIZE);
+	struct buf *b = bread(dev, blkno + (index * size) / BSIZE);
 	memcpy(buf, b->b_data + (index * size) % BSIZE, size);
 	brelse(b);
 }
 
-void blk_writeitem(int blkno, size_t index, const void *buf, size_t size)
+void blk_writeitem(dev_t dev, blkno_t blkno, size_t index, const void *buf, size_t size)
 {
 	if (BSIZE % size)
 		panic("blk_writeitem: size not aligned");
-	struct buf *b = bread(blkno + (index * size) / BSIZE);
+	struct buf *b = bread(dev, blkno + (index * size) / BSIZE);
 	memcpy(b->b_data + (index * size) % BSIZE, buf, size);
 	bwrite(b);
 	brelse(b);

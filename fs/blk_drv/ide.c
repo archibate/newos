@@ -29,7 +29,7 @@ static int ide_wait(void)
 static void ide_seek(int ide, int sectnr, int nsects)
 {
 	if (!ide_wait())
-		panic("ide_seek: ide=%d wait error", ide);
+		panic("ide_seek: IDE wait error");
 
 	int lba = sectnr;
 
@@ -47,7 +47,7 @@ static void ide_seek(int ide, int sectnr, int nsects)
 
 void ll_rw_block(struct buf *b, int rw)
 {
-	ide_seek(0, (b->b_blkno - 1) * PBPB, PBPB);
+	ide_seek(b->b_dev - 1, (b->b_blkno - 1) * PBPB, PBPB);
 	if (rw == READ)
 		outb(IDE_CMD, PBPB == 1 ? IDE_CMD_READ : IDE_CMD_RDMUL);
 	else if (rw == WRITE)

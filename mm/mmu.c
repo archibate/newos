@@ -68,8 +68,9 @@ page_insert(pde_t *pd, struct page_info *page, void *va, int perm)
 void
 page_remove(pde_t *pd, void *va)
 {
-	pte_t *pte;
+	pte_t *pte = NULL;
 	struct page_info *page = page_lookup(pd, va, &pte);
+	if (!page) return;
 	put_page(page);
 	*pte = 0;
 	tlb_invalidate(pd, va);

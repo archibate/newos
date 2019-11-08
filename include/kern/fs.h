@@ -10,6 +10,12 @@
 #include <bits/stat.h>
 #include <ds/list.h>
 
+#define DEV_HDA		1
+#define DEV_HDB		2
+
+#define ROOT_INO	NEFS_ROOT_INO
+#define ROOT_DEV	DEV_HDA
+
 #define BSIZE	1024
 #define NBUFS	128
 #define NINODES	256
@@ -17,13 +23,16 @@
 #define READ	0
 #define WRITE	1
 
-#define S_CHECK(mode, access) ((mode) & ((access) << 6))
+#define S_CHECK(mode, access) (((mode) & ((access) << 6)) == ((access) << 6))
 #define S_ISNOD(mode) (S_ISCHR(mode) || S_ISBLK(mode) || S_ISFIFO(mode) || S_ISSOCK(mode))
+
+typedef unsigned int blkno_t;
 
 struct buf {
 	char b_data[BSIZE];
 	int b_count;
-	int b_blkno;
+	dev_t b_dev;
+	blkno_t b_blkno;
 	int b_uptodate;
 	int b_dirt;
 	struct task *b_wait;
@@ -32,6 +41,7 @@ struct buf {
 struct inode {
 	struct nefs_inode i_nefs;
 	int i_count;
+	dev_t i_dev;
 	ino_t i_ino;
 	int i_uptodate;
 	int i_dirt;
@@ -63,19 +73,19 @@ void ll_rw_block(struct buf *b, int rw);
 // chr_drv
 size_t chr_drv_rw(int rw, int nr, off_t pos, void *buf, size_t size);
 // buffer.c
-struct buf *bread(int blkno);
+struct buf *bread(dev_t dev, blkno_t blkno);
 void bwrite(struct buf *b);
 void brelse(struct buf *b);
-void blk_readitem(int blkno, size_t index, void *buf, size_t size);
-void blk_writeitem(int blkno, size_t index, const void *buf, size_t size);
+void blk_readitem(dev_t dev, blkno_t blkno, size_t index, void *buf, size_t size);
+void blk_writeitem(dev_t dev, blkno_t blkno, size_t index, const void *buf, size_t size);
 // super.c
-struct super_block *get_super(void);
+struct super_block *get_super(dev_t dev);
 // inode.c
 struct inode *create_inode(struct inode *pip);
 struct inode *idup(struct inode *ip);
 void iupdate(struct inode *ip);
 void iput(struct inode *ip);
-struct inode *iget(ino_t ino);
+struct inode *iget(dev_t dev, ino_t ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);

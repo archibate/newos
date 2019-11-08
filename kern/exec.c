@@ -65,27 +65,6 @@ static int __do_execve(struct inode *ip, char **argv, char **envp)
 
 int do_execve(struct inode *ip, char *const *argv, char *const *envp)
 {
-	char **kargv = dup_arr2d(argv);
-	char **kenvp = dup_arr2d(envp);
-	int ret = __do_execve(ip, kargv, kenvp);
-	free(kargv);
-	free(kenvp);
-	if (!ret) {
-		for (int i = 0; i < NR_OPEN; i++) {
-			struct file *f = current->filp[i];
-			if (f && (f->f_fdargs & FD_CLOEXEC)) {
-				fs_close(f);
-				current->filp[i] = NULL;
-			}
-		}
-	}
-	return ret;
-}
-
-int sys_execve(const char *path, char *const *argv, char *const *envp)
-{
-	struct inode *ip = namei(path);
-	if (!ip) return -1;
 	if (S_ISDIR(ip->i_mode)) {
 		errno = EISDIR;
 		return -1;
@@ -94,6 +73,26 @@ int sys_execve(const char *path, char *const *argv, char *const *envp)
 		errno = EPERM;
 		return -1;
 	}
+	char **kargv = dup_arr2d(argv);
+	char **kenvp = dup_arr2d(envp);
+	int ret = __do_execve(ip, kargv, kenvp);
+	free(kargv);
+	free(kenvp);
+	if (ret) return ret;
+	for (int i = 0; i < NR_OPEN; i++) {
+		struct file *f = current->filp[i];
+		if (f && (f->f_fdargs & FD_CLOEXEC)) {
+			fs_close(f);
+			current->filp[i] = NULL;
+		}
+	}
+	return 0;
+}
+
+int sys_execve(const char *path, char *const *argv, char *const *envp)
+{
+	struct inode *ip = namei(path);
+	if (!ip) return -1;
 	int ret = do_execve(ip, argv, envp);
 	iput(ip);
 	if (ret != -1) move_to_user();

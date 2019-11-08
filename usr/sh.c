@@ -124,7 +124,7 @@ rep:
 	case T_EOF:
 		return;
 	default:
-		error("except T_ID, '<', '>' or '>>'");
+		error("except T_ID, T_EOF, '<', '>' or '>>'");
 	};
 	toke();
 	factor();
@@ -200,30 +200,17 @@ void do_opens(void)
 	}
 }
 
-void execute(void)
-{
-	argv[argc] = NULL;
-	if (!argv[0])
-		return;
+int last_exit_stat;
 
-	pid_t pid = fork();
-	if (pid == 0) {
-		do_opens();
-		execvp(argv[0], argv); 
-		if (errno != ENOENT)
-			perror(argv[0]);
-		else
-			eprintf("%s: command not found\n", argv[0]);
-		exit(EXIT_FAILURE);
-	} else if (pid < 0) {
-		perror("fork");
-		return;
-	}
+void wait_for(pid_t pid)
+{
 	int stat;
 	if (waitpid(pid, &stat, 0) < 0) {
 		perror("waitpid");
 		return;
 	}
+	last_exit_stat = WEXITSTATUS(stat);
+
 	if (WIFEXITED(stat)) {
 		stat = WEXITSTATUS(stat);
 		if (stat)
@@ -257,12 +244,70 @@ void execute(void)
 	}
 }
 
+__attribute__((noreturn)) void do_exec(int i)
+{
+	do_opens();
+	execvp(argv[i], argv + i); 
+	if (errno != ENOENT)
+		perror(argv[i]);
+	else
+		eprintf("%s: command not found\n", argv[i]);
+	exit(EXIT_FAILURE);
+}
+
+pid_t do_forkexec(void)
+{
+	pid_t pid = fork();
+	if (pid == 0) {
+		do_exec(0);
+	} else if (pid < 0) {
+		perror("fork");
+		return -1;
+	}
+	return pid;
+}
+
+char pwd[233];
+
+void do_chdir(const char *path)
+{
+	if (chdir(path) == -1) {
+		perror(path);
+		last_exit_stat = EXIT_FAILURE;
+	} else if (!getcwd(pwd, sizeof(pwd)))
+		pwd[0] = 0;
+}
+
+void execute(void)
+{
+	argv[argc] = NULL;
+	if (!argv[0])
+		return;
+	if (!strcmp(argv[0], "cd")) {
+		do_chdir(argv[1] ? argv[1] : "/root");
+		return;
+	} else if (!strcmp(argv[0], "exit")) {
+		exit(argv[1] ? atoi(argv[1]) : last_exit_stat);
+	} else if (!strcmp(argv[0], "exec")) {
+		do_exec(1);
+	}
+
+	pid_t pid = do_forkexec();
+	if (pid != -1)
+		wait_for(pid);
+	else
+		last_exit_stat = 0xff;
+}
+
 int main(void)
 {
+	if (!getcwd(pwd, sizeof(pwd)))
+		pwd[0] = 0;
 	while (!feof(stdin)) {
-		eprintf("# ");
+		eprintf("%s # ", pwd);
 		parse_input();
 		execute();
 		clear_state();
 	}
+	exit(last_exit_stat);
 }

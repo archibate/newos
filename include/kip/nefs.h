@@ -8,10 +8,11 @@
 #include INC_KIP(kip/stat.h)
 #include <stdint.h>
 
-#define NEFS_NR_DIRECT	11
-#define NEFS_MAGIC	0x5346654e // ASCII "NeFS"
-#define NEFS_ROOT_INO	1
-#define NEFS_NAME_MAX	27
+#define NEFS_MAGIC		0x5346654e // ASCII "NeFS"
+#define NEFS_NR_DIRECT		11
+#define NEFS_ROOT_INO		1
+#define NEFS_SUPER_BLKNO	2
+#define NEFS_NAME_MAX		27
 #define NEFS_INODE_SIZE		sizeof(struct nefs_inode)
 #define NEFS_DIR_ENTRY_SIZE	sizeof(struct nefs_dir_entry)
 

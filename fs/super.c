@@ -6,16 +6,18 @@
 
 static struct super_block sb;
 
-struct super_block *get_super(void)
+struct super_block *get_super(dev_t dev)
 {
+	if (dev != ROOT_DEV)
+		panic("bad device number %d", dev);
 	if (sb.s_magic != NEFS_MAGIC)
 		panic("file system not loaded");
 	return &sb;
 }
 
-void fs_init(void)
+void load_super(dev_t dev)
 {
-	struct buf *b = bread(2);
+	struct buf *b = bread(dev, NEFS_SUPER_BLKNO);
 	memcpy(&sb, b->b_data, sizeof(sb));
 	brelse(b);
 	if (sb.s_magic != NEFS_MAGIC)
@@ -27,12 +29,19 @@ void fs_init(void)
 			b->b_data + sb.s_super_len,
 			sb.s_imap_blknr * BSIZE * 8,
 			sb.s_zmap_blknr * BSIZE * 8);
+}
 
-	current->root = iget(NEFS_ROOT_INO);
+void fs_init(void)
+{
+	load_super(ROOT_DEV);
+
+	current->root = iget(ROOT_DEV, ROOT_INO);
 	current->cwd = namei("/root");
 
-	creati("/dev/tty", 1, S_IFDIR | 0755, 0);
-	creati("/dev/tty/mux", 1, S_IFCHR | 0644, TTY_MUX);
-	creati("/dev/tty/com0", 1, S_IFCHR | 0644, TTY_COM0);
-	creati("/dev/tty/vga", 1, S_IFCHR | 0644, TTY_VGA);
+	iput(creati("/dev/tty", 1, S_IFDIR | 0755, 0));
+	iput(creati("/dev/tty/mux", 1, S_IFCHR | 0644, TTY_MUX));
+	iput(creati("/dev/tty/com0", 1, S_IFCHR | 0644, TTY_COM0));
+	iput(creati("/dev/tty/vga", 1, S_IFCHR | 0644, TTY_VGA));
+	iput(creati("/dev/hda", 1, S_IFBLK | 0644, DEV_HDA));
+	iput(creati("/dev/hdb", 1, S_IFBLK | 0644, DEV_HDB));
 }

@@ -1,4 +1,9 @@
-COPT=-ggdb -gstabs+ $(if $(OPTIM), -O$(OPTIM))
+ifdef RELEASE
+OPTIM=3
+else
+COPT+=-ggdb -gstabs+
+endif
+COPT+=$(if $(OPTIM), -O$(OPTIM))
 CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-fno-stack-protector -Iinclude -Wall -Wextra \
 	-Wno-unused -Wno-main -Wno-frame-address \
@@ -19,9 +24,8 @@ LIBC_OBJS=$(LIBC_SRCS:%=build/%.o)
 .PHONY: default
 default: run
 
-.PHONY: image-dump
-image-dump: build/boot.img
-	@hexdump -C $< | less
+.PHONY: all
+all: build/boot.img
 
 .PHONY: run
 run: build/boot.img
@@ -32,7 +36,7 @@ bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
 build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USER_BINS)
-	@echo + [gen] $@
+	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
 	@dd if=$< of=$@ bs=2048 count=1 conv=notrunc
@@ -42,30 +46,30 @@ build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin filesys.txt $(USER_B
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
 
 build/boot/kerninfo.inc: build/vmlinux build/vmlinux.bin Makefile
-	@echo + [gen] $@
+	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@echo kern_addr equ `readelf -l $< | grep '^\s*LOAD.*R E' | awk '{print $$4; exit}'` > $@
 	@echo kern_size equ 1024 \* `tools/blks.c $(word 2, $^)` >> $@
 	@echo kmem_size equ $$[`readelf -l build/vmlinux | grep '^\s*LOAD' | tail -n1 | awk '{print $$4" + "$$6}'`] - kern_addr >> $@
 
 build/vmlinux.bin: build/vmlinux
-	@echo + [gen] $@
+	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@objcopy -O binary -S $< $@
 	@tools/fixsects.c $@
 
 build/%.S.o: %.S
-	@echo - [as] $<
+	@echo - '[as]' $<
 	@mkdir -p $(@D)
 	@nasm -felf -o $@ $<
 
 build/%.S.bin: %.S
-	@echo - [as] $<
+	@echo - '[as]' $<
 	@mkdir -p $(@D)
 	@nasm -fbin -o $@ $<
 
 build/%.c.o: %.c
-	@echo - [cc] $<
+	@echo - '[cc]' $<
 	@mkdir -p $(@D)
 	@gcc $(CFLAGS) -c -o $@ $<
 
@@ -83,11 +87,11 @@ info:
 	@echo USER_BINS=$(USER_BINS)
 
 build/vmlinux: $(KERN_OBJS)
-	@echo + [ld] $@
+	@echo + '[ld]' $@
 	@mkdir -p $(@D)
 	@ld -m elf_i386 -static -e _start -Ttext 0x100000 -o $@ $^
 
 build/libc.a: $(LIBC_OBJS)
-	@echo + [ar] $@
+	@echo + '[ar]' $@
 	@mkdir -p $(@D)
 	@ar cqs $@ $^

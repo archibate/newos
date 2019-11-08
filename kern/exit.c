@@ -27,6 +27,10 @@ static void tell_parent(int pid)
 __attribute__((noreturn)) void
 do_exit(int exit_code)
 {
+	if (current->pid == 0)
+		panic("idle task trying to exit");
+	if (current->pid == 1)
+		panic("init task exited");
 	for (int i = 0; i < NR_OPEN; i++)
 		if (current->filp[i])
 			fs_close(current->filp[i]);
@@ -67,7 +71,7 @@ repeat:
 		if (task[i]->state == TASK_STOPPED) {
 			if (!(options & WUNTRACED))
 				continue;
-			*stat_loc = 0x7f;
+			*stat_loc = 0x7fff;
 			return task[i]->pid;
 		} else if (task[i]->state == TASK_ZOMBIE) {
 			flag = task[i]->pid;

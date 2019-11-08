@@ -54,5 +54,7 @@ int brk(void *addr);
 int rmdir(const char *path);
 int unlink(const char *path);
 int link(const char *path1, const char *path2);
+int chdir(const char *path);
+char *getcwd(char *buf, size_t size);
 
 #endif

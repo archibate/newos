@@ -172,6 +172,8 @@ _syscall1(21, int, rmdir, const char *);
 _syscall2(22, int, link, const char *, const char *);
 _syscall2(23, int, dirread, int, struct dirent *);
 _syscall2(24, int, fstat, int, struct stat *);
+_syscall1(25, int, chdir, const char *);
+_syscall4(26, int, openat, int, const char *, int, mode_t);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

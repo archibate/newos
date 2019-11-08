@@ -3,6 +3,28 @@
 #include <kern/fs.h>
 #include <errno.h>
 
+static int do_chdir(struct inode *ip)
+{
+	if (!S_ISDIR(ip->i_mode)) {
+		errno = ENOTDIR;
+		return -1;
+	}
+	if (!S_CHECK(ip->i_mode, S_IXOTH)) {
+		errno = EACCES;
+		return -1;
+	}
+	if (current->cwd) iput(current->cwd);
+	current->cwd = ip;
+	return 0;
+}
+
+int sys_chdir(const char *path)
+{
+	struct inode *ip = namei(path);
+	if (!ip) return -1;
+	return do_chdir(ip);
+}
+
 int sys_mkdir(const char *path, mode_t mode)
 {
 	struct inode *ip = creati(path, 1, (mode & 0777) | S_IFDIR, 0);
@@ -49,6 +71,24 @@ int sys_open(const char *path, int flags, mode_t mode)
 		return fd;
 	}
 	current->filp[fd] = f;
+	return fd;
+}
+
+int sys_openat(int fd, const char *path, int flags, mode_t mode)
+{
+	if (fd == AT_FDCWD)
+		return sys_open(path, flags, mode);
+	if ((unsigned)fd >= NR_OPEN)
+		return -1;
+	struct file *f = current->filp[fd];
+	if (!f)
+		return -1;
+	struct inode *old_cwd = idup(current->cwd);
+	if (do_chdir(idup(f->f_ip)) == -1)
+		return -1;
+	fd = sys_open(path, flags, mode);
+	iput(current->cwd);
+	current->cwd = old_cwd;
 	return fd;
 }
 

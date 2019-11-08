@@ -21,4 +21,6 @@
 
 #define FD_CLOEXEC	1
 
+#define AT_FDCWD	(-2)
+
 #endif
