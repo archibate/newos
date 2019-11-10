@@ -198,3 +198,17 @@ void *realloc(void *p, size_t size)
 	free(p);
 	return q;
 }
+
+#ifdef _KERNEL
+#ifdef _KDEBUG
+void dump_kernel_heap(int more)
+{
+	printk("a|   addr   | size ");
+	for (H *node = first_block; node; node = node->next) {
+		if (!more && !node->ptr) continue;
+		printk("%c|%p|%4d", "a-B-"[!node->ptr + 2 * (node->ptr != node + 1)],
+			node + 1, node->size, node->size);
+	}
+}
+#endif
+#endif

@@ -146,4 +146,6 @@ static void switch_to_mm(
 	switch_pgdir(mm->pd);
 }
 
+void dump_kernel_heap(int more);
+
 #endif

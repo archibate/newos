@@ -5,11 +5,15 @@
 
 int stat(const char *path, struct stat *st)
 {
-	int fd = open(path, 0);
-	if (fd < 0 && errno == EISDIR) fd = open(path, O_DIRECTORY);
-	if (fd < 0)
-		return -1;
-	int ret = fstat(fd, st);
-	close(fd);
-	return ret;
+	return fstatat(AT_FDCWD, path, st, 0);
+}
+
+int lstat(const char *path, struct stat *st)
+{
+	return fstatat(AT_FDCWD, path, st, AT_SYMLINK_NOFOLLOW);
+}
+
+int fstat(int fd, struct stat *st)
+{
+	return fstatat(fd, "", st, AT_EMPTY_PATH);
 }

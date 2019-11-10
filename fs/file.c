@@ -24,16 +24,16 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 		ip = namei(path);
 		if (!ip)
 			return NULL;
-		if (S_ISDIR(ip->i_mode) && !(flags & O_DIRECTORY)) {
-			errno = EISDIR;
-			iput(ip);
-			return NULL;
-		}
-		if (!S_ISDIR(ip->i_mode) && (flags & O_DIRECTORY)) {
-			errno = ENOTDIR;
-			iput(ip);
-			return NULL;
-		}
+	}
+	if (S_ISDIR(ip->i_mode) && !(flags & O_DIRECTORY)) {
+		errno = EISDIR;
+		iput(ip);
+		return NULL;
+	}
+	if (!S_ISDIR(ip->i_mode) && (flags & O_DIRECTORY)) {
+		errno = ENOTDIR;
+		iput(ip);
+		return NULL;
 	}
 	if (flags & O_TRUNC)
 		ip->i_size = 0;
@@ -120,9 +120,4 @@ int fs_dirread(struct file *f, struct dirent *de)
 	if (ret != -1)
 		f->f_offset++;
 	return ret;
-}
-
-int fs_fstat(struct file *f, struct stat *st)
-{
-	return istat(f->f_ip, st);
 }

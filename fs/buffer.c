@@ -6,6 +6,22 @@
 struct buf buffer[NBUFS];
 static struct task *buffer_wait;
 
+#ifdef _KDEBUG
+void dump_buffer(int more)
+{
+	struct buf *b;
+	printk("dev|blkno|udb|%");
+	for (b = buffer; b < buffer + NBUFS; b++) {
+		if (!b->b_dev) continue;
+		if (!more && !b->b_count) continue;
+		printk("%3d|%5d|%c%c%c|%1d",
+		b->b_dev, b->b_blkno, "u-"[!b->b_uptodate],
+		"d-"[!b->b_dirt], "b-"[!b->b_wait],
+		b->b_count);
+	}
+}
+#endif
+
 static struct buf *getblk(dev_t dev, blkno_t blkno)
 {
 	struct buf *b, *eb = NULL;

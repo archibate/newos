@@ -1,7 +1,7 @@
 ifdef RELEASE
 OPTIM=3
 else
-COPT+=-ggdb -gstabs+
+COPT+=-ggdb -gstabs+ -D_KDEBUG
 endif
 COPT+=$(if $(OPTIM), -O$(OPTIM))
 CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
@@ -22,25 +22,25 @@ LIBC_SRCS=$(shell find libc -name '*.[cS]' -type f)
 LIBC_OBJS=$(LIBC_SRCS:%=build/%.o)
 
 .PHONY: default
-default: run
+default: all
 
 .PHONY: all
 all: build/boot.img
 
 .PHONY: run
 run: build/boot.img
-	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log
+	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log $(QRED)
 
 .PHONY: bochs
 bochs: build/boot.img
-	@-bochs -qf tools/bochsrc.bxrc
+	@-bochs -qf tools/bochsrc.bxrc $(QRED)
 
 build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/filesys.txt $(USER_BINS)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
-	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@ > /dev/null
-	@dd if=$< of=$@ bs=2048 count=1 conv=notrunc
-	@dd if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
+	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
+	@tools/dd.sh if=$< of=$@ bs=2048 count=1 conv=notrunc
+	@tools/dd.sh if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
 	@tools/mknefs.c $@ -r `tools/blks.c $(word 2, $^) | awk '{print $$1}'` -L NewOS -f $(word 3, $^)
 
 build/filesys.txt: filesys.txt usr
@@ -96,6 +96,11 @@ build/%.c.o.d: %.c
 	@mkdir -p $(@D)
 	@gcc -M -MT $(@:%.d=%) $(CFLAGS) -c -o $@ $<
 
+build/%.d: %.c
+	@echo - '[dep]' $<
+	@mkdir -p $(@D)
+	@gcc -M -MT $(@:%.d=%) $(CFLAGS) -c -o $@ $<
+
 build/usr/%: build/usr/%.c.o build/libc.a user.ld
 	@ld -m elf_i386 -static -T $(word 3, $^) -o $@ $< $(word 2, $^)
 
@@ -129,7 +134,7 @@ clean:
 .PHONY: dep
 dep: build/dep
 
-build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_OBJS:%=%.d))
+build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_BINS:%=%.d))
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $^ > $@

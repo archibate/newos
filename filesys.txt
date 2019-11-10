@@ -1,6 +1,10 @@
 root {
 	aa.txt tools/aa.txt
 	melty.txt tools/meltyland.txt
+	looper -> looper
+	a tools/aa.txt
+	b {
+	}
 }
 usr {
 	bin -> /bin

@@ -2,7 +2,7 @@
 # vim: ft=gdb ts=4 sts=4 tw=4
 
 add-symbol-file build/vmlinux
-add-symbol-file build/usr/pwd
+add-symbol-file build/usr/mv
 
 target remote localhost:1234
 

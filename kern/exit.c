@@ -8,6 +8,7 @@
 
 static void free_task(struct task *p)
 {
+	if (p->command) free(p->command);
 	free_kernel_stack(p->stack);
 }
 

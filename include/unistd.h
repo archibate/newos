@@ -53,8 +53,11 @@ void *sbrk(intptr_t incptr);
 int brk(void *addr);
 int rmdir(const char *path);
 int unlink(const char *path);
+int unlinkat(int fd, const char *path, int flag);
 int link(const char *path1, const char *path2);
 int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
+pid_t getpid(void);
+pid_t getppid(void);
 
 #endif

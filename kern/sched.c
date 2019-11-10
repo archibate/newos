@@ -13,6 +13,25 @@ struct task *current;
 __attribute__((fastcall)) void switch_context(
 		reg_t *prev, reg_t *next);
 
+#define TASK_RUNNING	0
+#define TASK_SLEEPING	1
+#define TASK_BLOCKED	2
+#define TASK_ZOMBIE	3
+#define TASK_STOPPED	4
+#ifdef _KDEBUG
+void dump_tasks(void)
+{
+	printk(" pid|ppid|prio|s| command");
+	for (int i = 0; i < NTASKS; i++) {
+		struct task *p = task[i];
+		if (!p) continue;
+		printk("%4d|%4d|%4d|%c| %s", p->pid, p->ppid,
+			p->priority, "rwbzs?????"[p->state % 10],
+			p->command ? p->command : "(noname)");
+	}
+}
+#endif
+
 static void switch_to_current_from(struct task *previous)
 {
 	if (current->mm) {
@@ -126,7 +145,8 @@ static struct task initial_task;
 void
 sched_init(void)
 {
-	initial_task.priority = 1;
+	initial_task.priority = 0;
+	initial_task.command = strdup("(idle)");
 	current = task[0] = &initial_task;
 	extern char boot_stack_top[];
 	current->stack = boot_stack_top - STACK_SIZE;
@@ -182,4 +202,14 @@ kernel_thread(void *start, void *arg)
 	*--sp = start;
 	p->kregs[K_ESP] = (unsigned long) sp;
 	return p;
+}
+
+pid_t sys_getpid(void)
+{
+	return current->pid;
+}
+
+pid_t sys_getppid(void)
+{
+	return current->ppid;
 }

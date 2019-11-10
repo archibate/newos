@@ -16,6 +16,7 @@
 #define TASK_ZOMBIE	3
 #define TASK_STOPPED	4
 
+#define MAX_PRIORITY	10
 #define NR_OPEN		64
 #define STACK_SIZE	8192
 
@@ -43,6 +44,8 @@ struct task {
 	struct inode *root;
 	struct mm_struct *mm;
 	struct file *filp[NR_OPEN];
+
+	char *command;
 };
 
 #define task_regs(p) ((reg_t *)((p)->stack + STACK_SIZE - REGS_SIZE))
@@ -70,3 +73,4 @@ int sys_kill(pid_t pid, int sig);
 int sys_raise(int sig);
 void sched_timer_callback(void);
 void check_signal(void);
+void dump_tasks(void);

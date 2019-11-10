@@ -86,6 +86,7 @@ int do_execve(struct inode *ip, char *const *argv, char *const *envp)
 			current->filp[i] = NULL;
 		}
 	}
+	current->command = strdup(kargv[0]);
 	return 0;
 }
 

@@ -180,7 +180,54 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 	return ino;
 }
 
-struct inode *_namei(const char **ppath, struct inode **pip, const char **ppath2)
+static int ks_follow = SYMLOOP_MAX;
+
+void follow_policy_enter(int follow)
+{
+	if (follow > 0)
+		ks_follow = SYMLOOP_MAX;
+	else
+		ks_follow = follow;
+}
+
+void follow_policy_leave(void)
+{
+	ks_follow = SYMLOOP_MAX;
+}
+
+static struct inode *ifollow(struct inode *ip, struct inode *pip)
+{
+	if (!S_ISLNK(ip->i_mode))
+		return ip;
+	if (ks_follow == 0) {
+		errno = ELOOP;
+		iput(ip);
+		return NULL;
+	} else if (ks_follow < 0) {
+		return ip;
+	}
+	if (ip->i_size > PATH_MAX) {
+		errno = ENAMETOOLONG;
+		iput(ip);
+		return NULL;
+	}
+	char buf[ip->i_size];
+	if (iread(ip, 0, buf, ip->i_size) != ip->i_size) {
+		iput(ip);
+		return NULL;
+	}
+	iput(ip);
+	struct inode *old_cwd = current->cwd;
+	current->cwd = pip;
+	--ks_follow;
+	ip = namei(buf);
+	++ks_follow;
+	current->cwd = old_cwd;
+	return ip;
+}
+
+struct inode *_namei(const char **ppath, struct inode **pip,
+		const char **ppath2)
 {
 	size_t namelen;
 	struct dir_entry de;
@@ -217,6 +264,7 @@ struct inode *_namei(const char **ppath, struct inode **pip, const char **ppath2
 			return NULL;
 		}
 		ip = iget(ip->i_dev, de.d_ino);
+		ip = ifollow(ip, *pip);
 	}
 	*ppath = path;
 	return ip;
@@ -248,8 +296,8 @@ int unlinki(const char *path, int rmdir)
 		return -1;
 	}
 	if (!pip) {
-		errno = EINVAL;
 		iput(ip);
+		errno = EINVAL;
 		return -1;
 	}
 	i = dir_find_entry(pip, &de, name, strchrnul(name, '/') - name);
@@ -261,6 +309,7 @@ int unlinki(const char *path, int rmdir)
 		return -1;
 	}
 	i = dir_del_entry(pip, i, !!rmdir);
+	iput(ip);
 	iput(pip);
 	return i;
 }

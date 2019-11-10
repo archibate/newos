@@ -45,3 +45,10 @@ void fs_init(void)
 	iput(creati("/dev/hda", 1, S_IFBLK | 0644, DEV_HDA));
 	iput(creati("/dev/hdb", 1, S_IFBLK | 0644, DEV_HDB));
 }
+
+#ifdef _KDEBUG
+void dump_super(void)
+{
+	panic("dump_super() UIMP");
+}
+#endif

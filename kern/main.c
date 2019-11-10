@@ -65,7 +65,7 @@ main(void)
 
 	//kernel_thread(test_thread_1, NULL);
 	//kernel_thread(test_thread_2, NULL);
-	kernel_thread(initial_thread, "/bin/init");
+	kernel_thread(initial_thread, "/bin/init")->priority = MAX_PRIORITY;
 
 	sti();
 	for (;;)

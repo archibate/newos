@@ -3,6 +3,7 @@
 #include <kern/fs.h>
 #include <errno.h>
 
+
 static int do_chdir(struct inode *ip)
 {
 	if (!S_ISDIR(ip->i_mode)) {
@@ -32,16 +33,6 @@ int sys_mkdir(const char *path, mode_t mode)
 	return ip ? 0 : -1;
 }
 
-int sys_rmdir(const char *path)
-{
-	return unlinki(path, 1);
-}
-
-int sys_unlink(const char *path)
-{
-	return unlinki(path, 0);
-}
-
 int sys_link(const char *path1, const char *path2)
 {
 	struct inode *ip = namei(path1);
@@ -51,6 +42,7 @@ int sys_link(const char *path1, const char *path2)
 	iput(ip);
 	return ret;
 }
+
 
 static int alloc_fd(unsigned begin)
 {
@@ -74,22 +66,16 @@ int sys_open(const char *path, int flags, mode_t mode)
 	return fd;
 }
 
-int sys_openat(int fd, const char *path, int flags, mode_t mode)
+int sys_close(int fd)
 {
-	if (fd == AT_FDCWD)
-		return sys_open(path, flags, mode);
 	if ((unsigned)fd >= NR_OPEN)
 		return -1;
 	struct file *f = current->filp[fd];
 	if (!f)
 		return -1;
-	struct inode *old_cwd = idup(current->cwd);
-	if (do_chdir(idup(f->f_ip)) == -1)
-		return -1;
-	fd = sys_open(path, flags, mode);
-	iput(current->cwd);
-	current->cwd = old_cwd;
-	return fd;
+	fs_close(f);
+	current->filp[fd] = NULL;
+	return 0;
 }
 
 int sys_dup2(int fd, int fd2)
@@ -137,17 +123,6 @@ int sys_fcntl(int fd, int cmd, int arg)
 	return -1;
 }
 
-int sys_close(int fd)
-{
-	if ((unsigned)fd >= NR_OPEN)
-		return -1;
-	struct file *f = current->filp[fd];
-	if (!f)
-		return -1;
-	fs_close(f);
-	current->filp[fd] = NULL;
-	return 0;
-}
 
 ssize_t sys_write(int fd, const void *buf, size_t size)
 {
@@ -203,5 +178,89 @@ int sys_fstat(int fd, struct stat *st)
 	struct file *f = current->filp[fd];
 	if (!f)
 		return -1;
-	return fs_fstat(f, st);
+	return istat(f->f_ip, st);
+}
+
+
+static struct inode *at_old_cwd;
+
+static int at_enter(int fd)
+{
+	if (fd == AT_FDCWD) {
+		at_old_cwd = NULL;
+		return 0;
+	}
+	if ((unsigned)fd >= NR_OPEN)
+		return -1;
+	struct file *f = current->filp[fd];
+	if (!f)
+		return -1;
+	at_old_cwd = idup(current->cwd);
+	if (do_chdir(idup(f->f_ip)) == -1) {
+		iput(at_old_cwd);
+		return -1;
+	}
+	return 0;
+}
+
+static void at_leave(void)
+{
+	if (!at_old_cwd)
+		return;
+	iput(current->cwd);
+	current->cwd = at_old_cwd;
+}
+
+static struct inode *at_namei(int fd, const char *path, int flag)
+{
+	struct inode *ip;
+	if (!(flag & AT_EMPTY_PATH) || *path) {
+		if (at_enter(fd) == -1)
+			return NULL;
+		ip = namei(path);
+		at_leave();
+		return ip;
+	}
+	if (fd == AT_FDCWD)
+		return idup(current->cwd);
+	else
+		return idup(current->filp[fd]->f_ip);
+}
+
+int sys_openat(int fd, const char *path, int flags, mode_t mode)
+{
+	if (at_enter(fd) == -1)
+		return -1;
+	fd = sys_open(path, flags, mode);
+	at_leave();
+	return fd;
+}
+
+int sys_fstatat(int fd, const char *path, struct stat *st, int flag)
+{
+	follow_policy_enter(flag & AT_SYMLINK_NOFOLLOW ? -1 : 1);
+	struct inode *ip = at_namei(fd, path, flag);
+	follow_policy_leave();
+	if (!ip) return -1;
+	int ret = istat(ip, st);
+	iput(ip);
+	return ret;
+}
+
+int sys_mkdirat(int fd, const char *path, mode_t mode)
+{
+	if (at_enter(fd) == -1)
+		return -1;
+	int ret = sys_mkdir(path, mode);
+	at_leave();
+	return ret;
+}
+
+int sys_unlinkat(int fd, const char *path, int flag)
+{
+	if (at_enter(fd) == -1)
+		return -1;
+	int ret = unlinki(path, !!(flag & AT_REMOVEDIR));
+	at_leave();
+	return ret;
 }

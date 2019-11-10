@@ -4,15 +4,16 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include "strstat.h"
 
-int ls_stat(const char *path)
+int ls_stat(int fd, const char *path)
 {
 	struct stat st;
-	if (stat(path, &st) == -1) {
+	if (fstatat(fd, path, &st, AT_SYMLINK_NOFOLLOW) == -1) {
 		perror(path);
 		return 1;
 	}
-	printf("%7d %s\n", st.st_ino, path);
+	printf("%4d %9s %s\n", st.st_ino, strfaccess(st.st_mode), path);
 	return 0;
 }
 
@@ -21,13 +22,15 @@ int ls(const char *path)
 	int i, fd = open(path, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
 		if (errno == ENOTDIR)
-			return ls_stat(path);
+			return ls_stat(AT_FDCWD, path);
 		perror(path);
 		return 1;
 	}
 	struct dirent de;
 	while (-1 != (i = dirread(fd, &de))) {
-		if (i) printf("%7d %s\n", de.d_ino, de.d_name);
+		if (!i) continue;
+		if (ls_stat(fd, de.d_name))
+			printf("%4d ?????????? %s\n", de.d_ino, de.d_name);
 	}
 	close(fd);
 	return 0;

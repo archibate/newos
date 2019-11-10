@@ -12,6 +12,7 @@
 #define	O_DIRECTORY	64
 #define	O_CLOEXEC	128
 #define	O_NOFOLLOW	256
+#define	O_PATH		512
 
 #define F_DUPFD	0
 #define F_GETFD	1
@@ -22,5 +23,11 @@
 #define FD_CLOEXEC	1
 
 #define AT_FDCWD	(-2)
+
+#define AT_EMPTY_PATH		1
+#define AT_SYMLINK_NOFOLLOW	2
+#define AT_SYMLINK_FOLLOW	2
+#define AT_REMOVEDIR		4
+#define AT_EACCESS		4
 
 #endif

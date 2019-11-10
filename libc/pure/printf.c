@@ -21,17 +21,27 @@ static void
 printnum(void (*putch)(int, void*), void *putdat, const char *table,
 		unsigned long long num, unsigned base, int width, int padc)
 {
-	// first recursively print all preceding (more significant) digits
+	if (padc == '-')
+		// first print this (the least significant) digit
+		putch(table[(unsigned long)num % base], putdat);
+
+	// second recursively print all preceding (more significant) digits
 	if (num >= base) {
 		printnum(putch, putdat, table, (unsigned long)num / base, base, width - 1, padc);
 	} else {
-		// print any needed pad characters before first digit
-		while (--width > 0)
-			putch(padc, putdat);
+		if (padc == '-')
+			// print any needed pad characters before first digit
+			while (--width > 0)
+				putch(' ', putdat);
+		else
+			// print any needed pad characters before first digit
+			while (--width > 0)
+				putch(padc, putdat);
 	}
 
-	// then print this (the least significant) digit
-	putch(table[(unsigned long)num % base], putdat);
+	if (padc != '-')
+		// then print this (the least significant) digit
+		putch(table[(unsigned long)num % base], putdat);
 }
 
 // Get an unsigned int of various possible sizes from a varargs list,

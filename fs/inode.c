@@ -7,6 +7,22 @@
 struct inode inodes[NINODES];
 static struct task *inode_buffer_wait;
 
+#ifdef _KDEBUG
+void dump_inode(int more)
+{
+	struct inode *ip;
+	printk("dev| ino |#l|ud|%");
+	for (ip = inodes; ip < inodes + NINODES; ip++) {
+		if (!ip->i_dev) continue;
+		if (!more && !ip->i_count) continue;
+		printk("%3d|%5d|%2d|%c%c|%d",
+		ip->i_dev, ip->i_ino, ip->i_nlink,
+		"u-"[!ip->i_uptodate], "d-"[!ip->i_dirt],
+		ip->i_count);
+	}
+}
+#endif
+
 static struct inode *get_inode(dev_t dev, ino_t ino)
 {
 	struct inode *ip, *eip = NULL;
@@ -41,8 +57,24 @@ struct inode *idup(struct inode *ip)
 		panic("idup(NULL) from %p -> %p",
 				__builtin_return_address(1),
 				__builtin_return_address(0));
+	/*if (ip->i_ino == 41)
+	printk("idup from %p -> %p -> %p -> %p: ++c=%d",
+			__builtin_return_address(3),
+			__builtin_return_address(2),
+			__builtin_return_address(1),
+			__builtin_return_address(0),
+			ip->i_count + 1);*/
 	ip->i_count++;
 	return ip;
+}
+
+static void erase_inode(struct inode *ip)
+{
+	char c = 0;
+	struct super_block *sb = get_super(ip->i_dev);
+	blk_readitem(ip->i_dev, sb->s_imap_begblk, ip->i_ino / 8, &c, 1);
+	c &= ~(1 << ip->i_ino % 8);
+	blk_writeitem(ip->i_dev, sb->s_imap_begblk, ip->i_ino / 8, &c, 1);
 }
 
 void iput(struct inode *ip)
@@ -51,11 +83,19 @@ void iput(struct inode *ip)
 		panic("iput(NULL) from %p -> %p",
 				__builtin_return_address(1),
 				__builtin_return_address(0));
+	/*if (ip->i_ino == 41)
+	printk("iput from %p -> %p -> %p: --c=%d",
+			__builtin_return_address(2),
+			__builtin_return_address(1),
+			__builtin_return_address(0),
+			ip->i_count - 1);*/
 	if (ip->i_count <= 0)
 		panic("trying to free free inode");
-	if (--ip->i_count <= 0)
+	if (--ip->i_count <= 0) {
 		wake_up(&inode_buffer_wait);
-	// TODO: check and erase_inode if i_nlink == 0
+		if (ip->i_nlink <= 0)
+			erase_inode(ip);
+	}
 }
 
 void iupdate(struct inode *ip)

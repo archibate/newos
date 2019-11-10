@@ -19,7 +19,7 @@ int main(void)
 		if (waitpid(pid, &stat, 0) == -1)
 			perror("waitpid");
 		stat = WEXITSTATUS(stat);
-		fprintf(stderr, "/bin/sh exited with %#x\n", stat);
+		fprintf(stderr, "init: /bin/sh exited with %#x\n", stat);
 	}
 	return stat;
 }

@@ -304,7 +304,7 @@ int main(void)
 	if (!getcwd(pwd, sizeof(pwd)))
 		pwd[0] = 0;
 	while (!feof(stdin)) {
-		eprintf("%s # ", pwd);
+		eprintf("%s# ", pwd);
 		parse_input();
 		execute();
 		clear_state();

@@ -19,6 +19,7 @@
 #define S_ISBLK(m)	(S_IFBLK == ((m) & S_IFMT))
 #define S_ISREG(m)	(S_IFREG == ((m) & S_IFMT))
 #define S_ISFIFO(m)	(S_IFIFO == ((m) & S_IFMT))
+#define S_ISLNK(m)	(S_IFLNK == ((m) & S_IFMT))
 #define S_ISSOCK(m)	(S_IFSOCK == ((m) & S_IFMT))
 
 /* POSIX.1b objects.  Note that these macros always evaluate to zero.  But

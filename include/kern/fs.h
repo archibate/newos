@@ -16,6 +16,10 @@
 #define ROOT_INO	NEFS_ROOT_INO
 #define ROOT_DEV	DEV_HDA
 
+#define SYMLOOP_MAX	8
+#define NAME_MAX	NEFS_NAME_MAX
+#define PATH_MAX	1024
+
 #define BSIZE	1024
 #define NBUFS	128
 #define NINODES	256
@@ -78,8 +82,10 @@ void bwrite(struct buf *b);
 void brelse(struct buf *b);
 void blk_readitem(dev_t dev, blkno_t blkno, size_t index, void *buf, size_t size);
 void blk_writeitem(dev_t dev, blkno_t blkno, size_t index, const void *buf, size_t size);
+void dump_buffer(int more);
 // super.c
 struct super_block *get_super(dev_t dev);
+void dump_super(void);
 // inode.c
 struct inode *create_inode(struct inode *pip);
 struct inode *idup(struct inode *ip);
@@ -90,12 +96,15 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int istat(struct inode *ip, struct stat *st);
+void dump_inode(int more);
 // namei.c
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
 struct inode *namei(const char *path);
 struct inode *creati(const char *path, int excl, mode_t mode, int nod);
 int linki(const char *path, struct inode *ip);
 int unlinki(const char *path, int rmdir);
+void follow_policy_enter(int follow);
+void follow_policy_leave(void);
 // file.c
 struct file *fs_open(const char *path, int flags, mode_t mode);
 struct file *fs_dup(struct file *f);
@@ -104,6 +113,5 @@ size_t fs_write(struct file *f, const void *buf, size_t size);
 off_t fs_seek(struct file *f, off_t offset, int whence);
 void fs_close(struct file *f);
 int fs_dirread(struct file *f, struct dirent *de);
-int fs_fstat(struct file *f, struct stat *st);
 
 #endif

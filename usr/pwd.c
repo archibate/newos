@@ -18,5 +18,6 @@ int main(void)
 		return 1;
 	}
 	puts(buf);
+	free(buf);
 	return 0;
 }
