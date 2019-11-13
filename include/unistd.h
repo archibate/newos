@@ -3,6 +3,7 @@
 
 #include <bits/types.h>
 #include <bits/unistd.h>
+#include <getopt.h>
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -59,5 +60,8 @@ int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
 pid_t getpid(void);
 pid_t getppid(void);
+int symlink(const char *path1, const char *path2);
+ssize_t readlink(const char *path, char *buf, size_t size);
+ssize_t readlinkat(int fd, const char *path, char *buf, size_t size);
 
 #endif

@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	else for (int i = 1; i < argc; i++) {
 		if (i != 1) putchar('\n');
 		printf("%s:\n", argv[i]);
-		err = err || ls(argv[i]);
+		err = ls(argv[i]) || err;
 	}
 	return err;
 }

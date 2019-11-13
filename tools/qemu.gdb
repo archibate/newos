@@ -2,9 +2,12 @@
 # vim: ft=gdb ts=4 sts=4 tw=4
 
 add-symbol-file build/vmlinux
-add-symbol-file build/usr/mv
 
 target remote localhost:1234
+
+def lu
+		add-symbol-file build/usr/$arg0
+end
 
 define toboot
 	set architecture i8086

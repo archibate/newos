@@ -56,6 +56,7 @@ disk_addr_packet:
 	dw 0xaa55
 
 stage2:
+	call set_video
 	mov si, disk_addr_packet
 	mov word [si + 8], 4
 	mov word [si + 6], tmp_kaddr >> 4
@@ -80,6 +81,20 @@ enable_prot:
 	mov ax, 0x01
 	lmsw ax
 	jmp 0x0008:start32
+
+set_video:
+	mov ax, 0x0013
+	mov di, buffer
+	int 0x10
+	jc error
+	mov eax, [di + 0x28]
+	test eax, eax
+	jz .iszero
+	mov [vram_addr], eax
+	ret
+.iszero:
+	mov [vram_addr], dword 0xa0000
+	ret
 
 	bits 32
 start32:
@@ -113,8 +128,12 @@ idtr:
 
 done_msg:
 	db "done", 13, 10, 0
+buffer:
 
-	times 1022-($-$$) db 0
+	times 1016-($-$$) db 0
+vram_addr: ; access me at 0x7ff8
+	dd 0
+	dw 0
 stage2_signature:
 	dw 0x55aa
 

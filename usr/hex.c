@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int cat(const char *path)
+int hex(const char *path)
 {
 	FILE *fp = !strcmp(path, "-") ? stdin : fopen(path, "r");
 	if (!fp) {
@@ -9,10 +9,14 @@ int cat(const char *path)
 		return 1;
 	}
 
-	char buf[256];
-	size_t size;
-	while ((size = fread(buf, 1, sizeof(buf), fp)))
-		fwrite(buf, size, 1, stdout);
+	int c;
+	static int i;
+	while (EOF != (c = getc(fp))) {
+		printf("%02X", (unsigned)c & 0xff);
+		putchar(" \n"[++i % 26 == 0]);
+	}
+	if (i % 26 != 0)
+		putchar('\n');
 
 	if (fp != stdin) fclose(fp);
 	return 0;
@@ -21,8 +25,8 @@ int cat(const char *path)
 int main(int argc, char **argv)
 {
 	int err = 0;
-	if (argc <= 1) err = cat("-");
+	if (argc <= 1) err = hex("-");
 	else for (int i = 1; i < argc; i++)
-		err = cat(argv[i]) || err;
+		err = hex(argv[i]) || err;
 	return err;
 }

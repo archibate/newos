@@ -62,6 +62,7 @@ main(void)
 	INIT(rtc);
 	INIT(sched);
 	INIT(fs);
+	INIT(video);
 
 	//kernel_thread(test_thread_1, NULL);
 	//kernel_thread(test_thread_2, NULL);

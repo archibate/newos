@@ -103,7 +103,7 @@ struct inode *namei(const char *path);
 struct inode *creati(const char *path, int excl, mode_t mode, int nod);
 int linki(const char *path, struct inode *ip);
 int unlinki(const char *path, int rmdir);
-void follow_policy_enter(int follow);
+void follow_policy_enter(int nofollow, int symlink_nofollow);
 void follow_policy_leave(void);
 // file.c
 struct file *fs_open(const char *path, int flags, mode_t mode);

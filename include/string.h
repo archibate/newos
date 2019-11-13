@@ -13,6 +13,7 @@ size_t strlcpy(char *dst, const char *src, size_t size);
 int strcmp(const char *p, const char *q);
 int strncmp(const char *p, const char *q, size_t n);
 char *strchr(const char *s, int c);
+char *strstr(const char *dst, const char *src);
 char *strrchr(const char *s, int c);
 char *strchrnul(const char *s, int c);
 void *memset(void *v, int c, size_t n);

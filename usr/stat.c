@@ -48,6 +48,6 @@ int main(int argc, char **argv)
 	}
 	int err = 0;
 	for (int i = 1; i < argc; i++)
-		err = err || do_stat(argv[i]);
+		err = do_stat(argv[i]) || err;
 	return err;
 }

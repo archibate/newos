@@ -35,7 +35,9 @@ int sys_mkdir(const char *path, mode_t mode)
 
 int sys_link(const char *path1, const char *path2)
 {
+	follow_policy_enter(0, 1);
 	struct inode *ip = namei(path1);
+	follow_policy_leave();
 	if (!ip)
 		return -1;
 	int ret = linki(path2, ip);
@@ -54,7 +56,9 @@ static int alloc_fd(unsigned begin)
 
 int sys_open(const char *path, int flags, mode_t mode)
 {
+	follow_policy_enter(flags & O_NOFOLLOW, flags & O_SYMLINK);
 	struct file *f = fs_open(path, flags, mode);
+	follow_policy_leave();
 	if (!f)
 		return -1;
 	int fd = alloc_fd(0);
@@ -238,7 +242,7 @@ int sys_openat(int fd, const char *path, int flags, mode_t mode)
 
 int sys_fstatat(int fd, const char *path, struct stat *st, int flag)
 {
-	follow_policy_enter(flag & AT_SYMLINK_NOFOLLOW ? -1 : 1);
+	follow_policy_enter(0, flag & AT_SYMLINK_NOFOLLOW);
 	struct inode *ip = at_namei(fd, path, flag);
 	follow_policy_leave();
 	if (!ip) return -1;

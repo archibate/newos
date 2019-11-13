@@ -7,7 +7,7 @@
 int do_move(const char *src, const char *dst)
 {
 	if (link(src, dst) == -1) {
-		if (do_copy(src, dst) == -1)
+		if (do_copy(src, dst))
 			return 1;
 	}
 	if (unlink(src) == -1) {

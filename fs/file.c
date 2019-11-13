@@ -9,7 +9,7 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 {
 	struct inode *ip;
 	if (flags & O_CREAT) {
-		if (!S_ISDIR(mode) && !S_ISREG(mode)) {
+		if (!S_ISDIR(mode) && !S_ISREG(mode) && !S_ISLNK(mode)) {
 			errno = EINVAL;
 			return NULL;
 		}
@@ -24,6 +24,11 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 		ip = namei(path);
 		if (!ip)
 			return NULL;
+	}
+	if ((flags & O_SYMLINK) && !S_ISLNK(ip->i_mode)) {
+		errno = EINVAL;
+		iput(ip);
+		return NULL;
 	}
 	if (S_ISDIR(ip->i_mode) && !(flags & O_DIRECTORY)) {
 		errno = EISDIR;

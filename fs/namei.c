@@ -180,19 +180,18 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 	return ino;
 }
 
-static int ks_follow = SYMLOOP_MAX;
+static int ks_follow = SYMLOOP_MAX, ks_target_nofollow;
 
-void follow_policy_enter(int follow)
+void follow_policy_enter(int o_nofollow, int o_symlink)
 {
-	if (follow > 0)
-		ks_follow = SYMLOOP_MAX;
-	else
-		ks_follow = follow;
+	ks_follow = o_nofollow ? 0 : SYMLOOP_MAX;
+	ks_target_nofollow = o_symlink;
 }
 
 void follow_policy_leave(void)
 {
 	ks_follow = SYMLOOP_MAX;
+	ks_target_nofollow = 0;
 }
 
 static struct inode *ifollow(struct inode *ip, struct inode *pip)
@@ -259,12 +258,19 @@ struct inode *_namei(const char **ppath, struct inode **pip,
 		*pip = ip;
 		*ppath2 = path;
 		namelen = strchrnul(path, '/') - path;
-		if (-1 == dir_find_entry(ip, &de, path, namelen)) {
+		if (-1 == dir_find_entry(ip, &de, path, namelen))
+			goto err;
+		ip = iget(ip->i_dev, de.d_ino);
+		if (!ip) {
+			printk("WARNING: de dev=%d, ino=%d not exist", ip->i_dev, de.d_ino);
+err:
 			*ppath = path;
 			return NULL;
 		}
-		ip = iget(ip->i_dev, de.d_ino);
-		ip = ifollow(ip, *pip);
+		if (!ks_target_nofollow || path[namelen])
+			ip = ifollow(ip, *pip);
+		if (!ip)
+			goto err;
 	}
 	*ppath = path;
 	return ip;
@@ -331,8 +337,9 @@ static struct inode *_creati(
 		}
 		return ip;
 	}
+	if (errno != ENOENT)
+		return NULL;
 	if (!pip) {
-		iput(ip);
 		errno = EINVAL;
 		return NULL;
 	}

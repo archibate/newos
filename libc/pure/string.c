@@ -107,6 +107,15 @@ strchr(const char *s, int c)
 }
 
 char *
+strstr(const char *dst, const char *src)
+{
+	for (; *dst; dst++)
+		if (!strncmp(dst, src, strlen(src)))
+			return (char *) dst;
+	return NULL;
+}
+
+char *
 strrchr(const char *s, int c)
 {
 	char *p = NULL;

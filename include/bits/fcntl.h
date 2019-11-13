@@ -13,6 +13,7 @@
 #define	O_CLOEXEC	128
 #define	O_NOFOLLOW	256
 #define	O_PATH		512
+#define	O_SYMLINK	1024
 
 #define F_DUPFD	0
 #define F_GETFD	1

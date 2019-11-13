@@ -28,6 +28,6 @@ int main(int argc, char **argv)
 	}
 	int err = 0;
 	for (int i = 1; i < argc; i++)
-		err = err || kdb(argv[i]);
+		err = kdb(argv[i]) || err;
 	return err;
 }
