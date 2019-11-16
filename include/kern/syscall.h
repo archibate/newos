@@ -176,6 +176,7 @@ _syscall0(25, pid_t, getppid);
 _syscall4(26, int, fstatat, int, const char *, struct stat *, int);
 _syscall3(27, int, mkdirat, int, const char *, mode_t);
 _syscall2(28, int, kdebug, int, long);
+_syscall1(29, int, pipe, int *);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

@@ -118,6 +118,11 @@ int sys_fcntl(int fd, int cmd, int arg)
 
 	case F_GETFL:
 		return f->f_flags;
+#if 0
+	case F_SETFL:
+		f->f_flags = (f->f_flags & ~_O_FLAGS_EDIABLE) | (arg & _O_FLAGS_EDIABLE);
+		return 0;
+#endif
 	case F_SETFD:
 		f->f_fdargs = arg;
 		return 0;
@@ -183,6 +188,24 @@ int sys_fstat(int fd, struct stat *st)
 	if (!f)
 		return -1;
 	return istat(f->f_ip, st);
+}
+
+int sys_pipe(int fd[2])
+{
+	struct file *fs[2];
+	int fd0 = alloc_fd(0);
+	if (fd0 == -1)
+		return -1;
+	int fd1 = alloc_fd(fd0 + 1);
+	if (fd1 == -1)
+		return -1;
+	if (fs_pipe(fs) == -1)
+		return -1;
+	current->filp[fd0] = fs[0];
+	current->filp[fd1] = fs[1];
+	fd[0] = fd0;
+	fd[1] = fd1;
+	return 1;
 }
 
 

@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	if (argc == 2) {
 		err = grep(argv[1], "-");
 	} else {
-		show_prefix = 1;
+		show_prefix = argc != 3;
 		for (int i = 2; i < argc; i++)
 			err = grep(argv[1], argv[i]) || err;
 	}

@@ -63,5 +63,6 @@ pid_t getppid(void);
 int symlink(const char *path1, const char *path2);
 ssize_t readlink(const char *path, char *buf, size_t size);
 ssize_t readlinkat(int fd, const char *path, char *buf, size_t size);
+int pipe(int fd[2]);
 
 #endif

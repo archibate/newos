@@ -32,7 +32,7 @@ true */
 
 enum {
 	T_EOF = 0,
-	T_ID, T_NUM, T_I, T_O, T_OO,
+	T_ID, T_NUM, T_I, T_O, T_OO, T_PIPE,
 };
 
 int errcnt, token_type;
@@ -40,6 +40,7 @@ char token_string[233];
 
 void argv_push(const char *s);
 void open_push(const char *path, int fd, int flags);
+void term_push(void);
 
 void error(const char *s)
 {
@@ -47,19 +48,62 @@ void error(const char *s)
 	errcnt++;
 }
 
-int good(int c)
-{
-	return !strchr(" \n\t\r><'\"|&\xff", c);
-}
-
 void tokestr(void)
 {
 	int c, i = 0;
-	while (good(c = getc(stdin))) {
-		token_string[i++] = c;
+	while (1) {
+		while (!strchr("\xff \n\t\r><'\"|&\\", c = getc(stdin)))
+			token_string[i++] = c;
+
+		if (c == '\\') {
+			c = getc(stdin);
+			if (c == EOF) {
+				error("expect character after `\\`, got EOF");
+				break;
+			}
+			token_string[i++] = c;
+
+		} else if (c == '\'') {
+			while (!strchr("\xff'", c = getc(stdin)))
+				token_string[i++] = c;
+			if (c == EOF) {
+				error("expect terminating `'`, got EOF");
+				break;
+			}
+
+		} else if (c == '"') {
+rep_double_quoter:
+			while (!strchr("\xff\"\\", c = getc(stdin)))
+				token_string[i++] = c;
+			if (c == EOF) {
+				error("expect terminating `\"`, got EOF");
+				break;
+			}
+			if (c == '\\') {
+				c = getc(stdin);
+				if (c == EOF) {
+					error("expect character after `\\`, got EOF");
+					break;
+				}
+				if (!strchr("\\\"$", c))
+					token_string[i++] = '\\';
+				token_string[i++] = c;
+				goto rep_double_quoter;
+			}
+
+		} else break;
 	}
-	ungetc(c, stdin);
+	if (c != EOF)
+		ungetc(c, stdin);
 	token_string[i] = 0;
+}
+
+int str_is_digital(const char *s)
+{
+	for (; *s; s++)
+		if (!('0' <= *s && *s <= '9'))
+			return 0;
+	return 1;
 }
 
 void toke(void)
@@ -69,8 +113,11 @@ rep:
 	c = getc(stdin);
 	if (strchr(" \t\r", c))
 		goto rep;
+	token_string[0] = 0;
+re_switch:
 	switch (c) {
 	case EOF:
+	case '#':
 	case '\n':
 		token_type = T_EOF;
 		break;
@@ -82,14 +129,29 @@ rep:
 		if (c == '>') {
 			token_type = T_OO;
 		} else {
-			ungetc(c, stdin);
+			if (c != EOF)
+				ungetc(c, stdin);
 			token_type = T_O;
 		}
 		break;
+	case '|':
+		token_type = T_PIPE;
+		break;
 	default:
 		token_type = T_ID;
-		ungetc(c, stdin);
+		if (c != EOF)
+			ungetc(c, stdin);
 		tokestr();
+		if (!str_is_digital(token_string))
+			break;
+		c = getc(stdin);
+		switch (c) {
+		case '<': case '>':
+			goto re_switch;
+		default:
+			if (c != EOF)
+				ungetc(c, stdin);
+		}
 		break;
 	}
 }
@@ -97,15 +159,17 @@ rep:
 void factor(void)
 {
 	if (token_type != T_ID) {
-		error("except T_ID");
+		error("expect T_ID");
 		token_string[0] = 0;
 	}
 }
 
 void term(void)
 {
-	int fd = -1, flags = -1;
+	int fd, flags, had = 0;
 rep:
+	fd = token_string[0] ? atoi(token_string) : -1;
+	flags = -1;
 	switch (token_type) {
 	case T_I:
 		if (fd == -1) fd = 0;
@@ -121,83 +185,98 @@ rep:
 		break;
 	case T_ID:
 		goto id;
-	case T_EOF:
-		return;
 	default:
-		error("except T_ID, T_EOF, '<', '>' or '>>'");
+		if (!had)
+			error("unexpected token term end");
+		term_push();
+		return;
 	};
 	toke();
 	factor();
 	open_push(token_string, fd, flags);
-	fd = -1;
-	flags = -1;
 	toke();
 	goto rep;
 id:
+	had = 1;
 	factor();
 	argv_push(token_string);
 	toke();
 	goto rep;
 }
 
+void expr(void)
+{
+	term();
+	while (token_type == T_PIPE) {
+		toke();
+		term();
+	}
+}
+
 void parse_input(void)
 {
 	toke();
-	term();
+	if (token_type == T_EOF)
+		return;
+	expr();
+	if (token_type != T_EOF)
+		error("expect T_EOF token");
 }
 
 #define MAX_OPEN 233
+#define MAX_ARGV 233
+#define MAX_TERM 23
+
 struct open_info {
 	char *path;
 	int fd, flags;
-} openv[MAX_OPEN];
-int openc;
+};
+
+struct term_info {
+	struct open_info openv[MAX_OPEN];
+	int openc;
+	char *argv[MAX_ARGV + 1];
+	int argc;
+} ts[MAX_TERM];
+int tc;
 
 void open_push(const char *path, int fd, int flags)
 {
 	debug("open('%s', %d, %d)\n", path, fd, flags);
-	if (openc >= MAX_OPEN) {
+	if (ts[tc].openc >= MAX_OPEN) {
 		error("too much I/O redir");
 		return;
 	}
-	openv[openc].path = strdup(path);
-	openv[openc].fd = fd;
-	openv[openc].flags = flags;
-	openc++;
+	ts[tc].openv[ts[tc].openc].path = strdup(path);
+	ts[tc].openv[ts[tc].openc].fd = fd;
+	ts[tc].openv[ts[tc].openc].flags = flags;
+	ts[tc].openc++;
 }
-
-#define MAX_ARGV 233
-char *argv[MAX_ARGV + 1];
-int argc;
 
 void argv_push(const char *s)
 {
 	debug("argv('%s')\n", token_string);
-	if (argc >= MAX_ARGV) {
+	if (ts[tc].argc >= MAX_ARGV) {
 		error("too much argv");
 		return;
 	}
-	argv[argc++] = strdup(s);
+	ts[tc].argv[ts[tc].argc++] = strdup(s);
+}
+
+void term_push(void)
+{
+	debug("term()\n");
+	tc++;
+	ts[tc].argc = 0;
+	ts[tc].openc = 0;
 }
 
 void clear_state(void)
 {
-	argc = 0;
-	openc = 0;
-}
-
-void do_opens(void)
-{
-	for (int i = 0; i < openc; i++) {
-		int fd = open(openv[i].path, openv[i].flags, S_IFREG | 0644);
-		if (fd == -1) {
-			perror(openv[i].path);
-			continue;
-		}
-		close(openv[i].fd);
-		dup2(fd, openv[i].fd);
-		close(fd);
-	}
+	tc = 0;
+	ts[tc].argc = 0;
+	ts[tc].openc = 0;
+	errcnt = 0;
 }
 
 int last_exit_stat;
@@ -211,11 +290,7 @@ void wait_for(pid_t pid)
 	}
 	last_exit_stat = WEXITSTATUS(stat);
 
-	if (WIFEXITED(stat)) {
-		stat = WEXITSTATUS(stat);
-		if (stat)
-			eprintf("%d ", stat);
-	} else if (WIFSIGNALED(stat)) {
+	if (WIFSIGNALED(stat)) {
 		stat = WTERMSIG(stat);
 		switch (stat) {
 		case SIGINT:
@@ -244,25 +319,63 @@ void wait_for(pid_t pid)
 	}
 }
 
-__attribute__((noreturn)) void do_exec(int i)
+int last_pipe_fd;
+
+int do_opens(int ti)
 {
-	do_opens();
-	execvp(argv[i], argv + i); 
+	for (int i = 0; i < ts[ti].openc; i++) {
+		int fd = open(ts[ti].openv[i].path, ts[ti].openv[i].flags, S_IFREG | 0644);
+		if (fd == -1) {
+			perror(ts[ti].openv[i].path);
+			return 0;
+		}
+		close(ts[ti].openv[i].fd);
+		dup2(fd, ts[ti].openv[i].fd);
+		close(fd);
+	}
+	return 1;
+}
+
+__attribute__((noreturn)) void do_exec(int ti, int i)
+{
+	if (!do_opens(ti))
+		exit(EXIT_FAILURE);
+	execvp(ts[ti].argv[i], ts[ti].argv + i); 
 	if (errno != ENOENT)
-		perror(argv[i]);
+		perror(ts[ti].argv[i]);
 	else
-		eprintf("%s: command not found\n", argv[i]);
+		eprintf("%s: command not found\n", ts[ti].argv[i]);
 	exit(EXIT_FAILURE);
 }
 
-pid_t do_forkexec(void)
+pid_t do_forkexec(int ti)
 {
+	int fd[2];
+	if (ti < tc - 1 && pipe(fd) == -1) {
+		perror("pipe");
+		return -1;
+	}
 	pid_t pid = fork();
 	if (pid == 0) {
-		do_exec(0);
+		if (ti < tc - 1) {
+			close(fd[0]);
+			close(1);
+			dup2(fd[1], 1);
+			close(fd[1]);
+		}
+		if (last_pipe_fd != 0) {
+			close(0);
+			dup2(last_pipe_fd, 0);
+			close(last_pipe_fd);
+		}
+		do_exec(ti, 0);
 	} else if (pid < 0) {
 		perror("fork");
 		return -1;
+	}
+	if (ti < tc - 1) {
+		close(fd[1]);
+		last_pipe_fd = fd[0];
 	}
 	return pid;
 }
@@ -278,25 +391,36 @@ void do_chdir(const char *path)
 		pwd[0] = 0;
 }
 
-void execute(void)
+pid_t tpids[MAX_TERM];
+
+void execute_ti(int ti)
 {
-	argv[argc] = NULL;
-	if (!argv[0])
+	ts[ti].argv[ts[ti].argc] = NULL;
+	if (!ts[ti].argv[0])
 		return;
-	if (!strcmp(argv[0], "cd")) {
-		do_chdir(argv[1] ? argv[1] : "/root");
+	if (!strcmp(ts[ti].argv[0], "cd")) {
+		do_chdir(ts[ti].argv[1] ? ts[ti].argv[1] : "/root");
 		return;
-	} else if (!strcmp(argv[0], "exit")) {
-		exit(argv[1] ? atoi(argv[1]) : last_exit_stat);
-	} else if (!strcmp(argv[0], "exec")) {
-		do_exec(1);
+	} else if (!strcmp(ts[ti].argv[0], "exit")) {
+		exit(ts[ti].argv[1] ? atoi(ts[ti].argv[1]) : last_exit_stat);
+	} else if (!strcmp(ts[ti].argv[0], "exec")) {
+		do_exec(ti, 1);
 	}
 
-	pid_t pid = do_forkexec();
-	if (pid != -1)
-		wait_for(pid);
-	else
+	pid_t pid = do_forkexec(ti);
+	tpids[ti] = pid;
+	if (pid == -1)
 		last_exit_stat = 0xff;
+}
+
+void execute(void)
+{
+	last_pipe_fd = 0;
+	for (int i = 0; i < tc; i++)
+		execute_ti(i);
+	for (int i = 0; i < tc; i++)
+		if (tpids[i] != -1)
+			wait_for(tpids[i]);
 }
 
 int main(void)
@@ -304,9 +428,12 @@ int main(void)
 	if (!getcwd(pwd, sizeof(pwd)))
 		pwd[0] = 0;
 	while (!feof(stdin)) {
+		if (last_exit_stat)
+		eprintf("%d ", last_exit_stat);
 		eprintf("%s # ", pwd);
 		parse_input();
-		execute();
+		if (!errcnt)
+			execute();
 		clear_state();
 	}
 	exit(last_exit_stat);

@@ -8,7 +8,7 @@
 #include <bits/fcntl.h>
 #include <bits/unistd.h>
 #include <bits/stat.h>
-#include <ds/list.h>
+#include <ds/ring.h>
 
 #define DEV_HDA		1
 #define DEV_HDB		2
@@ -19,6 +19,7 @@
 #define SYMLOOP_MAX	8
 #define NAME_MAX	NEFS_NAME_MAX
 #define PATH_MAX	1024
+#define PIPE_SIZE	4096
 
 #define BSIZE	1024
 #define NBUFS	128
@@ -28,7 +29,8 @@
 #define WRITE	1
 
 #define S_CHECK(mode, access) (((mode) & ((access) << 6)) == ((access) << 6))
-#define S_ISNOD(mode) (S_ISCHR(mode) || S_ISBLK(mode) || S_ISFIFO(mode) || S_ISSOCK(mode))
+#define S_ISNOD(mode) (S_ISCHR(mode) || S_ISBLK(mode) \
+		    || S_ISFIFO(mode) || S_ISSOCK(mode))
 
 typedef unsigned int blkno_t;
 
@@ -49,6 +51,7 @@ struct inode {
 	ino_t i_ino;
 	int i_uptodate;
 	int i_dirt;
+	struct pipe *i_pipe;
 };
 
 struct file {
@@ -56,6 +59,12 @@ struct file {
 	off_t f_offset;
 	int f_flags;
 	int f_fdargs;
+};
+
+struct pipe {
+	ring_buffer(char, PIPE_SIZE) p_ring;
+	struct task *p_read_wait;
+	struct task *p_write_wait;
 };
 
 #define super_block nefs_super_block
@@ -72,9 +81,9 @@ extern struct buf buffer[NBUFS];
 extern struct inode inodes[NINODES];
 extern struct file files[NFILES];
 
-// blk_drv
+// blk_drv/
 void ll_rw_block(struct buf *b, int rw);
-// chr_drv
+// chr_drv/
 size_t chr_drv_rw(int rw, int nr, off_t pos, void *buf, size_t size);
 // buffer.c
 struct buf *bread(dev_t dev, blkno_t blkno);
@@ -96,6 +105,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int istat(struct inode *ip, struct stat *st);
+struct inode *make_pipe_inode(void);
 void dump_inode(int more);
 // namei.c
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
@@ -113,5 +123,11 @@ size_t fs_write(struct file *f, const void *buf, size_t size);
 off_t fs_seek(struct file *f, off_t offset, int whence);
 void fs_close(struct file *f);
 int fs_dirread(struct file *f, struct dirent *de);
+int fs_pipe(struct file *fs[2]);
+// pipe.c
+struct pipe *make_pipe(void);
+size_t pipe_read(struct pipe *p, void *buf, size_t size);
+size_t pipe_write(struct pipe *p, const void *buf, size_t size);
+void free_pipe(struct pipe *p);
 
 #endif

@@ -23,13 +23,9 @@ void dump_inode(int more)
 }
 #endif
 
-static struct inode *get_inode(dev_t dev, ino_t ino)
+static struct inode *__alloc_m_inode(void)
 {
 	struct inode *ip, *eip = NULL;
-again:
-	for (ip = inodes; ip < inodes + NINODES; ip++)
-		if (ip->i_dev == dev && ip->i_ino == ino)
-			return idup(ip);
 #define BADNESS(ip) ((ip)->i_dirt * 2 + (ip)->i_uptodate)
 	for (ip = inodes; ip < inodes + NINODES; ip++)
 		if (ip->i_count == 0 &&
@@ -40,12 +36,44 @@ again:
 		}
 	if (!eip) {
 		block_on(&inode_buffer_wait);
-		goto again;
+		return NULL;
 	}
 	ip = eip;
 	ip->i_count = 1;
 	ip->i_dirt = 0;
 	ip->i_uptodate = 0;
+	return ip;
+}
+
+static struct inode *alloc_m_inode(void)
+{
+	struct inode *ip;
+	while (!(ip = __alloc_m_inode()));
+	ip->i_dev = 0;
+	ip->i_ino = 0;
+	ip->i_mode = 0777;
+	ip->i_nlink = -233;
+	return ip;
+}
+
+struct inode *make_pipe_inode(void)
+{
+	struct inode *ip = alloc_m_inode();
+	struct pipe *p = make_pipe();
+	ip->i_pipe = p;
+	return ip;
+}
+
+static struct inode *get_inode(dev_t dev, ino_t ino)
+{
+	struct inode *ip;
+again:
+	for (ip = inodes; ip < inodes + NINODES; ip++)
+		if (ip->i_dev == dev && ip->i_ino == ino)
+			return idup(ip);
+	ip = __alloc_m_inode();
+	if (!ip)
+		goto again;
 	ip->i_dev = dev;
 	ip->i_ino = ino;
 	return ip;
@@ -93,8 +121,12 @@ void iput(struct inode *ip)
 		panic("trying to free free inode");
 	if (--ip->i_count <= 0) {
 		wake_up(&inode_buffer_wait);
-		if (ip->i_nlink <= 0)
+		if (ip->i_nlink == 0)
 			erase_inode(ip);
+		if (ip->i_pipe) {
+			free_pipe(ip->i_pipe);
+			ip->i_pipe = NULL;
+		}
 	}
 }
 
@@ -190,6 +222,12 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 		panic("rw_inode(NULL) from %p -> %p",
 				__builtin_return_address(1),
 				__builtin_return_address(0));
+	if (ip->i_pipe) {
+		if (rw == READ)
+			return pipe_read(ip->i_pipe, buf, size);
+		else
+			return pipe_write(ip->i_pipe, buf, size);
+	}
 	if (S_ISCHR(ip->i_mode))
 		return chr_drv_rw(rw, ip->i_zone[0], pos, buf, size);
 
