@@ -411,7 +411,7 @@ int getchar(void) {
 char *fgets(char *s, int size, FILE *stream) {
 	int c;
 	char * out = s;
-	while ((c = fgetc(stream)) > 0) {
+	while ((c = fgetc(stream)) != EOF) {
 		*s++ = c;
 		size--;
 		if (size == 0) {

@@ -285,7 +285,7 @@ static struct inode *new_inode(struct inode *pip, mode_t mode, int nod)
 		dir_add_entry(ip, ip, ".", 1);
 		dir_add_entry(ip, pip, "..", 2);
 	} else if (S_ISNOD(mode)) {
-		ip->i_zone[0] = nod;
+		ip->i_nodnr = nod;
 	}
 	return ip;
 }

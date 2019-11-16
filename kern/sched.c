@@ -85,6 +85,12 @@ schedule(void)
 void
 sched_timer_callback(void)
 {
+#if 0
+	static int ctr;
+	if (++ctr < 10)
+		return;
+	ctr = 0;
+#endif
 	if (current->counter > 0)
 		current->counter--;
 	schedule();

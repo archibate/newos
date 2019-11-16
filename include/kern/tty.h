@@ -12,7 +12,7 @@
 
 #define TTY_BUFSIZ 512
 
-typedef ring_buffer(char, TTY_BUFSIZ) tty_queue_t;
+typedef sring_t(char, TTY_BUFSIZ) tty_queue_t;
 
 struct tty_struct
 {

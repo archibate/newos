@@ -10,11 +10,15 @@
 #include <bits/stat.h>
 #include <ds/ring.h>
 
-#define DEV_HDA		1
-#define DEV_HDB		2
+#define DEV_NULL	0
+#define DEV_ZERO	1
+#define DEV_TTY0	2
+
+#define DRV_HDA		1
+#define DRV_HDB		2
 
 #define ROOT_INO	NEFS_ROOT_INO
-#define ROOT_DEV	DEV_HDA
+#define ROOT_DEV	DRV_HDA
 
 #define SYMLOOP_MAX	8
 #define NAME_MAX	NEFS_NAME_MAX
@@ -44,15 +48,38 @@ struct buf {
 	struct task *b_wait;
 };
 
+struct pipe_inode {
+	ring_t(char) p_ring;
+	struct task *p_read_wait;
+	struct task *p_write_wait;
+};
+
+#define IFS_NEFS 0
+#define IFS_PIPE 1
+
 struct inode {
-	struct nefs_inode i_nefs;
+	union {
+		int i_nodnr;
+		struct nefs_inode i_nefs;
+		struct pipe_inode i_pipe;
+	};
 	int i_count;
 	dev_t i_dev;
 	ino_t i_ino;
 	int i_uptodate;
 	int i_dirt;
-	struct pipe *i_pipe;
+	int i_fstype;
 };
+
+#define i_mode i_nefs.i_nefs_mode
+#define i_size i_nefs.i_nefs_size
+#define i_nlink i_nefs.i_nefs_nlink
+#define i_zone i_nefs.i_nefs_zone
+#define i_s_zone i_nefs.i_nefs_s_zone
+#define i_atime i_nefs.i_nefs_atime
+#define i_p_ring i_pipe.p_ring
+#define i_p_read_wait i_pipe.p_read_wait
+#define i_p_write_wait i_pipe.p_write_wait
 
 struct file {
 	struct inode *f_ip;
@@ -61,21 +88,8 @@ struct file {
 	int f_fdargs;
 };
 
-struct pipe {
-	ring_buffer(char, PIPE_SIZE) p_ring;
-	struct task *p_read_wait;
-	struct task *p_write_wait;
-};
-
 #define super_block nefs_super_block
 #define dir_entry nefs_dir_entry
-
-#define i_mode i_nefs.i_nefs_mode
-#define i_size i_nefs.i_nefs_size
-#define i_nlink i_nefs.i_nefs_nlink
-#define i_zone i_nefs.i_nefs_zone
-#define i_s_zone i_nefs.i_nefs_s_zone
-#define i_atime i_nefs.i_nefs_atime
 
 extern struct buf buffer[NBUFS];
 extern struct inode inodes[NINODES];
@@ -105,7 +119,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int istat(struct inode *ip, struct stat *st);
-struct inode *make_pipe_inode(void);
+struct inode *alloc_m_inode(void);
 void dump_inode(int more);
 // namei.c
 int dir_read_entry(struct inode *dir, struct nefs_dir_entry *de, int i);
@@ -125,9 +139,10 @@ void fs_close(struct file *f);
 int fs_dirread(struct file *f, struct dirent *de);
 int fs_pipe(struct file *fs[2]);
 // pipe.c
-struct pipe *make_pipe(void);
-size_t pipe_read(struct pipe *p, void *buf, size_t size);
-size_t pipe_write(struct pipe *p, const void *buf, size_t size);
-void free_pipe(struct pipe *p);
+struct inode *make_pipe(void);
+size_t pipe_read(struct inode *ip, void *buf, size_t size);
+size_t pipe_write(struct inode *ip, const void *buf, size_t size);
+void close_pipe(struct inode *ip);
+void free_pipe(struct inode *ip);
 
 #endif

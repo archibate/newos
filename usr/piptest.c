@@ -35,10 +35,12 @@ int main(void)
 		printf("parent\n");
 		close(fd[1]);
 		char buf[233];
-		buf[read(fd[0], buf, sizeof(buf))] = 0;
+		int ret = read(fd[0], buf, sizeof(buf));
+		if (ret <= 0)
+			perror("read");
+		buf[ret] = 0;
 		printf("parent got [%s] from child\n", buf);
-		int stat;
-		wait(&stat);
+		wait(&ret);
 	}
 	return 0;
 }

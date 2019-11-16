@@ -47,10 +47,10 @@ struct nefs_super_block
 
 struct nefs_inode
 {
+	nefs_zone_t i_nefs_zone[NEFS_NR_DIRECT];
 	nefs_mode_t i_nefs_mode;
 	nefs_size_t i_nefs_size;
 	nefs_nlink_t i_nefs_nlink;
-	nefs_zone_t i_nefs_zone[NEFS_NR_DIRECT];
 	nefs_zone_t i_nefs_s_zone;
 	nefs_time_t i_nefs_atime;
 };

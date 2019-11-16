@@ -45,7 +45,7 @@ static struct inode *__alloc_m_inode(void)
 	return ip;
 }
 
-static struct inode *alloc_m_inode(void)
+struct inode *alloc_m_inode(void)
 {
 	struct inode *ip;
 	while (!(ip = __alloc_m_inode()));
@@ -53,14 +53,6 @@ static struct inode *alloc_m_inode(void)
 	ip->i_ino = 0;
 	ip->i_mode = 0777;
 	ip->i_nlink = -233;
-	return ip;
-}
-
-struct inode *make_pipe_inode(void)
-{
-	struct inode *ip = alloc_m_inode();
-	struct pipe *p = make_pipe();
-	ip->i_pipe = p;
 	return ip;
 }
 
@@ -74,6 +66,7 @@ again:
 	ip = __alloc_m_inode();
 	if (!ip)
 		goto again;
+	ip->i_fstype = IFS_NEFS;
 	ip->i_dev = dev;
 	ip->i_ino = ino;
 	return ip;
@@ -119,14 +112,14 @@ void iput(struct inode *ip)
 			ip->i_count - 1);*/
 	if (ip->i_count <= 0)
 		panic("trying to free free inode");
+	if (ip->i_fstype == IFS_PIPE)
+		close_pipe(ip);
 	if (--ip->i_count <= 0) {
+		if (ip->i_fstype == IFS_PIPE)
+			free_pipe(ip);
 		wake_up(&inode_buffer_wait);
 		if (ip->i_nlink == 0)
 			erase_inode(ip);
-		if (ip->i_pipe) {
-			free_pipe(ip->i_pipe);
-			ip->i_pipe = NULL;
-		}
 	}
 }
 
@@ -222,14 +215,14 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 		panic("rw_inode(NULL) from %p -> %p",
 				__builtin_return_address(1),
 				__builtin_return_address(0));
-	if (ip->i_pipe) {
+	if (ip->i_fstype == IFS_PIPE) {
 		if (rw == READ)
-			return pipe_read(ip->i_pipe, buf, size);
+			return pipe_read(ip, buf, size);
 		else
-			return pipe_write(ip->i_pipe, buf, size);
+			return pipe_write(ip, buf, size);
 	}
 	if (S_ISCHR(ip->i_mode))
-		return chr_drv_rw(rw, ip->i_zone[0], pos, buf, size);
+		return chr_drv_rw(rw, ip->i_nodnr, pos, buf, size);
 
 	if (pos > ip->i_size) {
 		printk("WARNING: i%s: pos > ip->i_size",
@@ -319,7 +312,7 @@ int istat(struct inode *ip, struct stat *st)
 	st->st_mode = ip->i_mode;
 	st->st_nlink = ip->i_nlink;
 	if (S_ISNOD(ip->i_mode))
-		st->st_rdev = ip->i_zone[0];
+		st->st_rdev = ip->i_nodnr;
 	st->st_size = ip->i_size;
 	return 0;
 }

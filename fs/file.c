@@ -129,7 +129,7 @@ int fs_dirread(struct file *f, struct dirent *de)
 
 int fs_pipe(struct file *fs[2])
 {
-	struct inode *ip = make_pipe_inode();
+	struct inode *ip = make_pipe();
 	struct file *fw = calloc(sizeof(struct file), 1);
 	struct file *fr = calloc(sizeof(struct file), 1);
 	fw->f_ip = ip;

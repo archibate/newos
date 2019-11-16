@@ -93,11 +93,11 @@ int sys_dup2(int fd, int fd2)
 	struct file *f = current->filp[fd];
 	if (!f)
 		return -1;
-	struct file **f2 = current->filp + fd2;
+	struct file **f2 = &current->filp[fd2];
 	if (*f2)
-		return -1;
+		fs_close(*f2);
 	*f2 = fs_dup(f);
-	return 0;
+	return fd2;
 }
 
 int sys_fcntl(int fd, int cmd, int arg)

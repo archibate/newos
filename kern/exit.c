@@ -22,7 +22,8 @@ static void tell_parent(int pid)
 			return;
 		}
 	}
-	panic("no parent ppid=%d found", pid);
+	printk("WARNING: no parent ppid=%d found", pid);
+	return;
 }
 
 __attribute__((noreturn)) void

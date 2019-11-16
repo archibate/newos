@@ -22,7 +22,6 @@ true */
 #include <stdlib.h>
 #include <errno.h>
 
-
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #ifdef _DEBUG
 #define debug(...) eprintf(__VA_ARGS__)
@@ -358,13 +357,13 @@ pid_t do_forkexec(int ti)
 	pid_t pid = fork();
 	if (pid == 0) {
 		if (ti < tc - 1) {
+			debug("ti=%d, out=%d\n", ti, fd[1]);
 			close(fd[0]);
-			close(1);
 			dup2(fd[1], 1);
 			close(fd[1]);
 		}
-		if (last_pipe_fd != 0) {
-			close(0);
+		if (last_pipe_fd != 0) { // ti > 0
+			debug("ti=%d, in=%d\n", ti, last_pipe_fd);
 			dup2(last_pipe_fd, 0);
 			close(last_pipe_fd);
 		}
@@ -372,6 +371,10 @@ pid_t do_forkexec(int ti)
 	} else if (pid < 0) {
 		perror("fork");
 		return -1;
+	}
+	if (last_pipe_fd != 0) {
+		close(last_pipe_fd);
+		last_pipe_fd = 0;
 	}
 	if (ti < tc - 1) {
 		close(fd[1]);
@@ -415,12 +418,15 @@ void execute_ti(int ti)
 
 void execute(void)
 {
+	debug("execute()\n");
 	last_pipe_fd = 0;
 	for (int i = 0; i < tc; i++)
 		execute_ti(i);
 	for (int i = 0; i < tc; i++)
-		if (tpids[i] != -1)
+		if (tpids[i] != -1) {
+			debug("wait(%d)\n", tpids[i]);
 			wait_for(tpids[i]);
+		}
 }
 
 int main(void)
