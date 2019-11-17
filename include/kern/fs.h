@@ -117,7 +117,6 @@ struct inode *iget(dev_t dev, ino_t ino);
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
-int itruncate(struct inode *ip, size_t size);
 int istat(struct inode *ip, struct stat *st);
 int iaccess(struct inode *ip, mode_t amode, int eacc);
 struct inode *alloc_m_inode(void);
@@ -139,7 +138,7 @@ off_t fs_seek(struct file *f, off_t offset, int whence);
 void fs_close(struct file *f);
 int fs_dirread(struct file *f, struct dirent *de);
 int fs_pipe(struct file *fs[2]);
-int fs_truncate(struct file *f, off_t length);
+int fs_truncate_s(struct file *f, size_t length);
 // pipe.c
 struct inode *make_pipe(void);
 size_t pipe_read(struct inode *ip, void *buf, size_t size);

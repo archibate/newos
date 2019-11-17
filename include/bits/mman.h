@@ -13,6 +13,10 @@
 #define MAP_NOREPLACE	8
 #define MAP_FIXED_NOREPLACE	(MAP_FIXED | MAP_NOREPLACE)
 
+#define MS_SYNC		0
+#define MS_ASYNC	1
+#define MS_INVALIDATE	2
+
 #define MAP_FAILED	((void *)-1)
 
 #endif

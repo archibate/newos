@@ -291,12 +291,12 @@ int sys_linkat(int fd1, const char *path1, int fd2, const char *path2, int flag)
 	return ret;
 }
 
-int sys_ftruncate(int fd, off_t length)
+int sys_ftruncate_s(int fd, size_t length)
 {
 	if ((unsigned)fd >= NR_OPEN)
 		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
 		return badf();
-	return fs_truncate(f, length);
+	return fs_truncate_s(f, length);
 }

@@ -156,7 +156,7 @@ static ino_t alloc_inode(struct inode *pip)
 	panic("file system out of inode");
 }
 
-static int __alloc_zone(struct inode *ip)
+static int alloc_zone(struct inode *ip)
 {
 	struct super_block *sb = get_super(ip->i_dev);
 	for (size_t t = 0; t < sb->s_zmap_blknr; t++) {
@@ -176,7 +176,7 @@ static int __alloc_zone(struct inode *ip)
 	panic("file system out of zone");
 }
 
-#if 1
+#if 0
 static int alloc_zone(struct inode *ip)
 {
 	int zid = __alloc_zone(ip);
@@ -295,11 +295,6 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 	}
 	if (s_blk) brelse(s_blk);
 	return size - sz_left;
-}
-
-int itruncate(struct inode *ip, size_t size)
-{
-	panic("itruncate is under construction"); //TODO;
 }
 
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size)
