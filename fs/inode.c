@@ -156,7 +156,7 @@ static ino_t alloc_inode(struct inode *pip)
 	panic("file system out of inode");
 }
 
-static int alloc_zone(struct inode *ip)
+static int __alloc_zone(struct inode *ip)
 {
 	struct super_block *sb = get_super(ip->i_dev);
 	for (size_t t = 0; t < sb->s_zmap_blknr; t++) {
@@ -175,6 +175,17 @@ static int alloc_zone(struct inode *ip)
 	}
 	panic("file system out of zone");
 }
+
+#if 1
+static int alloc_zone(struct inode *ip)
+{
+	int zid = __alloc_zone(ip);
+	static char zero[BSIZE];
+	struct super_block *sb = get_super(ip->i_dev);
+	blk_writeitem(ip->i_dev, sb->s_data_begblk, zid, &zero, BSIZE);
+	return zid;
+}
+#endif
 
 static void load_inode(struct inode *ip)
 {
@@ -286,9 +297,14 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 	return size - sz_left;
 }
 
+int itruncate(struct inode *ip, size_t size)
+{
+	panic("itruncate is under construction"); //TODO;
+}
+
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size)
 {
-	if (!S_CHECK(ip->i_mode, S_IROTH)) {
+	if (iaccess(ip, R_OK, 0) == -1) {
 		errno = EPERM;
 		return 0;
 	}
@@ -297,7 +313,7 @@ size_t iread(struct inode *ip, size_t pos, void *buf, size_t size)
 
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size)
 {
-	if (!S_CHECK(ip->i_mode, S_IWOTH)) {
+	if (iaccess(ip, W_OK, 0) == -1) {
 		errno = EPERM;
 		return 0;
 	}
@@ -315,4 +331,13 @@ int istat(struct inode *ip, struct stat *st)
 		st->st_rdev = ip->i_nodnr;
 	st->st_size = ip->i_size;
 	return 0;
+}
+
+int iaccess(struct inode *ip, mode_t amode, int eacces)
+{
+	mode_t mode = ip->i_mode >> 6;
+	if ((mode & amode) == amode)
+		return 0;
+	errno = EACCES;
+	return -1;
 }

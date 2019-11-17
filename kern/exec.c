@@ -69,10 +69,8 @@ int do_execve(struct inode *ip, char *const *argv, char *const *envp)
 		errno = EISDIR;
 		return -1;
 	}
-	if (!S_CHECK(ip->i_mode, S_IXOTH)) {
-		errno = EPERM;
+	if (iaccess(ip, X_OK, 0) == -1)
 		return -1;
-	}
 	char **kargv = dup_arr2d(argv);
 	char **kenvp = dup_arr2d(envp);
 	int ret = __do_execve(ip, kargv, kenvp);

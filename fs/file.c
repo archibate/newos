@@ -140,3 +140,16 @@ int fs_pipe(struct file *fs[2])
 	fs[1] = fw;
 	return 0;
 }
+
+int fs_truncate(struct file *f, off_t length)
+{
+	if ((f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY) {
+		errno = EPERM;
+		return 0;
+	}
+	if (length < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+	return itruncate(f->f_ip, length);
+}

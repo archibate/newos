@@ -44,6 +44,8 @@ static inline void list_insert_head(
 		struct list_node *node,
 		struct list_head *head)
 {
+	if (head->first)
+		head->first->pprev = &node->next;
 	node->next = head->first;
 	node->pprev = &head->first;
 	head->first = node;
@@ -98,12 +100,12 @@ static inline void list_remove(
 
 #define list_entry(node, type, list) container_of(node, type, list)
 #define list_next(entry, list) list_entry((entry)->list.next, typeof(*(entry)), list)
-#define list_foreach(entry, head, list, ...) \
-	for (__VA_ARGS__ (entry) = list_entry((head)->first, typeof((*entry)), list); \
-			&(entry)->list; (entry) = list_next(entry, list))
-#define list_remove_foreach(entry, head, list, ...) \
+#define list_foreach(entry, head, list) \
 	for ((entry) = list_entry((head)->first, typeof((*entry)), list); \
-			&(entry)->list; list_remove(&(entry)->list), \
-			(entry) = list_entry((head)->first, typeof((*entry)), list))
+			&(entry)->list; (entry) = list_next(entry, list))
+#define list_foreach_s(next, entry, head, list) \
+	for ((entry) = list_entry((head)->first, typeof((*entry)), list); \
+			&(entry)->list && (((next) = list_next(entry, list)) || 1); \
+			(entry) = (next))
 
 #endif

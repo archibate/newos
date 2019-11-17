@@ -32,20 +32,20 @@ static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 		size_t memsz = PAGEUP(ph.p_memsz);
 		// PF_* and PROT_* are exactly same, so we can do so:
 		mm_new_area(mm, ph.p_vaddr, filesz,
-				ph.p_flags & 7, MAP_PRIVATE, ip, ph.p_offset);
+				ph.p_flags & 7, MAP_FIXED_NOREPLACE, ip, ph.p_offset);
 		if (PGOFFS(ph.p_vaddr)) {
 			printk("WARNING: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
 			continue;
 		}
 		if (memsz > filesz)
 			mm_new_area(mm, ph.p_vaddr + filesz, memsz - filesz,
-					ph.p_flags & 7, MAP_PRIVATE, NULL, 0);
+					ph.p_flags & 7, MAP_FIXED_NOREPLACE, NULL, 0);
 		if (ebss < ph.p_vaddr + memsz)
 			ebss = ph.p_vaddr + memsz;
 	}
 
 	mm_new_area(mm, ebss, USER_STACK_SIZE,
-			PROT_READ | PROT_WRITE, MAP_PRIVATE, NULL, 0);
+			PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE, NULL, 0);
 
 	mm->ebss = ebss;
 	mm->ebrk = ebss;

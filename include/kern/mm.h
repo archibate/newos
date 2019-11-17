@@ -9,6 +9,8 @@
 #include <stdint.h>
 // Get list data structure.
 #include <ds/list.h>
+// Get PROT_*, MAP_*
+#include <bits/mman.h>
 
 #define PGSIZE	0x1000
 #define PGMASK	0xfffff000
@@ -76,15 +78,6 @@ extern pte_t *kern_ptes;
 #define PGDOWN(x) ((typeof(x))(((uintptr_t)(x)) & PGMASK))
 #define PAGEUP(x) ((typeof(x))(((uintptr_t)(x) + PGSIZE - 1) & PGMASK))
 
-#define PROT_EXEC	1
-#define PROT_WRITE	2
-#define PROT_READ	4
-#define PROT_NONE	0
-
-#define MAP_SHARED	1
-#define MAP_PRIVATE	2
-#define MAP_FIXED	3
-
 struct mm_struct
 {
 	struct list_head mm_areas;
@@ -133,6 +126,10 @@ struct vm_area_struct *mm_new_area(
 		viraddr_t begin, size_t size,
 		int prot, int flags,
 		struct inode *file, off_t offset);
+int mm_find_replace_area(
+		struct mm_struct *mm,
+		viraddr_t begin, viraddr_t end,
+		int noreplace);
 void mm_del_area(struct vm_area_struct *vm);
 struct vm_page *vm_area_new_page(
 		struct vm_area_struct *vm,

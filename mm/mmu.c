@@ -34,7 +34,8 @@ tlb_invalidate(pde_t *pd, void *va)
 pte_t *
 pgdir_walk(pde_t *pd, void *va, int create)
 {
-	unsigned long i = (long)va >> 22, j = ((long)va >> 12) & 0x3ff;
+	unsigned long i = (unsigned long)va >> 22;
+	unsigned long j = (unsigned long)va >> 12 & 0x3ff;
 	if (!(pd[i] & PG_P)) {
 		if (!create)
 			return NULL;

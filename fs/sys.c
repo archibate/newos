@@ -10,10 +10,8 @@ static int do_chdir(struct inode *ip)
 		errno = ENOTDIR;
 		return -1;
 	}
-	if (!S_CHECK(ip->i_mode, S_IXOTH)) {
-		errno = EACCES;
+	if (iaccess(ip, X_OK, 0) == -1)
 		return -1;
-	}
 	if (current->cwd) iput(current->cwd);
 	current->cwd = ip;
 	return 0;
@@ -24,13 +22,6 @@ int sys_chdir(const char *path)
 	struct inode *ip = namei(path);
 	if (!ip) return -1;
 	return do_chdir(ip);
-}
-
-int sys_mkdir(const char *path, mode_t mode)
-{
-	struct inode *ip = creati(path, 1, (mode & 0777) | S_IFDIR, 0);
-	if (ip) iput(ip);
-	return ip ? 0 : -1;
 }
 
 int sys_link(const char *path1, const char *path2)
@@ -51,21 +42,26 @@ static int alloc_fd(unsigned begin)
 	for (unsigned i = begin; i < NR_OPEN; i++)
 		if (!current->filp[i])
 			return i;
+	errno = ENFILE;
+	return -1;
+}
+
+static inline int badf(void)
+{
+	errno = EBADF;
 	return -1;
 }
 
 int sys_open(const char *path, int flags, mode_t mode)
 {
+	int fd = alloc_fd(0);
+	if (fd == -1)
+		return -1;
 	follow_policy_enter(flags & O_NOFOLLOW, flags & O_SYMLINK);
 	struct file *f = fs_open(path, flags, mode);
 	follow_policy_leave();
 	if (!f)
 		return -1;
-	int fd = alloc_fd(0);
-	if (fd == -1) {
-		fs_close(f);
-		return fd;
-	}
 	current->filp[fd] = f;
 	return fd;
 }
@@ -73,40 +69,22 @@ int sys_open(const char *path, int flags, mode_t mode)
 int sys_close(int fd)
 {
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
 	fs_close(f);
 	current->filp[fd] = NULL;
 	return 0;
 }
 
-int sys_dup2(int fd, int fd2)
-{
-	if ((unsigned)fd >= NR_OPEN)
-		return -1;
-	if ((unsigned)fd2 >= NR_OPEN)
-		return -1;
-	if (fd == fd2)
-		return -1;
-	struct file *f = current->filp[fd];
-	if (!f)
-		return -1;
-	struct file **f2 = &current->filp[fd2];
-	if (*f2)
-		fs_close(*f2);
-	*f2 = fs_dup(f);
-	return fd2;
-}
-
 int sys_fcntl(int fd, int cmd, int arg)
 {
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
 
 	switch (cmd) {
 	case F_DUPFD:
@@ -129,6 +107,7 @@ int sys_fcntl(int fd, int cmd, int arg)
 	case F_GETFD:
 		return f->f_fdargs;
 	}
+	errno = EINVAL;
 	return -1;
 }
 
@@ -136,10 +115,11 @@ int sys_fcntl(int fd, int cmd, int arg)
 ssize_t sys_write(int fd, const void *buf, size_t size)
 {
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
+	errno = 0;
 	size = fs_write(f, buf, size);
 	if (!size && errno < 0)
 		return -1;
@@ -149,10 +129,10 @@ ssize_t sys_write(int fd, const void *buf, size_t size)
 ssize_t sys_read(int fd, void *buf, size_t size)
 {
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
 	errno = 0;
 	size = fs_read(f, buf, size);
 	if (!size && errno > 0)
@@ -163,31 +143,21 @@ ssize_t sys_read(int fd, void *buf, size_t size)
 off_t sys_lseek(int fd, off_t offset, int whence)
 {
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
 	return fs_seek(f, offset, whence);
 }
 
 int sys_dirread(int fd, struct dirent *de)
 {
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
 	return fs_dirread(f, de);
-}
-
-int sys_fstat(int fd, struct stat *st)
-{
-	if ((unsigned)fd >= NR_OPEN)
-		return -1;
-	struct file *f = current->filp[fd];
-	if (!f)
-		return -1;
-	return istat(f->f_ip, st);
 }
 
 int sys_pipe(int fd[2])
@@ -218,10 +188,10 @@ static int at_enter(int fd)
 		return 0;
 	}
 	if ((unsigned)fd >= NR_OPEN)
-		return -1;
+		return badf();
 	struct file *f = current->filp[fd];
 	if (!f)
-		return -1;
+		return badf();
 	at_old_cwd = idup(current->cwd);
 	if (do_chdir(idup(f->f_ip)) == -1) {
 		iput(at_old_cwd);
@@ -274,13 +244,25 @@ int sys_fstatat(int fd, const char *path, struct stat *st, int flag)
 	return ret;
 }
 
+int sys_faccessat(int fd, const char *path, int amode, int flag)
+{
+	follow_policy_enter(0, flag & AT_SYMLINK_NOFOLLOW);
+	struct inode *ip = at_namei(fd, path, flag);
+	follow_policy_leave();
+	if (!ip) return -1;
+	int ret = iaccess(ip, amode, flag & AT_EACCESS);
+	iput(ip);
+	return ret;
+}
+
 int sys_mkdirat(int fd, const char *path, mode_t mode)
 {
 	if (at_enter(fd) == -1)
 		return -1;
-	int ret = sys_mkdir(path, mode);
+	struct inode *ip = creati(path, 1, (mode & 0777) | S_IFDIR, 0);
 	at_leave();
-	return ret;
+	if (ip) iput(ip);
+	return ip ? 0 : -1;
 }
 
 int sys_unlinkat(int fd, const char *path, int flag)
@@ -290,4 +272,31 @@ int sys_unlinkat(int fd, const char *path, int flag)
 	int ret = unlinki(path, !!(flag & AT_REMOVEDIR));
 	at_leave();
 	return ret;
+}
+
+int sys_linkat(int fd1, const char *path1, int fd2, const char *path2, int flag)
+{
+	follow_policy_enter(0, !(flag & AT_SYMLINK_FOLLOW));
+	struct inode *ip = at_namei(fd1, path1, flag);
+	follow_policy_leave();
+	if (!ip)
+		return -1;
+	if (at_enter(fd2) == -1) {
+		iput(ip);
+		return -1;
+	}
+	int ret = linki(path2, ip);
+	at_leave();
+	iput(ip);
+	return ret;
+}
+
+int sys_ftruncate(int fd, off_t length)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return badf();
+	struct file *f = current->filp[fd];
+	if (!f)
+		return badf();
+	return fs_truncate(f, length);
 }

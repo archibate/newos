@@ -165,7 +165,7 @@ _syscall1(14, long, ssetmask, long);
 _syscall3(15, long, signal_r, int, void *, void *);
 _syscall2(16, int, kill, pid_t, int);
 _syscall1(17, int, raise, int);
-_syscall2(18, int, mkdir, const char *, mode_t);
+_syscall3(18, int, mkdirat, int, const char *, mode_t);
 _syscall3(19, int, unlinkat, int, const char *, int);
 _syscall2(20, int, link, const char *, const char *);
 _syscall2(21, int, dirread, int, struct dirent *);
@@ -174,8 +174,11 @@ _syscall4(23, int, openat, int, const char *, int, mode_t);
 _syscall0(24, pid_t, getpid);
 _syscall0(25, pid_t, getppid);
 _syscall4(26, int, fstatat, int, const char *, struct stat *, int);
-_syscall3(27, int, mkdirat, int, const char *, mode_t);
+_syscall4(27, int, faccessat, int, const char *, int, int);
 _syscall1(28, int, pipe, int *);
+_syscall5(29, int, linkat, int, const char *, int, const char *, int);
+_syscall6(30, void *, mmap, void *, size_t, int, int, int, off_t);
+_syscall2(31, int, munmap, void *, size_t);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

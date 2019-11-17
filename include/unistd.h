@@ -64,5 +64,9 @@ int symlink(const char *path1, const char *path2);
 ssize_t readlink(const char *path, char *buf, size_t size);
 ssize_t readlinkat(int fd, const char *path, char *buf, size_t size);
 int pipe(int fd[2]);
+int access(const char *path, int amode);
+int faccessat(int fd, const char *path, int amode, int flag);
+int truncate(const char *path, off_t length);
+int ftruncate(int fd, off_t length);
 
 #endif

@@ -398,6 +398,7 @@ pid_t tpids[MAX_TERM];
 
 void execute_ti(int ti)
 {
+	tpids[ti] = -1;
 	ts[ti].argv[ts[ti].argc] = NULL;
 	if (!ts[ti].argv[0])
 		return;
@@ -411,9 +412,10 @@ void execute_ti(int ti)
 	}
 
 	pid_t pid = do_forkexec(ti);
-	tpids[ti] = pid;
 	if (pid == -1)
 		last_exit_stat = 0xff;
+	else
+		tpids[ti] = pid;
 }
 
 void execute(void)
@@ -423,10 +425,8 @@ void execute(void)
 	for (int i = 0; i < tc; i++)
 		execute_ti(i);
 	for (int i = 0; i < tc; i++)
-		if (tpids[i] != -1) {
-			debug("wait(%d)\n", tpids[i]);
+		if (tpids[i] != -1)
 			wait_for(tpids[i]);
-		}
 }
 
 int main(void)
@@ -435,7 +435,7 @@ int main(void)
 		pwd[0] = 0;
 	while (!feof(stdin)) {
 		if (last_exit_stat)
-		eprintf("%d ", last_exit_stat);
+			eprintf("%d ", last_exit_stat);
 		eprintf("%s # ", pwd);
 		parse_input();
 		if (!errcnt)

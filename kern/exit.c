@@ -32,7 +32,7 @@ do_exit(int exit_code)
 	if (current->pid == 0)
 		panic("idle task trying to exit");
 	if (current->pid == 1)
-		panic("init task exited");
+		panic("init task exited with %#x", exit_code);
 	for (int i = 0; i < NR_OPEN; i++)
 		if (current->filp[i])
 			fs_close(current->filp[i]);

@@ -6,6 +6,7 @@
 #include <sys/reg.h>
 #include <string.h>
 #include <malloc.h>
+#include <errno.h>
 
 static int vm_mmu_perm(struct vm_area_struct *vm)
 {
@@ -24,9 +25,9 @@ struct mm_struct *create_mm(void)
 
 void free_mm(struct mm_struct *mm)
 {
-	struct vm_area_struct *vm;
+	struct vm_area_struct *vm, *_vmn;
 	put_page(kva2page(mm->pd));
-	list_foreach(vm, &mm->mm_areas, vm_list)
+	list_foreach_s(_vmn, vm, &mm->mm_areas, vm_list)
 		mm_del_area(vm);
 	free(mm);
 }
@@ -113,6 +114,70 @@ struct vm_area_struct *mm_find_area(
 	return NULL;
 }
 
+static void select_inn_vm_pages(
+		struct vm_area_struct *vm1,
+		struct vm_area_struct *vm)
+{
+	viraddr_t va;
+	struct vm_page *pg, *pg1;
+	struct list_node **pprev = &vm1->vm_pages.first;
+	list_foreach(pg, &vm->vm_pages, pg_list) {
+		va = vm->vm_begin + (pg->pg_index << 12);
+		if (!(vm1->vm_begin <= va && va <= vm1->vm_end))
+			continue;
+		pg1 = dup_mm_vm_page(vm1, pg);
+		pg1->pg_index = (va - vm1->vm_begin) >> 12;
+		*pprev = &pg1->pg_list;
+		pg1->pg_list.pprev = pprev;
+		pprev = &pg1->pg_list.next;
+	}
+	*pprev = NULL;
+}
+
+static void mm_sep_del_area_in(
+		struct vm_area_struct *vm,
+		viraddr_t begin, viraddr_t end)
+{
+	struct vm_area_struct *vm1;
+	if (vm->vm_begin < begin && vm->vm_end >= begin) {
+		vm1 = malloc(sizeof(struct vm_area_struct));
+		memcpy(vm1, vm, sizeof(struct vm_area_struct));
+		vm1->vm_file = vm->vm_file ? idup(vm->vm_file) : NULL;
+		vm1->vm_end = begin - 1;
+		vm1->vm_pages = LIST_INIT;
+		select_inn_vm_pages(vm1, vm);
+		list_insert_head(&vm1->vm_list, &vm1->vm_mm->mm_areas);
+	}
+	if (vm->vm_begin <= end && vm->vm_end > end) {
+		vm1 = malloc(sizeof(struct vm_area_struct));
+		memcpy(vm1, vm, sizeof(struct vm_area_struct));
+		vm1->vm_file = vm->vm_file ? idup(vm->vm_file) : NULL;
+		vm1->vm_begin = end + 1;
+		vm1->vm_file_offset += vm1->vm_begin - vm->vm_begin;
+		vm1->vm_pages = LIST_INIT;
+		select_inn_vm_pages(vm1, vm);
+		list_insert_head(&vm1->vm_list, &vm1->vm_mm->mm_areas);
+	}
+	struct vm_area_struct *v;
+	struct mm_struct *mm = vm->vm_mm;
+	mm_del_area(vm);
+}
+
+int mm_find_replace_area(
+		struct mm_struct *mm,
+		viraddr_t begin, viraddr_t end,
+		int noreplace)
+{
+	struct vm_area_struct *vm;
+	vm = mm_find_area(mm, begin, end);
+	if (!vm) return 1;
+	if (noreplace) return 0;
+	do {
+		mm_sep_del_area_in(vm, begin, end);
+	} while ((vm = mm_find_area(mm, begin, end)));
+	return 1;
+}
+
 struct vm_area_struct *mm_new_area(
 		struct mm_struct *mm,
 		viraddr_t begin, size_t size,
@@ -121,8 +186,10 @@ struct vm_area_struct *mm_new_area(
 {
 	struct vm_area_struct *vm;
 	viraddr_t end = begin + size - 1;
-	vm = mm_find_area(mm, begin, end);
-	if (vm) return NULL;
+	if (!mm_find_replace_area(mm, begin, end, flags & MAP_NOREPLACE)) {
+		errno = EEXIST;
+		return NULL;
+	}
 	vm = calloc(sizeof(struct vm_area_struct), 1);
 	vm->vm_begin = begin;
 	vm->vm_end = end;
@@ -137,12 +204,12 @@ struct vm_area_struct *mm_new_area(
 
 void mm_del_area(struct vm_area_struct *vm)
 {
-	struct vm_page *pg;
+	struct vm_page *pg, *_pgn;
 	if (vm->vm_file)
 		iput(vm->vm_file);
-	list_foreach(pg, &vm->vm_pages, pg_list)
+	list_foreach_s(_pgn, pg, &vm->vm_pages, pg_list)
 		vm_area_del_page(pg);
-	__list_remove(&vm->vm_list);
+	list_remove(&vm->vm_list);
 	free(vm);
 }
 
@@ -180,7 +247,7 @@ void vm_area_del_page(struct vm_page *pg)
 	struct mm_struct *mm = vm->vm_mm;
 	viraddr_t vaddr = vm->vm_begin + (pg->pg_index << 12);
 	page_remove(mm->pd, (void *)vaddr);
-	__list_remove(&pg->pg_list);
+	list_remove(&pg->pg_list);
 	struct vm_page *tail = get_cow_tail(pg);
 	tail->cow_next = pg->cow_next;
 	pg->cow_next = NULL;

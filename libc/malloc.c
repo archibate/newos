@@ -166,6 +166,7 @@ void free(void *p)
 		else
 			panic("bad free %p (%p)", p, b->ptr);
 	}
+	//memset(p, 0xcc, b->size);
 
 	b->ptr = NULL;
 	if (b->prev && !b->prev->ptr) {
