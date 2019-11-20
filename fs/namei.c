@@ -303,7 +303,7 @@ int unlinki(const char *path, int rmdir)
 	}
 	i = dir_find_entry(pip, &de, name, strchrnul(name, '/') - name);
 	if (i == -1) {
-		printk("WARNING: namei BUG, entry [%s] not found!", name);
+		printk("ERROR: namei BUG, entry [%s] not found!", name);
 		iput(ip);
 		iput(pip);
 		errno = ENOENT;

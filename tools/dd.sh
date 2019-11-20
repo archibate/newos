@@ -1,8 +1,8 @@
 #!/bin/sh
 
-dd $* 2> /tmp/dd.out.$PID
+dd $* 2> /tmp/dd.out.$$
 stat=$?
-grep -v 'records\|copied' /tmp/dd.out.$PID >&2
-grep 'records\|copied' /tmp/dd.out.$PID
-rm -f /tmp/dd.out.$PID
+grep -v 'records\|copied' /tmp/dd.out.$$ >&2
+grep 'records\|copied' /tmp/dd.out.$$
+rm -f /tmp/dd.out.$$
 exit $stat

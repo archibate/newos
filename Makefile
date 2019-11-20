@@ -1,25 +1,40 @@
+DYN=1
+RELEASE=1
+#####################################
 ifdef RELEASE
 OPTIM=3
+STRIP=strip
 else
 COPT+=-ggdb -gstabs+ -D_KDEBUG
 endif
+ifeq ($(STRIP),)
+STRIP=:
+endif
 COPT+=$(if $(OPTIM), -O$(OPTIM))
-CFLAGS=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
+CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-fno-stack-protector -Iinclude -Wall -Wextra \
 	-Wno-unused -Wno-main -Wno-frame-address \
 	-Wno-builtin-declaration-mismatch \
 	-Werror=int-conversion -Werror=implicit-int \
 	-Werror=implicit-function-declaration
+ifeq ($(DYN),)
+CFLAGS+=-D_LIBC_EXP
+endif
+LDFLAGS=-m elf_i386
 QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
 QEMUCMD=qemu-system-i386 $(QEMUOPT)
+LIBGCC=$(shell gcc $(CFLAGS) -print-libgcc-file-name)
 KERN_DIRS=kern mm fs libc/pure
 KERN_SRCS=$(shell find $(KERN_DIRS) -name '*.[cS]' -type f)
-KERN_OBJS=build/tools/stext.c.o $(KERN_SRCS:%=build/%.o) \
-	 $(shell gcc -m32 -print-libgcc-file-name) build/tools/ebss.c.o
+KERN_OBJS=build/scripts/stext.c.o $(KERN_SRCS:%=build/%.o) build/scripts/ebss.c.o
 USER_SRCS=$(shell find usr -name '*.[cS]' -type f)
 USER_BINS=$(shell echo $(USER_SRCS:%=build/%) | sed 's/\.[cS]//g')
+ifneq ($(DYN),)
+USER_LIBS=build/libc.dl
+endif
 LIBC_SRCS=$(shell find libc -name '*.[cS]' -type f)
 LIBC_OBJS=$(LIBC_SRCS:%=build/%.o)
+CRT0_OBJS=build/scripts/crt0.c.o
 
 .PHONY: default
 default: all
@@ -50,6 +65,9 @@ build/filesys.txt: filesys.txt usr
 	@echo 'bin {' >> $@
 	@for x in $(USER_BINS); do echo 0755 `basename $$x` $$x >> $@; done
 	@echo '}' >> $@
+	@echo 'lib {' >> $@
+	@for x in $(USER_LIBS); do echo `basename $$x` $$x >> $@; done
+	@echo '}' >> $@
 
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
 
@@ -64,7 +82,7 @@ build/vmlinux.bin: build/vmlinux
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@objcopy -O binary -S $< $@
-	@tools/fixsects.c $@
+	@truncate -s%512 $@
 
 build/%.S.o: %.S
 	@echo - '[as]' $<
@@ -96,13 +114,16 @@ build/%.c.o.d: %.c
 	@mkdir -p $(@D)
 	@gcc -M -MT $(@:%.d=%) $(CFLAGS) -c -o $@ $<
 
-build/%.d: %.c
-	@echo - '[dep]' $<
-	@mkdir -p $(@D)
-	@gcc -M -MT $(@:%.d=%) $(CFLAGS) -c -o $@ $<
+ifneq ($(DYN),)
+#build/libc/%: CFLAGS+=-fPIC
+$(foreach x, $(KERN_DIRS) libc, build/$x/%): CFLAGS+=-D_LIBC_EXP
+endif
 
-build/usr/%: build/usr/%.c.o build/libc.a user.ld
-	@ld -m elf_i386 -static -T $(word 3, $^) -o $@ $< $(word 2, $^)
+build/usr/%: build/usr/%.c.o $(CRT0_OBJS) scripts/user.ld build/libc.a
+	@echo + '[ld]' $@
+	@mkdir -p $(@D)
+	@ld -nostdlib $(LDFLAGS) -T scripts/user.ld -L build -e _start -o $@ $(CRT0_OBJS) $< $(LIBGCC) -lc
+	@$(STRIP) $@
 
 .PHONY: info
 info:
@@ -113,6 +134,9 @@ info:
 	@echo LIBC_SRCS=$(LIBC_SRCS)
 	@echo USER_SRCS=$(USER_SRCS)
 	@echo USER_BINS=$(USER_BINS)
+	@echo CRT0_OBJS=$(CRT0_OBJS)
+	@echo LDSCRIPT=$(LDSCRIPT)
+	@echo LIBGCC=$(LIBGCC)
 
 .PHONY: kernel
 kernel: build/vmlinux
@@ -120,12 +144,36 @@ kernel: build/vmlinux
 build/vmlinux: $(KERN_OBJS)
 	@echo + '[ld]' $@
 	@mkdir -p $(@D)
-	@ld -m elf_i386 -static -e _start -Ttext 0x100000 -o $@ $^
+	@ld $(LDFLAGS) -static -e _start -Ttext 0x100000 -o $@ $^ $(LIBGCC)
+	@$(STRIP) $@
 
+ifeq ($(DYN),)
 build/libc.a: $(LIBC_OBJS)
 	@echo + '[ar]' $@
 	@mkdir -p $(@D)
+	@-rm -rf $@
 	@ar cqs $@ $^
+	@$(STRIP) $@
+else
+build/libc.dl.nostrip: $(LIBC_OBJS) scripts/dynlib.ld
+	@echo + '[ld]' $@
+	@mkdir -p $(@D)
+	@ld $(LDFLAGS) -static -T scripts/dynlib.ld -o $@ $(LIBC_OBJS)
+	@tools/dd.sh of=$@ if=tools/elfdynsig.bin seek=8 count=1 bs=2 conv=notrunc
+
+build/%.dl: build/%.dl.nostrip
+ifeq ($(STRIP),:)
+	@cp $< $@
+else
+	@$(STRIP) $< -o $@
+endif
+
+build/%.a: build/%.dl.nostrip
+	@echo + '[gen]' $@
+	@mkdir -p $(@D)
+	@tools/makedlo.sh $<
+	@test -f $@
+endif
 
 .PHONY: clean
 clean:
@@ -138,5 +186,7 @@ build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_BINS:%=%
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $^ > $@
+
+.PRECIOUS: build/scripts/% build/%.a build/%.dl
 
 include build/dep

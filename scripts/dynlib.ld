@@ -1,22 +1,17 @@
-ENTRY(_start)
+ENTRY(__dynlib_elf_start)
 
 PHDRS
 {
-	headers PT_LOAD FILEHDR PHDRS;
-	text PT_LOAD;
-	rodata PT_LOAD;
+	text PT_LOAD FILEHDR PHDRS;
 	data PT_LOAD;
 }
 
 SECTIONS {
-	. = 0x40000000;
-	.interp : {
-		*(.interp)
-	} :text
+	. = 0xc0000000;
+	PROVIDE(__dynlib_elf_start = .);
 	.text : {
 		*(.text .text.*)
 		*(.gnu.linkonce.t.*)
-		. = ALIGN(4096);
 	} :text
 	.rodata : {
 		*(.rodata .rodata.* .rdata .rdata.*)
@@ -27,22 +22,24 @@ SECTIONS {
 		__DTORS_BEGIN__ = .;
 		*(.dtor*)
 		__DTORS_END__ = .;
-		. = ALIGN(4096);
-	} :rodata
+		*(.eh_frame)
+	} :text
+	. = ALIGN(4K);
 	.data : {
 		*(.data .data.*)
 		*(.gnu.linkonce.d.*)
-		*(.plt .iplt .rela.plt .rela.iplt .plt.got .plt.sec)
-		*(.got .igot .got.plt .igot.plt)
-		. = ALIGN(4096);
+		*(.plt) *(.iplt)
+		*(.plt.got) *(plt.sec)
+		*(.got) *(.igot)
+		*(.got.plt) *(.igot.plt)
 	} :data
+	. = ALIGN(4K);
 	.bss : {
 		*(COMMON)
-		*(.dynbss)
 		*(.bss .bss.*)
 		*(.gnu.linkonce.b.*)
-		. = ALIGN(4096);
 	} :data
+	. = ALIGN(4K);
 	.stab 0 : {
 		*(.stab)
 	}
@@ -99,7 +96,6 @@ SECTIONS {
 	/DISCARD/ : {
 		*(.note)
 		*(.note.*)
-		*(.eh_frame)
 		*(.gnu_debuglink)
 		*(.gnu.lto_*)
 	}

@@ -22,7 +22,13 @@ typedef struct _fpos
 	long __pos;
 } fpos_t;
 
-extern FILE *stdin, *stdout, *stderr;
+#ifndef _LIBC_EXP
+#define __iob (*IMP$__iob)
+#endif
+extern FILE *__iob[3];
+#define stdin  (__iob[0])
+#define stdout (__iob[1])
+#define stderr (__iob[2])
 
 int printf(const char *fmt, ...);
 int fprintf(FILE *fp, const char *fmt, ...);

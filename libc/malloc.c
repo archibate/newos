@@ -49,7 +49,7 @@ typedef struct header
 	void *ptr;
 } H;
 
-H *first_block;
+static H *first_block;
 
 static H *search_block(H **pprev, size_t size)
 {

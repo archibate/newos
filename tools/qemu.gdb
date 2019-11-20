@@ -8,6 +8,9 @@ target remote localhost:1234
 def lu
 		add-symbol-file build/usr/$arg0
 end
+def ll
+		add-symbol-file build/$arg0.dl
+end
 
 define toboot
 	set architecture i8086

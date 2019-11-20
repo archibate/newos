@@ -42,7 +42,7 @@ static int alloc_fd(unsigned begin)
 	for (unsigned i = begin; i < NR_OPEN; i++)
 		if (!current->filp[i])
 			return i;
-	errno = ENFILE;
+	errno = EMFILE;
 	return -1;
 }
 

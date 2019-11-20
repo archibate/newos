@@ -43,7 +43,7 @@ int do_truncate(const char *sz, const char *path)
 	struct stat st;
 	stat(path, &st);
 	size_t size = get_size(sz, st.st_size);
-	if (size == st.st_size)
+	if (size == (size_t)st.st_size)
 		return 0;
 	if (truncate(path, size) == -1) {
 		perror(path);

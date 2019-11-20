@@ -3,8 +3,83 @@
 #include <kern/gdt.h>
 #include <kip/elf.h>
 #include <string.h>
+#include <malloc.h>
 
 #define irdexec(...) rw_inode(READ, __VA_ARGS__)
+#define bad_load() sys_exit(-1)
+
+static int mm_load_dyn_elf(struct mm_struct *mm, struct inode *ip);
+
+static void load_dynamics(struct mm_struct *mm, struct inode *ip, off_t offset)
+{
+	int ret;
+	char *name;
+	off_t dlt_pos;
+	struct elf32_dlhdr dl;
+	struct inode *dlip;
+	for (dlt_pos = offset;
+		irdexec(ip, dlt_pos, &dl, sizeof(dl)) == sizeof(dl) && dl.d_namelen;
+		dlt_pos += sizeof(dl) + dl.d_namelen);
+	for (;	irdexec(ip, offset, &dl, sizeof(dl)) == sizeof(dl) && dl.d_namelen;
+		offset += sizeof(dl) + dl.d_namelen) {
+		if ((unsigned)dl.d_namelen > PATH_MAX)
+			bad_load();
+		name = malloc(dl.d_namelen + 1);
+		irdexec(ip, offset + sizeof(dl), name, dl.d_namelen);
+		name[dl.d_namelen] = 0;
+		//printk("load_dynamic %s (%d symbols)", name, dl.d_dltents);
+		dlip = namei(name);
+		if (dlip) {
+			ret = mm_load_dyn_elf(mm, dlip);
+			iput(dlip);
+		} else ret = -1;
+		if (ret == -1) {
+			printk("cannot load shared library %s", name);
+			free(name);
+			bad_load();
+		}
+		free(name);
+	}
+	return;
+}
+
+static int mm_load_dyn_elf(struct mm_struct *mm, struct inode *ip)
+{
+	struct elf32_ehdr e;
+	struct elf32_phdr ph;
+	irdexec(ip, 0, &e, sizeof(e));
+	if (e.e_magic != ELF_MAGIC)
+		return -1;
+	if (e.e_bits != ELF_32)
+		return -1;
+	if (e.e_endian != ELF_LE)
+		return -1;
+	if (e.e_machine != EM_386)
+		return -1;
+	if (e.e_type != ET_DYN)
+		return -1;
+
+	for (size_t i = 0; i < e.e_phnum; i++) {
+		irdexec(ip, e.e_phoff + i * e.e_phentsz, &ph, sizeof(ph));
+		if (ph.p_type != PT_LOAD)
+			continue;
+		size_t filesz = PAGEUP(ph.p_filesz);
+		size_t memsz = PAGEUP(ph.p_memsz);
+		// PF_* and PROT_* are exactly same, so we can do so:
+		if (!mm_new_area(mm, ph.p_vaddr, filesz,
+				ph.p_flags & 7, MAP_FIXED_NOREPLACE, ip, ph.p_offset))
+			return -1;
+		if (PGOFFS(ph.p_vaddr)) {
+			printk("WARNING: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
+			continue;
+		}
+		if (memsz > filesz)
+			mm_new_area(mm, ph.p_vaddr + filesz, memsz - filesz,
+					ph.p_flags & 7, MAP_FIXED_NOREPLACE, NULL, 0);
+	}
+
+	return 0;
+}
 
 static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 {
@@ -26,13 +101,22 @@ static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 
 	for (size_t i = 0; i < e.e_phnum; i++) {
 		irdexec(ip, e.e_phoff + i * e.e_phentsz, &ph, sizeof(ph));
+		if (ph.p_type == PT_DYNAMIC) {
+			load_dynamics(mm, ip, ph.p_offset);
+			continue;
+		}
+	}
+	for (size_t i = 0; i < e.e_phnum; i++) {
+		irdexec(ip, e.e_phoff + i * e.e_phentsz, &ph, sizeof(ph));
 		if (ph.p_type != PT_LOAD)
 			continue;
 		size_t filesz = PAGEUP(ph.p_filesz);
 		size_t memsz = PAGEUP(ph.p_memsz);
 		// PF_* and PROT_* are exactly same, so we can do so:
-		mm_new_area(mm, ph.p_vaddr, filesz,
-				ph.p_flags & 7, MAP_FIXED_NOREPLACE, ip, ph.p_offset);
+		if (!mm_new_area(mm, ph.p_vaddr, filesz,
+				ph.p_flags & 7, MAP_FIXED_NOREPLACE, ip, ph.p_offset)) {
+			bad_load();
+		}
 		if (PGOFFS(ph.p_vaddr)) {
 			printk("WARNING: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
 			continue;
