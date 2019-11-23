@@ -21,6 +21,8 @@ char *getenv(const char *name);
 __attribute__((noreturn)) void exit(int status);
 __attribute__((noreturn)) void _Exit(int status);
 __attribute__((noreturn)) void abort(void);
+int atexit(void (*proc)(void));
+int on_exit(void (*proc)(int, void *), void *);
 
 int rand_r(unsigned int *sp);
 void srand(unsigned int s);
@@ -30,5 +32,7 @@ long strtol(const char *s, char **endptr, int base);
 int atoi(const char *s);
 div_t div(int a, int b);
 int abs(int x);
+
+int system(const char *s);
 
 #endif

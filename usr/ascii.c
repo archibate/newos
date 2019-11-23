@@ -13,6 +13,8 @@ true */
 #define _ARGV0 (argv[0])
 #endif // }}}
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <termios.h>
 

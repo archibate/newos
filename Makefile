@@ -16,7 +16,7 @@ CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-Wno-unused -Wno-main -Wno-frame-address \
 	-Wno-builtin-declaration-mismatch \
 	-Werror=int-conversion -Werror=implicit-int \
-	-Werror=implicit-function-declaration
+	-Werror=implicit-function-declaration -D_NEWOS
 ifeq ($(DYN),)
 CFLAGS+=-D_LIBC_EXP
 endif
@@ -44,13 +44,13 @@ all: build/boot.img
 
 .PHONY: run
 run: build/boot.img
-	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log $(QRED)
+	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log
 
 .PHONY: bochs
 bochs: build/boot.img
-	@-bochs -qf tools/bochsrc.bxrc $(QRED)
+	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/filesys.txt $(USER_BINS)
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/filesys.txt $(USER_BINS) $(USER_LIBS)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
@@ -171,8 +171,8 @@ endif
 build/%.a: build/%.dl.nostrip
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
-	@tools/makedlo.sh $<
-	@test -f $@
+	@rm -rf $@
+	@tools/makedlo.sh $< $@ /lib/$*.dl
 endif
 
 .PHONY: clean

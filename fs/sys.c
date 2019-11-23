@@ -160,6 +160,16 @@ int sys_dirread(int fd, struct dirent *de)
 	return fs_dirread(f, de);
 }
 
+int sys_ioctl(int fd, int req, long arg)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return badf();
+	struct file *f = current->filp[fd];
+	if (!f)
+		return badf();
+	return fs_ioctl(f, req, arg);
+}
+
 int sys_pipe(int fd[2])
 {
 	struct file *fs[2];

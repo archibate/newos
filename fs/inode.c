@@ -220,6 +220,17 @@ struct inode *iget(dev_t dev, ino_t ino)
 	return ip;
 }
 
+int iioctl(struct inode *ip, int req, long arg)
+{
+	if (ip->i_fstype == IFS_PIPE)
+		goto notty;
+	if (S_ISCHR(ip->i_mode))
+		return chr_drv_ioctl(ip->i_nodnr, req, arg);
+notty:
+	errno = ENOTTY;
+	return -1;
+}
+
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 {
 	if (!ip)

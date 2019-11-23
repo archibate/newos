@@ -127,6 +127,11 @@ int fs_dirread(struct file *f, struct dirent *de)
 	return ret;
 }
 
+int fs_ioctl(struct file *f, int req, long arg)
+{
+	return iioctl(f->f_ip, req, arg);
+}
+
 int fs_pipe(struct file *fs[2])
 {
 	struct inode *ip = make_pipe();

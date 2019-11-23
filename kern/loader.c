@@ -34,7 +34,7 @@ static void load_dynamics(struct mm_struct *mm, struct inode *ip, off_t offset)
 			iput(dlip);
 		} else ret = -1;
 		if (ret == -1) {
-			printk("cannot load shared library %s", name);
+			printk("ld.so: cannot load shared library %s", name);
 			free(name);
 			bad_load();
 		}
@@ -70,7 +70,7 @@ static int mm_load_dyn_elf(struct mm_struct *mm, struct inode *ip)
 				ph.p_flags & 7, MAP_FIXED_NOREPLACE, ip, ph.p_offset))
 			return -1;
 		if (PGOFFS(ph.p_vaddr)) {
-			printk("WARNING: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
+			printk("ld.so: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
 			continue;
 		}
 		if (memsz > filesz)
@@ -118,7 +118,7 @@ static int mm_load_exec_elf(struct mm_struct *mm, reg_t *regs, struct inode *ip)
 			bad_load();
 		}
 		if (PGOFFS(ph.p_vaddr)) {
-			printk("WARNING: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
+			printk("ld.so: unaligned ph#%d/%p not loaded", i, ph.p_vaddr);
 			continue;
 		}
 		if (memsz > filesz)

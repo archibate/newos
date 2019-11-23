@@ -98,6 +98,7 @@ extern struct file files[NFILES];
 void ll_rw_block(struct buf *b, int rw);
 // chr_drv/
 size_t chr_drv_rw(int rw, int nr, off_t pos, void *buf, size_t size);
+int chr_drv_ioctl(int nr, int req, long arg);
 // buffer.c
 struct buf *bread(dev_t dev, blkno_t blkno);
 void bwrite(struct buf *b);
@@ -118,6 +119,7 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int istat(struct inode *ip, struct stat *st);
+int iioctl(struct inode *ip, int req, long arg);
 int iaccess(struct inode *ip, mode_t amode, int eacc);
 struct inode *alloc_m_inode(void);
 void dump_inode(int more);
@@ -137,6 +139,7 @@ size_t fs_write(struct file *f, const void *buf, size_t size);
 off_t fs_seek(struct file *f, off_t offset, int whence);
 void fs_close(struct file *f);
 int fs_dirread(struct file *f, struct dirent *de);
+int fs_ioctl(struct file *f, int req, long arg);
 int fs_pipe(struct file *fs[2]);
 int fs_truncate_s(struct file *f, size_t length);
 // pipe.c

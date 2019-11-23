@@ -439,12 +439,19 @@ void rewind(FILE *stream) {
 	fseek(stream, 0, SEEK_SET);
 }
 
-void setbuf(FILE * stream, char * buf) {
-	setvbuf(stream, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
+void setbuffer(FILE *f, char *buf, size_t size)
+{
+	setvbuf(f, buf, buf ? _IOFBF : _IONBF, size);
 }
 
-void setbuffer(FILE * stream, char * buf) {
-	setvbuf(stream, buf, _IOLBF, 0);
+void setbuf(FILE *f, char *buf)
+{
+	setvbuf(f, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
+}
+
+void setlinebuf(FILE *f)
+{
+	setvbuf(f, NULL, _IOLBF, 0);
 }
 
 int feof(FILE * stream) {

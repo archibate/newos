@@ -3,6 +3,7 @@
 
 // Get size_t.
 #include <stddef.h>
+#include <bits/termios.h>
 #include <ds/ring.h>
 
 #define TTY_MUX  0
@@ -20,6 +21,7 @@ struct tty_struct
 	int (*getc)(int *);
 	tty_queue_t read_q;
 	struct task *read_wait;
+	struct termios tc;
 };
 
 struct tty_struct ttys[NTTYS];
@@ -28,5 +30,6 @@ void tty_intr(int num);
 size_t tty_read(int num, char *buf, size_t n);
 void tty_write(int num, const char *buf, size_t n);
 void tty_register(int num, int (*putc)(int), int (*getc)(int *));
+int tty_ioctl(int num, int req, long arg);
 
 #endif

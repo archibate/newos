@@ -1,6 +1,7 @@
 #include <kern/fs.h>
 #include <kern/tty.h>
 #include <string.h>
+#include <errno.h>
 
 static size_t rw_dev_null(int rw, off_t pos, void *buf, size_t size)
 {
@@ -30,4 +31,14 @@ size_t chr_drv_rw(int rw, int nr, off_t pos, void *buf, size_t size)
 	case DEV_ZERO: return rw_dev_zero(rw, pos, buf, size);
 	}
 	return size;
+}
+
+int chr_drv_ioctl(int nr, int req, long arg)
+{
+	if (nr >= DEV_TTY0) {
+		nr -= DEV_TTY0;
+		return tty_ioctl(nr, req, arg);
+	}
+	errno = ENOTTY;
+	return -1;
 }

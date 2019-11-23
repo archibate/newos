@@ -180,6 +180,7 @@ _syscall5(29, int, linkat, int, const char *, int, const char *, int);
 _syscall6(30, void *, mmap, void *, size_t, int, int, int, off_t);
 _syscall2(31, int, munmap, void *, size_t);
 _syscall2(32, int, ftruncate_s, int, size_t);
+_syscall3(33, int, ioctl, int, int, long);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

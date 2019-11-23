@@ -47,15 +47,35 @@ void error(const char *s)
 	errcnt++;
 }
 
+const char *s;
+
+int sgetchr(void)
+{
+	return *s ? *s++ : EOF;
+}
+
+void sungetchr(int c)
+{
+	*s--;
+}
+
+void ungetchar(int c)
+{
+	ungetc(c, stdin);
+}
+
+int (*getchr)(void) = sgetchr;
+void (*ungetchr)(int c) = sungetchr;
+
 void tokestr(void)
 {
 	int c, i = 0;
 	while (1) {
-		while (!strchr("\xff \n\t\r><'\"|&\\", c = getc(stdin)))
+		while (!strchr("\xff \n;\t\r><'\"|&\\", c = getchr()))
 			token_string[i++] = c;
 
 		if (c == '\\') {
-			c = getc(stdin);
+			c = getchr();
 			if (c == EOF) {
 				error("expect character after `\\`, got EOF");
 				break;
@@ -63,7 +83,7 @@ void tokestr(void)
 			token_string[i++] = c;
 
 		} else if (c == '\'') {
-			while (!strchr("\xff'", c = getc(stdin)))
+			while (!strchr("\xff'", c = getchr()))
 				token_string[i++] = c;
 			if (c == EOF) {
 				error("expect terminating `'`, got EOF");
@@ -72,14 +92,14 @@ void tokestr(void)
 
 		} else if (c == '"') {
 rep_double_quoter:
-			while (!strchr("\xff\"\\", c = getc(stdin)))
+			while (!strchr("\xff\"\\", c = getchr()))
 				token_string[i++] = c;
 			if (c == EOF) {
 				error("expect terminating `\"`, got EOF");
 				break;
 			}
 			if (c == '\\') {
-				c = getc(stdin);
+				c = getchr();
 				if (c == EOF) {
 					error("expect character after `\\`, got EOF");
 					break;
@@ -93,7 +113,7 @@ rep_double_quoter:
 		} else break;
 	}
 	if (c != EOF)
-		ungetc(c, stdin);
+		ungetchr(c);
 	token_string[i] = 0;
 }
 
@@ -109,7 +129,7 @@ void toke(void)
 {
 	int c;
 rep:
-	c = getc(stdin);
+	c = getchr();
 	if (strchr(" \t\r", c))
 		goto rep;
 	token_string[0] = 0;
@@ -118,18 +138,19 @@ re_switch:
 	case EOF:
 	case '#':
 	case '\n':
+	case ';':
 		token_type = T_EOF;
 		break;
 	case '<':
 		token_type = T_I;
 		break;
 	case '>':
-		c = getc(stdin);
+		c = getchr();
 		if (c == '>') {
 			token_type = T_OO;
 		} else {
 			if (c != EOF)
-				ungetc(c, stdin);
+				ungetchr(c);
 			token_type = T_O;
 		}
 		break;
@@ -139,17 +160,17 @@ re_switch:
 	default:
 		token_type = T_ID;
 		if (c != EOF)
-			ungetc(c, stdin);
+			ungetchr(c);
 		tokestr();
 		if (!str_is_digital(token_string))
 			break;
-		c = getc(stdin);
+		c = getchr();
 		switch (c) {
 		case '<': case '>':
 			goto re_switch;
 		default:
 			if (c != EOF)
-				ungetc(c, stdin);
+				ungetchr(c);
 		}
 		break;
 	}
@@ -429,18 +450,46 @@ void execute(void)
 			wait_for(tpids[i]);
 }
 
-int main(void)
+void run_input(void)
 {
+	parse_input();
+	if (!errcnt)
+		execute();
+	clear_state();
+}
+
+int main(int argc, char **argv)
+{
+	int c, interactive = 1;
+	if (argv[1] && !strcmp(argv[1], "-c")) {
+		if (!argv[2]) {
+			fprintf(stderr, "-c option requires an argument\n");
+			return 1;
+		}
+		s = argv[2];
+		while (*s)
+			run_input();
+		return last_exit_stat;
+	} else if (argv[1]) {
+		fclose(stdin);
+		stdin = fopen(argv[1], "r");
+		if (!stdin) {
+			perror(argv[1]);
+			return 1;
+		}
+		interactive = 0;
+	}
+	getchr = getchar;
+	ungetchr = ungetchar;
 	if (!getcwd(pwd, sizeof(pwd)))
 		pwd[0] = 0;
 	while (!feof(stdin)) {
-		if (last_exit_stat)
-			eprintf("%d ", last_exit_stat);
-		eprintf("%s # ", pwd);
-		parse_input();
-		if (!errcnt)
-			execute();
-		clear_state();
+		if (interactive) {
+			if (last_exit_stat)
+				eprintf("%d ", last_exit_stat);
+			eprintf("%s # ", pwd);
+		}
+		run_input();
 	}
-	exit(last_exit_stat);
+	return last_exit_stat;
 }

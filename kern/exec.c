@@ -4,7 +4,7 @@
 #include <malloc.h>
 #include <errno.h>
 
-static size_t length_arr2d(char *const *src)
+static ssize_t length_arr2d(char *const *src)
 {
 	size_t n = 0;
 	while (*src++)
@@ -14,7 +14,9 @@ static size_t length_arr2d(char *const *src)
 
 static char **dup_arr2d(char *const *src)
 {
-	size_t len = length_arr2d(src);
+	ssize_t len = length_arr2d(src);
+	if (len == -1)
+		return NULL;
 	char **dst = malloc(sizeof(char *) * (len + 1));
 	char **p = dst;
 	while (len-- > 0)
