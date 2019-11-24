@@ -2,8 +2,7 @@
 true /*
 set -e
 chmod +x $0
-gcc -ggdb -gstabs+ -D_ARGV0=\"$0\" $0 -o /tmp/$$
-/tmp/$$ $*
+gcc -ggdb -gstabs+ -D_ARGV0=\"$0\" $0 -o /tmp/$$ && /tmp/$$ $*
 #cgdb /tmp/$$ $*
 x=$?
 rm -f /tmp/$$

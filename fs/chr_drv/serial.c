@@ -33,6 +33,8 @@ rs_getc(int *pc)
 	// let's convert it.
 	if (c == '\r')
 		c = '\n';
+	if (c == 0x7f)
+		c = '\b';
 	*pc = c;
 	return 1;
 }
