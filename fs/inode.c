@@ -42,6 +42,7 @@ static struct inode *__alloc_m_inode(void)
 	ip->i_count = 1;
 	ip->i_dirt = 0;
 	ip->i_uptodate = 0;
+	ip->i_mount = NULL;
 	return ip;
 }
 

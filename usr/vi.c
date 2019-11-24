@@ -497,7 +497,10 @@ void dot_goto_top(unsigned n)
 
 void dot_goto_bottom(unsigned n)
 {
-	dot = end_screen();
+	int i;
+	dot = top;
+	for (i = 0; i < NY - 1; i++)
+		dot = next_line(dot);
 	if (n >= NY)
 		n = NY;
 	dot_prev_skipws(n - 1);
@@ -791,7 +794,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	setbuf(stdlog, NULL);
-	fprintf(stdlog, "\033[2J\033[0H\033[3J");
+	fprintf(stdlog, "\033[2J\033[H\033[3J");
 #endif
 #ifdef _DEBUG
 	edit_file("tools/test.txt");

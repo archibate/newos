@@ -1,9 +1,9 @@
 #include <kern/exec.h>
 #include <kern/kernel.h>
 #include <kern/gdt.h>
-#include <kip/elf.h>
 #include <string.h>
 #include <malloc.h>
+#include <elf.h>
 
 #define irdexec(...) rw_inode(READ, __VA_ARGS__)
 #define bad_load() sys_exit(-1)

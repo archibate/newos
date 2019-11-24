@@ -17,3 +17,5 @@ usr {
 sbin -> bin
 dev {
 }
+mnt {
+}

@@ -49,8 +49,8 @@ void fillzero(size_t size)
 
 int alloc_zone(void)
 {
-	fseek(fp, (sb.s_zmap_begblk - 1) * BSIZE, SEEK_SET);
-	for (int i = 0; i < sb.s_zmap_blknr * BSIZE; i += sizeof(unsigned)) {
+	fseek(fp, (sb.s_nefs_zmap_begblk - 1) * BSIZE, SEEK_SET);
+	for (int i = 0; i < sb.s_nefs_zmap_blknr * BSIZE; i += sizeof(unsigned)) {
 		unsigned r;
 		fread(&r, sizeof(r), 1, fp);
 		int k = ffs(~r);
@@ -67,8 +67,8 @@ int alloc_zone(void)
 
 int alloc_inode(void)
 {
-	fseek(fp, (sb.s_imap_begblk - 1) * BSIZE, SEEK_SET);
-	for (int i = 0; i < sb.s_imap_blknr * BSIZE; i += sizeof(unsigned)) {
+	fseek(fp, (sb.s_nefs_imap_begblk - 1) * BSIZE, SEEK_SET);
+	for (int i = 0; i < sb.s_nefs_imap_blknr * BSIZE; i += sizeof(unsigned)) {
 		unsigned r;
 		fread(&r, sizeof(r), 1, fp);
 		int k = ffs(~r);
@@ -85,18 +85,27 @@ int alloc_inode(void)
 
 void update_inode(int ino, struct nefs_inode *ip)
 {
-	char c = 0;
-	fseek(fp, (sb.s_itab_begblk - 1) * BSIZE + ino * sizeof(*ip), SEEK_SET);
+	nefs_nlink_t nlink;
+	fseek(fp, (sb.s_nefs_itab_begblk - 1) * BSIZE
+			+ ino * sizeof(struct nefs_inode)
+			+ offsetof(struct nefs_inode, i_nefs_nlink), SEEK_SET);
+	fread(&nlink, sizeof(nlink), 1, fp);
+	fseek(fp, (sb.s_nefs_itab_begblk - 1) * BSIZE + ino * sizeof(*ip), SEEK_SET);
 	fwrite(ip, sizeof(*ip), 1, fp);
+	fseek(fp, (sb.s_nefs_itab_begblk - 1) * BSIZE
+			+ ino * sizeof(struct nefs_inode)
+			+ offsetof(struct nefs_inode, i_nefs_nlink), SEEK_SET);
+	fwrite(&nlink, sizeof(nlink), 1, fp);
 }
 
 void increase_i_nlink(int ino)
 {
 	nefs_nlink_t nlink;
-	fseek(fp, (sb.s_itab_begblk - 1) * BSIZE
+	fseek(fp, (sb.s_nefs_itab_begblk - 1) * BSIZE
 			+ ino * sizeof(struct nefs_inode)
 			+ offsetof(struct nefs_inode, i_nefs_nlink), SEEK_SET);
 	fread(&nlink, sizeof(nlink), 1, fp);
+	//printf("inc nlink %d->%d, ino=%d\n", nlink, nlink + 1, ino);
 	nlink++;
 	fseek(fp, -sizeof(nlink), SEEK_CUR);
 	fwrite(&nlink, sizeof(nlink), 1, fp);
@@ -106,7 +115,7 @@ int write_zone(int z, FILE *f)
 {
 	char buf[BSIZE];
 	size_t size = fread(buf, 1, BSIZE, f);
-	fseek(fp, (sb.s_data_begblk + z - 1) * BSIZE, SEEK_SET);
+	fseek(fp, (sb.s_nefs_data_begblk + z - 1) * BSIZE, SEEK_SET);
 	fwrite(buf, size, 1, fp);
 	return size == BSIZE;
 }
@@ -147,7 +156,7 @@ int set_inode(int ino, FILE *f, int mode)
 	eprintf("WARNING: file too big, truncated to %d KB\n", ftell(f) / 1024);
 s_eof:
 	inode.i_nefs_s_zone = alloc_zone();
-	fseek(fp, (sb.s_data_begblk + inode.i_nefs_s_zone - 1) * BSIZE, SEEK_SET);
+	fseek(fp, (sb.s_nefs_data_begblk + inode.i_nefs_s_zone - 1) * BSIZE, SEEK_SET);
 	fwrite(s_zone_buf, BSIZE, 1, fp);
 eof:
 	inode.i_nefs_size = ftell(f);
@@ -244,23 +253,23 @@ usage:
 	printf("%s: %d inodes, %d blocks\n", vol_label, inodes, blocks);
 	memset(&sb, 0, sizeof(sb));
 	switch (0) { case 0: case BSIZE % sizeof(struct nefs_inode) == 0:; }
-	sb.s_super_len = sizeof(sb);
-	sb.s_itab_blknr = inodes * sizeof(struct nefs_inode) / BSIZE;
-	sb.s_imap_blknr = inodes / BSIZE / 8;
-	sb.s_zmap_blknr = blocks / BSIZE / 8;
-	sb.s_data_blknr = blocks;
-	sb.s_magic = NEFS_MAGIC;
-	sb.s_blksize_log2 = 10;
-	sb.s_imap_begblk = 3 + reserved_blocks;
-	sb.s_zmap_begblk = sb.s_imap_begblk + sb.s_imap_blknr;
-	sb.s_itab_begblk = sb.s_zmap_begblk + sb.s_zmap_blknr;
-	sb.s_data_begblk = sb.s_itab_begblk + sb.s_itab_blknr;
+	sb.s_nefs_super_len = sizeof(sb);
+	sb.s_nefs_itab_blknr = inodes * sizeof(struct nefs_inode) / BSIZE;
+	sb.s_nefs_imap_blknr = inodes / BSIZE / 8;
+	sb.s_nefs_zmap_blknr = blocks / BSIZE / 8;
+	sb.s_nefs_data_blknr = blocks;
+	sb.s_nefs_magic = NEFS_MAGIC;
+	sb.s_nefs_blksize_log2 = 10;
+	sb.s_nefs_imap_begblk = 3 + reserved_blocks;
+	sb.s_nefs_zmap_begblk = sb.s_nefs_imap_begblk + sb.s_nefs_imap_blknr;
+	sb.s_nefs_itab_begblk = sb.s_nefs_zmap_begblk + sb.s_nefs_zmap_blknr;
+	sb.s_nefs_data_begblk = sb.s_nefs_itab_begblk + sb.s_nefs_itab_blknr;
 	touch_seek(1 * BSIZE);
 	fwrite(&sb, sizeof(sb), 1, fp);
-	fwrite(vol_label, strnlen(vol_label, BSIZE - sb.s_super_len), 1, fp);
-	touch_seek((sb.s_imap_begblk - 1) * BSIZE);
-	fillzero((sb.s_imap_blknr + sb.s_zmap_blknr
-		+ sb.s_itab_blknr + blocks) * BSIZE);
+	fwrite(vol_label, strnlen(vol_label, BSIZE - sb.s_nefs_super_len), 1, fp);
+	touch_seek((sb.s_nefs_imap_begblk - 1) * BSIZE);
+	fillzero((sb.s_nefs_imap_blknr + sb.s_nefs_zmap_blknr
+		+ sb.s_nefs_itab_blknr + blocks) * BSIZE);
 	assert(alloc_inode() == 0);
 	assert(alloc_zone() == 0);
 

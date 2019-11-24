@@ -74,11 +74,11 @@ static int dir_check_if_empty(struct inode *dir)
 	struct dir_entry de;
 	rw_inode(READ, dir, 0, &de, NEFS_DIR_ENTRY_SIZE);
 	if (!de.d_ino || !!strcmp(de.d_name, ".")) {
-		printk("ERROR: BAD dir . entry");
+		printk("WARNING: BAD dir . entry");
 	}
 	rw_inode(READ, dir, NEFS_DIR_ENTRY_SIZE, &de, NEFS_DIR_ENTRY_SIZE);
 	if (!de.d_ino || !!strcmp(de.d_name, "..")) {
-		printk("ERROR: BAD dir .. entry");
+		printk("WARNING: BAD dir .. entry");
 	}
 	for (size_t i = 2; i < dir->i_size / NEFS_DIR_ENTRY_SIZE; i++) {
 		rw_inode(READ, dir, i * NEFS_DIR_ENTRY_SIZE, &de, NEFS_DIR_ENTRY_SIZE);
@@ -158,6 +158,10 @@ static int dir_del_entry(struct inode *dir, int i, int rmdir)
 	if (!ip) {
 		printk("ERROR: de inode %d not exist", ino);
 	} else {
+		if (ip->i_mount) {
+			errno = EBUSY;
+			return -1;
+		}
 		if (check_rmdir_inode(ip, rmdir) == -1) {
 			iput(ip);
 			return -1;
@@ -227,6 +231,7 @@ struct inode *_namei(const char **ppath, struct inode **pip,
 	struct inode *ip;
 	const char *path = *ppath;
 	int tmp;
+	dev_t dev;
 	*pip = NULL;
 	*ppath2 = path;
 	if (*path == '/')
@@ -253,19 +258,46 @@ struct inode *_namei(const char **ppath, struct inode **pip,
 		*ppath2 = path;
 		namelen = strchrnul(path, '/') - path;
 		//printk("!!!%.*s", namelen, path);
+#if 1
+		if (namelen == 1 && path[0] == '.') {
+dup_skip:
+			ip = idup(ip);
+			goto skip;
+		} else if (namelen == 2 && path[0] == '.' && path[1] == '.') {
+			if (ip == current->root)
+				goto dup_skip;
+			if (ip->i_ino == ROOT_INO) {
+				struct super_block *sb = get_super(ip->i_dev);
+				if (sb->s_imount)
+					ip = idup(sb->s_imount);
+			}
+		}
+#endif
 		if (-1 == dir_find_entry(ip, &de, path, namelen))
 			goto err;
-		ip = iget(ip->i_dev, de.d_ino);
+		dev = ip->i_dev;
+		ip = iget(dev, de.d_ino);
 		if (!ip) {
-			printk("WARNING: de dev=%d, ino=%d not exist", ip->i_dev, de.d_ino);
+			printk("ERROR: de dev=%d, ino=%d not exist", dev, de.d_ino);
 err:
 			*ppath = path;
+			errno = ENOENT;
 			return NULL;
 		}
+skip:
 		if (!ks_target_nofollow || path[namelen])
 			ip = ifollow(ip, *pip);
 		if (!ip)
 			goto err;
+		if (ip->i_mount) {
+			dev = ip->i_mount->s_dev;
+			ip = iget(dev, ROOT_INO);
+			if (!ip) {
+				printk("ERROR: cannot get mount root of dev=%d", dev);
+				errno = ENOENT;
+				return NULL;
+			}
+		}
 	}
 	*ppath = path;
 	return ip;

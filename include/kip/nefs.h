@@ -32,17 +32,17 @@ typedef int8_t nefs_char_t;
 
 struct nefs_super_block
 {
-	nefs_word_t s_magic;
-	nefs_size_t s_super_len;
-	nefs_blksize_log2_t s_blksize_log2;
-	nefs_blkno_t s_imap_begblk;
-	nefs_blkno_t s_zmap_begblk;
-	nefs_blkno_t s_itab_begblk;
-	nefs_blkno_t s_data_begblk;
-	nefs_blkcnt_t s_imap_blknr;
-	nefs_blkcnt_t s_zmap_blknr;
-	nefs_blkcnt_t s_itab_blknr;
-	nefs_blkcnt_t s_data_blknr;
+	nefs_word_t s_nefs_magic;
+	nefs_size_t s_nefs_super_len;
+	nefs_blksize_log2_t s_nefs_blksize_log2;
+	nefs_blkno_t s_nefs_imap_begblk;
+	nefs_blkno_t s_nefs_zmap_begblk;
+	nefs_blkno_t s_nefs_itab_begblk;
+	nefs_blkno_t s_nefs_data_begblk;
+	nefs_blkcnt_t s_nefs_imap_blknr;
+	nefs_blkcnt_t s_nefs_zmap_blknr;
+	nefs_blkcnt_t s_nefs_itab_blknr;
+	nefs_blkcnt_t s_nefs_data_blknr;
 };
 
 struct nefs_inode

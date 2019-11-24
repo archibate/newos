@@ -25,12 +25,13 @@
 #define PATH_MAX	1024
 #define PIPE_SIZE	4096
 
-#define BSIZE	1024
-#define NBUFS	128
-#define NINODES	256
-#define NFILES	256
-#define READ	0
-#define WRITE	1
+#define BSIZE		1024
+#define NBUFS		128
+#define NINODES		256
+#define NR_SUPER	8
+
+#define READ		0
+#define WRITE		1
 
 #define S_ISNOD(mode) (S_ISCHR(mode) || S_ISBLK(mode) \
 		    || S_ISFIFO(mode) || S_ISSOCK(mode))
@@ -62,12 +63,13 @@ struct inode {
 		struct nefs_inode i_nefs;
 		struct pipe_inode i_pipe;
 	};
-	int i_count;
 	dev_t i_dev;
 	ino_t i_ino;
+	int i_fstype;
+	int i_count;
 	int i_uptodate;
 	int i_dirt;
-	int i_fstype;
+	struct super_block *i_mount;
 };
 
 #define i_mode i_nefs.i_nefs_mode
@@ -80,6 +82,24 @@ struct inode {
 #define i_p_read_wait i_pipe.p_read_wait
 #define i_p_write_wait i_pipe.p_write_wait
 
+struct super_block {
+	struct nefs_super_block s_nefs;
+	dev_t s_dev;
+	struct inode *s_imount;
+};
+
+#define s_magic s_nefs.s_nefs_magic
+#define s_super_len s_nefs.s_nefs_super_len
+#define s_blksize_log2 s_nefs.s_nefs_blksize_log2
+#define s_imap_begblk s_nefs.s_nefs_imap_begblk
+#define s_zmap_begblk s_nefs.s_nefs_zmap_begblk
+#define s_itab_begblk s_nefs.s_nefs_itab_begblk
+#define s_data_begblk s_nefs.s_nefs_data_begblk
+#define s_imap_blknr s_nefs.s_nefs_imap_blknr
+#define s_zmap_blknr s_nefs.s_nefs_zmap_blknr
+#define s_itab_blknr s_nefs.s_nefs_itab_blknr
+#define s_data_blknr s_nefs.s_nefs_data_blknr
+
 struct file {
 	struct inode *f_ip;
 	off_t f_offset;
@@ -87,12 +107,11 @@ struct file {
 	int f_fdargs;
 };
 
-#define super_block nefs_super_block
 #define dir_entry nefs_dir_entry
 
 extern struct buf buffer[NBUFS];
 extern struct inode inodes[NINODES];
-extern struct file files[NFILES];
+extern struct super_block super[NR_SUPER];
 
 // blk_drv/
 void ll_rw_block(struct buf *b, int rw);
@@ -108,6 +127,12 @@ void blk_writeitem(dev_t dev, blkno_t blkno, size_t index, const void *buf, size
 void dump_buffer(int more);
 // super.c
 struct super_block *get_super(dev_t dev);
+struct super_block *load_super(dev_t dev);
+int mount_super(struct super_block *sb, struct inode *ip);
+int do_mount(dev_t dev, struct inode *ip);
+int umount_super(struct super_block *sb);
+int do_umount(struct inode *ip);
+int unload_super(dev_t dev);
 void dump_super(void);
 // inode.c
 struct inode *create_inode(struct inode *pip);

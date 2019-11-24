@@ -13,7 +13,7 @@ int ls_stat(int fd, const char *path)
 		perror(path);
 		return 1;
 	}
-	printf("%4d %9s %s\n", st.st_ino, strfaccess(st.st_mode), path);
+	printf("%5ld %9s %s\n", st.st_size + 1023 >> 10, strfaccess(st.st_mode), path);
 	return 0;
 }
 
@@ -30,7 +30,7 @@ int ls(const char *path)
 	while (-1 != (i = dirread(fd, &de))) {
 		if (!i) continue;
 		if (ls_stat(fd, de.d_name))
-			printf("%4d ?????????? %s\n", de.d_ino, de.d_name);
+			printf("????? ?????????? %s\n", de.d_name);
 	}
 	close(fd);
 	return 0;

@@ -1,5 +1,4 @@
 DYN=1
-RELEASE=1
 #####################################
 ifdef RELEASE
 OPTIM=3
@@ -44,7 +43,7 @@ all: build/boot.img
 
 .PHONY: run
 run: build/boot.img
-	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log
+	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw -drive file=tools/test.img,index=1,media=disk,driver=raw | tee build/qemu.log
 
 .PHONY: bochs
 bochs: build/boot.img
