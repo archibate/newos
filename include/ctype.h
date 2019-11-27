@@ -50,7 +50,8 @@ static inline int ispunct(int c)
 
 static inline int isspace(int c)
 {
-	return c == ' ' || c == '\n' || c == '\t' || c == '\r';
+	return c == ' ' || c == '\n' || c == '\t'
+	    || c == '\r' || c == '\v' || c == '\f';
 }
 
 static inline int isblank(int c)

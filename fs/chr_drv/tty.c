@@ -2,6 +2,7 @@
 #include <kern/sched.h>
 #include <bits/ioctl.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 
 struct tty_struct ttys[NTTYS];
@@ -22,6 +23,21 @@ tty_getc(struct tty_struct *tty)
 	sring_get(&tty->read_q, c);
 	return c;
 }
+static void
+tty_put_printable_c(struct tty_struct *tty, int c)
+{
+	if (c == tty->tc.c_cc[VEOL])
+		goto ok_to_print;
+	if (!isprint(c)) {
+		tty_putc(tty, '^');
+		c |= '@';
+		c &= 0x7f;
+		if (c == 0x7f)
+			c = '?';
+	}
+ok_to_print:
+	tty_putc(tty, c);
+}
 
 void
 tty_intr(int num)
@@ -36,12 +52,18 @@ tty_intr(int num)
 			if ((tty->tc.c_lflag & ECHO)
 				|| ((tty->tc.c_lflag & ECHONL)
 					&& c == tty->tc.c_cc[VEOL]))
-				tty_putc(tty, c);
+				tty_put_printable_c(tty, c);
 			sring_put(&tty->read_q, c);
+			if ((tty->tc.c_lflag & ISIG) && c == tty->tc.c_cc[VINTR])
+				goto wake;
 			if (!(tty->tc.c_lflag & ICANON)
-				|| c == tty->tc.c_cc[VEOL]
-				|| c == tty->tc.c_cc[VEOF])
-				wake_up(&tty->read_wait);
+					|| c == tty->tc.c_cc[VEOL]
+					|| c == tty->tc.c_cc[VEOF])
+				goto wake;
+
+			continue;
+		wake:
+			wake_up(&tty->read_wait);
 		}
 	}
 }
@@ -64,10 +86,14 @@ tty_read(int num, char *buf, size_t n)
 	struct tty_struct *tty = &ttys[num];
 	while (i < n) {
 		int c = tty_getc(tty);
+		if ((tty->tc.c_lflag & ICANON) && c == tty->tc.c_cc[VEOF])
+			break;
+		if ((tty->tc.c_lflag & ISIG) && c == tty->tc.c_cc[VINTR]) {
+			sys_raise(SIGINT);
+			break;
+		}
 		buf[i++] = c;
-		if (!(tty->tc.c_lflag & ICANON)
-			|| c == tty->tc.c_cc[VEOL]
-			|| c == tty->tc.c_cc[VEOF])
+		if (!(tty->tc.c_lflag & ICANON) || c == tty->tc.c_cc[VEOL])
 			break;
 	}
 	return i;

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stddef.h>
 
+clock_t jiffies;
 struct task *task[NTASKS];
 struct task *current;
 
@@ -54,11 +55,23 @@ switch_to(int i)
 	}
 }
 
+time_t sys_alarm(time_t secs)
+{
+	int old = current->alarm;
+	current->alarm = secs > 0 ? jiffies + CLOCKS_PER_SEC * secs : 0;
+	return old ? (old - jiffies) / CLOCKS_PER_SEC : 0;
+}
+
 void
 schedule(void)
 {
+
 	for (int i = NTASKS - 1; i > 0; i--) {
 		struct task *p = task[i];
+		if (p && p->alarm && p->alarm < jiffies) {
+			p->signal |= _S(SIGALRM);
+			p->alarm = 0;
+		}
 		if (p && p->state == TASK_SLEEPING && task_signal(p))
 			p->state = 0;
 	}

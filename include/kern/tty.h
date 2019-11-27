@@ -6,10 +6,14 @@
 #include <bits/termios.h>
 #include <ds/ring.h>
 
-#define TTY_MUX  0
+#define TTY_COM0 0
 #define TTY_VGA  1
-#define TTY_COM0 2
-#define NTTYS    3
+#define NTTYS    2
+#ifdef _TTY_SERIAL
+#define TTY_STD TTY_COM0
+#else
+#define TTY_STD TTY_VGA
+#endif
 
 #define TTY_BUFSIZ 512
 

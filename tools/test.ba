@@ -1,0 +1,10 @@
+ldi 233		; 233
+ldi 10		; 10 233
+dvm		; 23 3
+bnz
+ldi 48
+add
+out
+ldi 10
+out
+end

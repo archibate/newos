@@ -1,18 +1,26 @@
 #ifndef _BITS_TIME_H
 #define _BITS_TIME_H 1
 
-#include <bits/types.h>
-
-#ifndef clock_t
-#define clock_t __clock_t
-#endif
-#ifndef time_t
-#define time_t __time_t
-#endif
+#include <sys/types.h>
 
 struct timespec {
 	time_t tv_sec;
-	long tv_nsec;
+	suseconds_t tv_nsec;
+};
+
+struct itimerspec {
+	struct timespec it_period;
+	struct timespec it_value;
+};
+
+struct timeval {
+	time_t tv_sec;
+	suseconds_t tv_nsec;
+};
+
+struct itimerval {
+	struct timeval it_interval;
+	struct timeval it_value;
 };
 
 struct tm {

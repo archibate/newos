@@ -60,9 +60,9 @@ install_irq(int irq, void (*proc)(void))
 void
 do_irq(int irq)
 {
+	irq_done(irq);
 	if (irq_proc[irq])
 		irq_proc[irq]();
 	else
 		printk("WARNING: Ignored IRQ #%d", irq);
-	irq_done(irq);
 }

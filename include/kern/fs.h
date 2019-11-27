@@ -70,6 +70,7 @@ struct inode {
 	int i_uptodate;
 	int i_dirt;
 	struct super_block *i_mount;
+	//struct pipe_inode i_pipe;
 };
 
 #define i_mode i_nefs.i_nefs_mode

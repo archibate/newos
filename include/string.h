@@ -25,5 +25,9 @@ long strtol(const char *s, char **endptr, int base);
 char *strdup(const char *s);
 char *strndup(const char *s, size_t n);
 char *strerror(int err);
+char *strprint(const char *s);
+char *strescape(const char *s);
+int chrprint(int c);
+int chrescape(int c);
 
 #endif

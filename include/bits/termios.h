@@ -38,8 +38,8 @@
 		[VEOL] = '\n', \
 		[VEOL2] = '\r', \
 		[VERASE] = '\b', \
-		[VINTR] = 003, /* Ctrl-C */ \
-		[VEOF] = 004, /* Ctrl-D */ \
+		[VINTR] = 3, /* Ctrl-C */ \
+		[VEOF] = 4, /* Ctrl-D */ \
 		[VBELL] = '\a', \
 	}, \
 }

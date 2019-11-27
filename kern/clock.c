@@ -1,14 +1,11 @@
-#include <kern/clock.h>
 #include <kern/sched.h>
 #include <kern/irq.h>
 #include <sys/io.h>
 
-clock_t clock_tick;
-
 static void
 do_clock_tick(void)
 {
-	clock_tick++;
+	jiffies++;
 	sched_timer_callback();
 }
 

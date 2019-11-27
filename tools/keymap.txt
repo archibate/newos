@@ -1,0 +1,2533 @@
+<table cols="11" width="100%" cellspacing="0" border="1">
+
+        <tbody>
+
+          <tr>
+
+            <td>
+
+            <center><b>KEY</b></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><b>MAKE</b></center>
+
+            </td>
+
+            <td>
+
+            <center><b>BREAK</b></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">
+
+
+
+            <center><tt>-----</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><b>KEY</b></center>
+
+            </td>
+
+            <td>
+
+            <center><b>MAKE</b></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><b>BREAK</b></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">
+
+            <center><tt>-----</tt></center>
+
+            </td>
+
+            <td>
+
+
+
+            <center><b>KEY</b></center>
+
+            </td>
+
+            <td>
+
+            <center><b>MAKE</b></center>
+
+            </td>
+
+            <td>
+
+            <center><b>BREAK</b></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>A</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>1E</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>9E</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>9</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>0A</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>8A</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>[</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>1A</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>9A</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>30</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>B0</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>`</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>29</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>89</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>INSERT</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,52</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,D2</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>2E</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>AE</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>-</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>0C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>8C</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>HOME</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,47</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,97</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>20</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A0</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>=</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>0D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>8D</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>PG UP</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,49</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,C9</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>E</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>12</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>92</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>\</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>2B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>AB</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>DELETE</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,53</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,D3</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>F</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>21</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A1</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>BKSP</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>0E</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>8E</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>END</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,4F</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,CF</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>G</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>22</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A2</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>SPACE</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>39</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B9</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>PG DN</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,51</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,D1</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>H</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>23</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A3</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>TAB</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>0F</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>8F</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>U ARROW</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,48</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,C8</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>I</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>17</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>97</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>CAPS</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>3A</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>BA</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>L ARROW</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,4B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,CB</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>J</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>24</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A4</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>L SHFT</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>2A</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>AA</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>D ARROW</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,50</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,D0</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>K</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>25</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A5</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>L CTRL</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>1D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>9D</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>R ARROW</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,4D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,CD</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>L</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>26</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>A6</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>L GUI</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>E0,5B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,DB</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>NUM</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>45</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C5</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>M</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>32</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>B2</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>L ALT</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>38</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B8</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP /</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,35</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,B5</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>N</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>31</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>B1</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>R SHFT</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>36</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B6</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP *</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>37</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B7</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>O</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>18</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>98</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>R CTRL</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>E0,1D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,9D</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP -</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>4A</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>CA</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>P</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>19</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>99</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>R GUI</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>E0,5C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,DC</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP +</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>4E</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>CE</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>Q</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>10</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>90</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>R ALT</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>E0,38</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,B8</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP EN</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,1C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,9C</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>R</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>13</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>93</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>APPS</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>E0,5D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,DD</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP .</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>53</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>D3</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>S</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>1F</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>9F</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>ENTER</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>1C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>9C</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 0</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>52</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>D2</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>T</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>14</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>94</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>ESC</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>01</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>81</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 1</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>4F</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>CF</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>U</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>16</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>96</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F1</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>3B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>BB</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 2</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>50</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>D0</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>V</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>2F</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>AF</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F2</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>3C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>BC</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 3</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>51</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>D1</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>W</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>11</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>91</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F3</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>3D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>BD</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 4</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>4B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>CB</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>X</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>2D</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>AD</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F4</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>3E</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>BE</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 5</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>4C</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>CC</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>Y</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>15</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>95</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F5</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>3F</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>BF</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 6</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>4D</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>CD</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>Z</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>2C</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>AC</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F6</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>40</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C0</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 7</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>47</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C7</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>0</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>0B</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>8B</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F7</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>41</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C1</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 8</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>48</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C8</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>1</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>02</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>82</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F8</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>42</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C2</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>KP 9</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>49</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C9</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>2</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>03</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>83</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F9</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>43</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C3</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>]</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>1B</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>9B</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>3</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>04</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>84</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F10</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>44</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>C4</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>;</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>27</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>A7</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>4</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>05</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>85</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F11</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>57</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>D7</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>'</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>28</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>A8</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>5</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>06</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>86</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>F12</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>58</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>D8</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+
+
+            <center><tt>,</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>33</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B3</tt></center>
+
+
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+            <center><tt>6</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>07</tt></center>
+
+
+
+            </td>
+
+            <td>
+
+            <center><tt>87</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>PRNT</tt> <br>
+
+
+
+            <tt>SCRN</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E0,2A,</tt> <br>
+
+            <tt>E0,37&nbsp;</tt></center>
+
+            </td>
+
+            <td>
+
+
+
+            <center><tt>&nbsp;E0,B7,</tt> <br>
+
+            <tt>E0,AA</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>.</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>34</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B4</tt></center>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+
+
+            <td>
+
+            <center><tt>7</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>08</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>88</tt></center>
+
+
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>SCROLL</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>46</tt></center>
+
+            </td>
+
+
+
+            <td>
+
+            <center><tt>C6</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>/</tt></center>
+
+            </td>
+
+            <td>
+
+
+
+            <center><tt>35</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>B5</tt></center>
+
+            </td>
+
+          </tr>
+
+          <tr>
+
+            <td>
+
+
+
+            <center><tt>8</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>09</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>89</tt></center>
+
+
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>
+
+            <center><tt>PAUSE</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>E1,1D,45</tt> <br>
+
+
+
+            <tt>E1,9D,C5</tt></center>
+
+            </td>
+
+            <td>
+
+            <center><tt>-NONE-</tt></center>
+
+            </td>
+
+            <td bgcolor="#cccccc">&nbsp;</td>
+
+            <td>&nbsp;</td>
+
+            <td>&nbsp;</td>
+
+
+
+            <td>&nbsp;</td>
+
+          </tr>
+
+        </tbody>
+
+      </table>

@@ -10,9 +10,8 @@ int cat(const char *path)
 	}
 
 	char buf[256];
-	size_t size;
-	while ((size = fread(buf, 1, sizeof(buf), fp)))
-		fwrite(buf, size, 1, stdout);
+	while (fgets(buf, sizeof(buf), fp))
+		fputs(buf, stdout);
 
 	if (fp != stdin) fclose(fp);
 	return 0;

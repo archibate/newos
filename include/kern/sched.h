@@ -6,6 +6,8 @@
 #include <sys/reg.h>
 // Get signal indexes.
 #include <bits/signal.h>
+// Get CLOCKS_PER_SEC, time_t, clock_t.
+#include <bits/time.h>
 
 #define _S(sig) (1 << ((sig) - 1))
 #define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
@@ -35,6 +37,7 @@ struct task {
 	pid_t pid, ppid;
 	reg_t kregs[NR_KREGS];
 	void *stack;
+	clock_t alarm;
 
 	int exit_code;
 	sigset_t signal, blocked;
@@ -53,6 +56,7 @@ struct task {
 
 #define NTASKS	64
 
+extern clock_t jiffies;
 extern struct task *task[NTASKS];
 extern struct task *current;
 extern struct task *exit_wait;

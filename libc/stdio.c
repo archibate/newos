@@ -1,6 +1,7 @@
 // https://github.com/klange/toaruos/blob/master/libc/stdio/stdio.c
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -153,7 +154,7 @@ static void parse_mode(const char * mode, int * flags_, int * mask_) {
 	const char * x = mode;
 
 	int flags = 0;
-	int mask = 0644;
+	int mask = 0644 | S_IFREG;
 
 	while (*x) {
 		if (*x == 'r') {
@@ -166,10 +167,10 @@ static void parse_mode(const char * mode, int * flags_, int * mask_) {
 			flags |= O_WRONLY;
 			flags |= O_CREAT;
 			flags |= O_TRUNC;
-			//mask = 0666;
 		} else if (*x == '+') {
+			flags &= ~O_WRONLY;
+			flags &= ~O_RDONLY;
 			flags |= O_RDWR;
-			flags &= ~(O_APPEND); /* uh... */
 		} else if (*x == 'e') {
 			flags |= O_CLOEXEC;
 		}

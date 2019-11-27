@@ -279,9 +279,9 @@ dup_skip:
 		ip = iget(dev, de.d_ino);
 		if (!ip) {
 			printk("ERROR: de dev=%d, ino=%d not exist", dev, de.d_ino);
+			errno = ENOENT;
 err:
 			*ppath = path;
-			errno = ENOENT;
 			return NULL;
 		}
 skip:
@@ -289,13 +289,14 @@ skip:
 			ip = ifollow(ip, *pip);
 		if (!ip)
 			goto err;
+
 		if (ip->i_mount) {
 			dev = ip->i_mount->s_dev;
 			ip = iget(dev, ROOT_INO);
 			if (!ip) {
 				printk("ERROR: cannot get mount root of dev=%d", dev);
 				errno = ENOENT;
-				return NULL;
+				goto err;
 			}
 		}
 	}

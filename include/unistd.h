@@ -69,5 +69,7 @@ int faccessat(int fd, const char *path, int amode, int flag);
 int truncate(const char *path, off_t length);
 int ftruncate(int fd, off_t length);
 int isatty(int fd);
+unsigned alarm(unsigned secs);
+unsigned sleep(unsigned secs);
 
 #endif

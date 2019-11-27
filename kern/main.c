@@ -17,8 +17,8 @@ int initial_thread(const char *path)
 {
 	char *argv[] = {(char *)path, "-s", NULL};
 	char *envp[] = {"PATH=/bin", "HOME=/root", NULL};
-	current->filp[0] = fs_open("/dev/tty/com0", O_RDONLY, 0); // muxin has BUG
-	current->filp[1] = fs_open("/dev/tty/mux", O_WRONLY, 0);
+	current->filp[0] = fs_open("/dev/tty/std", O_RDONLY, 0);
+	current->filp[1] = fs_open("/dev/tty/std", O_WRONLY, 0);
 	current->filp[2] = current->filp[1] ? fs_dup(current->filp[1]) : NULL;
 	sys_execve(path, argv, envp);
 	panic("cannot exec %s", path);
@@ -53,16 +53,14 @@ main(void)
 	INIT(irq);
 	INIT(rs);
 	INIT(vga);
-	INIT(muxcon);
 	printk("Kernel Started");
 	INIT(memtest);
 	INIT(bootmm);
 	INIT(pmm);
 	INIT(clock);
-	INIT(rtc);
 	INIT(sched);
 	INIT(fs);
-	INIT(video);
+	INIT(kbd);
 
 	//kernel_thread(test_thread_1, NULL);
 	//kernel_thread(test_thread_2, NULL);

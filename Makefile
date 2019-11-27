@@ -1,4 +1,5 @@
 DYN=1
+DISP=1
 #####################################
 ifdef RELEASE
 OPTIM=3
@@ -15,9 +16,13 @@ CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-Wno-unused -Wno-main -Wno-frame-address \
 	-Wno-builtin-declaration-mismatch \
 	-Werror=int-conversion -Werror=implicit-int \
-	-Werror=implicit-function-declaration -D_NEWOS
+	-Werror=implicit-function-declaration \
+	-Wno-format-zero-length -D_NEWOS
 ifeq ($(DYN),)
 CFLAGS+=-D_LIBC_EXP
+endif
+ifeq ($(DISP),)
+CFLAGS+=-D_TTY_SERIAL
 endif
 LDFLAGS=-m elf_i386
 QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
@@ -43,7 +48,7 @@ all: build/boot.img
 
 .PHONY: run
 run: build/boot.img
-	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw -drive file=tools/test.img,index=1,media=disk,driver=raw | tee build/qemu.log
+	@tools/startqemu.sh $(QEMUCMD) -drive file=$<,index=0,media=disk,driver=raw | tee build/qemu.log
 
 .PHONY: bochs
 bochs: build/boot.img

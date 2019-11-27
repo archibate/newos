@@ -363,7 +363,7 @@ __attribute__((noreturn)) void do_exec(int ti, int i)
 	if (errno != ENOENT)
 		perror(ts[ti].argv[i]);
 	else
-		eprintf("%s: command not found\n", ts[ti].argv[i]);
+		eprintf("%s: command not found\n", strescape(ts[ti].argv[i]));
 	exit(EXIT_FAILURE);
 }
 

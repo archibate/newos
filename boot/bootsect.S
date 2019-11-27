@@ -56,7 +56,7 @@ disk_addr_packet:
 	dw 0xaa55
 
 stage2:
-	call set_video
+	;call set_video
 	mov si, disk_addr_packet
 	mov word [si + 8], 4
 	mov word [si + 6], tmp_kaddr >> 4

@@ -293,7 +293,7 @@ snprintf(char *buf, size_t n, const char *fmt, ...)
 int
 vsprintf(char *buf, const char *fmt, va_list ap)
 {
-	return vsnprintf(buf, 0x7fffffff, fmt, ap);
+	return vsnprintf(buf, 0x23333333, fmt, ap);
 }
 
 int

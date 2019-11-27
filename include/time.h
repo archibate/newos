@@ -3,4 +3,6 @@
 
 #include <bits/time.h>
 
+clock_t clock(void);
+
 #endif
