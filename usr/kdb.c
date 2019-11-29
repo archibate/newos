@@ -1,7 +1,8 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <kdebug.h>
 
-int kdb(const char *s)
+static int kdb(const char *s)
 {
 	int err = 0;
 	while (*s == '-')

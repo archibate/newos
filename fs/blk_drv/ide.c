@@ -8,7 +8,7 @@
 
 static int ide_wait(void)
 {
-	int timeout = 40000;
+	int timeout = 80000;
 	int r;
 
 	while ((r = inb(IDE_STAT)) & IDE_BSY) {

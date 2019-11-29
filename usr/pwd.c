@@ -1,3 +1,4 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
@@ -5,7 +6,7 @@
 
 #define FRAG 256
 
-int main(void)
+int main(int argc, char **argv)
 {
 	size_t size = FRAG;
 	void *buf = malloc(size);

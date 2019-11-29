@@ -212,8 +212,8 @@ static int kbrd_disable();
 #define KEY_DELETE             0x1b5b337e
 #define KEY_HOME               0x1b5b317e
 #define KEY_END                0x1b5b347e
-#define KEY_PAGEUP             0x1b5b367e
-#define KEY_PAGEDOWN           0x1b5b357e
+#define KEY_PAGEUP             0x1b5b357e
+#define KEY_PAGEDOWN           0x1b5b367e
 #define KEY_SCROLLLOCK         0x1b1b4010
 #define KEY_PAUSE              0x1b1b4011
 #define KEY_PRINT              0x1b1b4012

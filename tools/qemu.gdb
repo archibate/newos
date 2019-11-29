@@ -1,9 +1,13 @@
 #!/usr/bin/cgdb -x
 # vim: ft=gdb ts=4 sts=4 tw=4
 
-add-symbol-file build/vmlinux
+def cn
+		target remote localhost:1234
+end
 
-target remote localhost:1234
+def lk
+		add-symbol-file build/vmlinux
+end
 
 def lu
 		add-symbol-file build/usr/$arg0
@@ -31,3 +35,8 @@ end
 define u
 	x/10i $pc
 end
+
+cn
+lk
+lu busybox
+ll libc

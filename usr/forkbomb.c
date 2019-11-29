@@ -1,16 +1,17 @@
+#include "busybox.h"
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <malloc.h>
 
-void fuck(void)
+static void fuck(void)
 {
-	char hell[2333];
+	char hell[23333];
 	memset(hell, 233, sizeof(hell));
-	malloc(2333);
+	malloc(23333);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
 	while (1) {
 		fork();

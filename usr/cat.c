@@ -1,7 +1,8 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <string.h>
 
-int cat(const char *path)
+static int cat(const char *path)
 {
 	FILE *fp = !strcmp(path, "-") ? stdin : fopen(path, "r");
 	if (!fp) {
@@ -9,9 +10,9 @@ int cat(const char *path)
 		return 1;
 	}
 
-	char buf[256];
-	while (fgets(buf, sizeof(buf), fp))
-		fputs(buf, stdout);
+	int c;
+	while (EOF != (c = getc(fp)))
+		putc(c, stdout);
 
 	if (fp != stdin) fclose(fp);
 	return 0;

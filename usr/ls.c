@@ -1,3 +1,4 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -6,7 +7,7 @@
 #include <sys/stat.h>
 #include "strstat.h"
 
-int ls_stat(int fd, const char *path)
+static int ls_stat(int fd, const char *path)
 {
 	struct stat st;
 	if (fstatat(fd, path, &st, AT_SYMLINK_NOFOLLOW) == -1) {
@@ -17,7 +18,7 @@ int ls_stat(int fd, const char *path)
 	return 0;
 }
 
-int ls(const char *path)
+static int ls(const char *path)
 {
 	int i, fd = open(path, O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {

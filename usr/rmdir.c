@@ -1,7 +1,8 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 
-int do_rmdir(const char *path)
+static int do_rmdir(const char *path)
 {
 	if (rmdir(path) == -1) {
 		perror(path);

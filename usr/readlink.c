@@ -1,8 +1,9 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 
-int do_readlink(const char *path)
+static int do_readlink(const char *path)
 {
 	char buf[1025];
 	ssize_t ret = readlink(path, buf, sizeof(buf) - 1);

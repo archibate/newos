@@ -1,18 +1,17 @@
-#if 0 // sh-stub {{{
-true /*
-chmod +x $0
+#if 0 ////////////////////////////////////////// {{{
+true /*; chmod +x $0
+if grep -q 'math\.h' $0; then C+=-lm; fi
+if grep -q 'pthread\.h' $0; then C+=-lpthread; fi
 if [ ! -z $GDB ]; then C+="-gstabs+ -ggdb -D_DEBUG"; fi
-gcc $C -Werror -D_ARGV0=\"$0\" $0 -o /tmp/$$ && $GDB /tmp/$$ $*
-x=$?
-rm -f /tmp/$$
-exit
-true */
+gcc $C -Werror $0 -o /tmp/$$ && $GDB /tmp/$$ $*; x=$?
+rm -f /tmp/$$; exit $x
+true CCSH_signature123 */
 #endif
-#ifndef _ARGV0
-#define _ARGV0 (argv[0])
-#endif // }}}
-
+// # }}} [3J[H[2J
 #define _GNU_SOURCE
+#ifdef _NEWOS
+#include "busybox.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -38,7 +37,7 @@ static int issymbl(int c)
 #endif
 
 #ifdef _LOG
-FILE *stdlog;
+static FILE *stdlog;
 #define dprintf(...) fprintf(stdlog, __VA_ARGS__)
 #else
 #define dprintf(...)
@@ -52,14 +51,15 @@ FILE *stdlog;
 
 #define TABS 8
 
-struct termios tc_orig, tc_vi;
-int editing, modified, readonly, newfile, cmd_mode, status_error, cx, cy;
-char *text, *undotext, *textend, *top, *dot, *doll, *end;
-char status_bar[100];
-const char *g_path;
+static struct termios tc_orig, tc_vi;
+static int editing, modified, readonly, newfile, cmd_mode, status_error, cx, cy;
+static char *text, *undotext, *textend, *top, *dot, *doll, *end;
+static char status_bar[100];
+static const char *g_path;
 
 // ANSI control sequences {{{ 
 
+static
 void gotoy0(int y)
 {
 #if 0
@@ -69,6 +69,7 @@ void gotoy0(int y)
 	printf("\033[%dH", y + 1);
 }
 
+static
 void gotoyx(int y, int x)
 {
 #if 0
@@ -80,61 +81,73 @@ void gotoyx(int y, int x)
 	printf("\033[%d;%dH", y + 1, x + 1);
 }
 
+static
 void ceol(void)
 {
 	printf("\033[K");
 }
 
+static
 void ceos(void)
 {
 	printf("\033[J");
 }
 
+static
 void emcolor(void)
 {
 	printf("\033[1m");
 }
 
+static
 void fgcolor(int c)
 {
 	printf("\033[3%dm", c & 7);
 }
 
+static
 void bgcolor(int c)
 {
 	printf("\033[4%dm", c & 7);
 }
 
+static
 void standup(void)
 {
 	printf("\033[7m");
 }
 
+static
 void sitdown(void)
 {
 	printf("\033[0m");
 }
 
+static
 void cmup(void)
 {
 	printf("\033[A");
 }
 
+static
 void cmdown(void)
 {
 	printf("\033[B");
 }
 
+static
 void cmbol(void)
 {
 	putchar('\r');
 }
 
+static
 void cmdown0(void)
 {
 	putchar('\n');
 }
 
+static
 void beep(void)
 {
 	putchar('\a');
@@ -143,6 +156,7 @@ void beep(void)
 // }}}
 // move-in-text operations {{{
 
+static
 char *begin_line(char *p)
 {
 	while (p > text && p[-1] != '\n')
@@ -150,6 +164,7 @@ char *begin_line(char *p)
 	return p;
 }
 
+static
 char *end_line(char *p)
 {
 	while (p < end - 1 && *p != '\n')
@@ -157,6 +172,7 @@ char *end_line(char *p)
 	return p;
 }
 
+static
 char *dollar_line(char *p)
 {
 	while (*p != '\n')
@@ -166,6 +182,7 @@ char *dollar_line(char *p)
 	return p;
 }
 
+static
 char *prev_line(char *p)
 {
 	p = begin_line(p);
@@ -175,6 +192,7 @@ char *prev_line(char *p)
 	return p;
 }
 
+static
 char *next_line(char *p)
 {
 	char *q = end_line(p);
@@ -183,6 +201,7 @@ char *next_line(char *p)
 	return p;
 }
 
+static
 char *end_screen(void)
 {
 	int i;
@@ -193,6 +212,7 @@ char *end_screen(void)
 	return p;
 }
 
+static
 char *skip_spaces(char *p)
 {
 	while (isblank(*p))
@@ -212,12 +232,14 @@ char *skip_spaces(char *p)
 	sprintf(status_bar, __VA_ARGS__); \
 } while (0)
 
+static
 int getkb(void)
 {
 	int n, c = getchar();
 	return c;
 }
 
+static
 char *printable(int c)
 {
 	static char buf[3];
@@ -236,6 +258,7 @@ char *printable(int c)
 	return buf;
 }
 
+static
 void format_line(const char *s, int line)
 {
 	int x, c;
@@ -267,11 +290,11 @@ void format_line(const char *s, int line)
 	}
 }
 
+static
 void sync_cursor(void)
 {
 	int cnt, y, x = 0;
 	char *tp, *tmp, *es = end_screen();
-	//dprintf("dot=%.4s\n", dot);
 	if (dot < top) {
 		y = 0;
 		while (dot < top)
@@ -314,6 +337,7 @@ void sync_cursor(void)
 	cy = y;
 }
 
+static
 void redraw(void)
 {
 	int y;
@@ -338,6 +362,7 @@ void redraw(void)
 // }}}
 // text operations {{{
 
+static
 void make_hole(char *p, int size)
 {
 	memmove(p + size, p, end - p);
@@ -345,6 +370,7 @@ void make_hole(char *p, int size)
 	end += size;
 }
 
+static
 char *remove_hole(char *p, char *q)
 {
 	char *dst, *src;
@@ -369,6 +395,7 @@ char *remove_hole(char *p, char *q)
 	return dst;
 }
 
+static
 char *reserve_hole(char *p, char *q)
 {
 	char *t;
@@ -382,6 +409,7 @@ char *reserve_hole(char *p, char *q)
 	return p;
 }
 
+static
 char *remove_hole_nx(char *p, char *q, int rsv)
 {
 	char *t;
@@ -405,6 +433,7 @@ char *remove_hole_nx(char *p, char *q, int rsv)
 	return t;
 }
 
+static
 char *just_insert_char(char *p, int c)
 {
 	if (p > doll)
@@ -413,6 +442,7 @@ char *just_insert_char(char *p, int c)
 	return p;
 }
 
+static
 char *insert_char(char *p, int c)
 {
 	if (c == 27) {
@@ -445,12 +475,14 @@ char *insert_char(char *p, int c)
 // }}}
 // command moving cursor {{{
 
+static
 void dot_left(unsigned n)
 {
 	while (n-- && dot > text && dot[-1] != '\n')
 		dot--;
 }
 
+static
 void dot_right(unsigned n)
 {
 	if (*dot == '\n')
@@ -459,6 +491,7 @@ void dot_right(unsigned n)
 		dot++;
 }
 
+static
 void dot_dollar(unsigned n)
 {
 	while (n-- > 1)
@@ -466,14 +499,7 @@ void dot_dollar(unsigned n)
 	dot = dollar_line(dot);
 }
 
-void dot_begin_skipws(unsigned n)
-{
-	while (n-- > 1)
-		dot = next_line(dot);
-	dot = begin_line(dot);
-	dot = skip_spaces(dot);
-}
-
+static
 void dot_prev_skipws(unsigned n)
 {
 	while (n--)
@@ -481,6 +507,7 @@ void dot_prev_skipws(unsigned n)
 	dot = skip_spaces(dot);
 }
 
+static
 void dot_next_skipws(unsigned n)
 {
 	while (n--)
@@ -488,6 +515,16 @@ void dot_next_skipws(unsigned n)
 	dot = skip_spaces(dot);
 }
 
+static
+void dot_begin_skipws(unsigned n)
+{
+	if (n < 1)
+		dot = skip_spaces(begin_line(dot));
+	else
+		dot_next_skipws(n - 1);
+}
+
+static
 void dot_move_to_col(int col)
 {
 	int i = 0;
@@ -503,6 +540,7 @@ void dot_move_to_col(int col)
 	} while (++i <= col && dot++ < end);
 }
 
+static
 void dot_down(unsigned n)
 {
 	while (n--)
@@ -510,6 +548,7 @@ void dot_down(unsigned n)
 	dot_move_to_col(cx);
 }
 
+static
 void dot_up(unsigned n)
 {
 	while (n--)
@@ -517,6 +556,7 @@ void dot_up(unsigned n)
 	dot_move_to_col(cx);
 }
 
+static
 void dot_forward(int c, int ist, int iscont)
 {
 	char *q = dot + 1;
@@ -531,6 +571,7 @@ void dot_forward(int c, int ist, int iscont)
 	}
 }
 
+static
 void dot_goto_top(unsigned n)
 {
 	dot = top;
@@ -539,6 +580,7 @@ void dot_goto_top(unsigned n)
 	dot_next_skipws(n - 1);
 }
 
+static
 void dot_goto_bottom(unsigned n)
 {
 	int i;
@@ -550,6 +592,7 @@ void dot_goto_bottom(unsigned n)
 	dot_prev_skipws(n - 1);
 }
 
+static
 void dot_forward_word(unsigned n)
 {
 	while (n--) {
@@ -568,6 +611,7 @@ void dot_forward_word(unsigned n)
 	}
 }
 
+static
 void dot_back_word(unsigned n)
 {
 	while (n--) {
@@ -583,6 +627,7 @@ void dot_back_word(unsigned n)
 	}
 }
 
+static
 void dot_end_word(unsigned n)
 {
 	while (n--) {
@@ -600,6 +645,7 @@ void dot_end_word(unsigned n)
 	}
 }
 
+static
 void dot_goto_line(unsigned n)
 {
 	if (!n) {
@@ -616,12 +662,14 @@ void dot_goto_line(unsigned n)
 // }}}
 // command modifying text {{{
 
+static
 void dot_delete(unsigned n)
 {
 	while (n--)
 		remove_hole(dot, dot);
 }
 
+static
 void dot_join(unsigned n)
 {
 	while (n--) {
@@ -634,6 +682,7 @@ void dot_join(unsigned n)
 	}
 }
 
+static
 void dot_delchar(unsigned n, int rsv)
 {
 	if (*dot == '\n')
@@ -641,14 +690,17 @@ void dot_delchar(unsigned n, int rsv)
 	remove_hole_nx(dot, dot + n - 1, rsv);
 }
 
+static
 void dot_delete_to_eol(int rsv)
 {
 	char *q = dollar_line(dot);
 	remove_hole_nx(dot, q, rsv);
 }
 
+static
 int do_cmd(int c);
 
+static
 int find_range(char **start, char **stop, int c, unsigned n)
 {
 	int i;
@@ -681,16 +733,17 @@ int find_range(char **start, char **stop, int c, unsigned n)
 	return 1;
 }
 
+static
 int dot_delrangec(unsigned n, int c0)
 {
 	char *p, *q;
-	int c = getkb();
+	int c = getkb(), was;
 	if (c == 27)
 		return 0;
 	if (c == c0)
 		c = '_';
 	if (!find_range(&p, &q, c, n)) {
-		error("Bad command '%c%s'\n", c0, printable(c));
+		error("Bad command '%c%s'", c0, printable(c));
 		return 0;
 	}
 	if (strchr("wW", c)) {
@@ -705,14 +758,14 @@ int dot_delrangec(unsigned n, int c0)
 	} else if (strchr("kj-_+%{}HL\n", c)) {
 		dot = remove_hole(p, q);
 		if (c0 != 'd') {
-			dprintf("dot=%d=%s%s\n", dot - text, strdup(printable(dot[-1])), strdup(printable(*dot)), strdup(printable(dot[1])));
-			dot = insert_char(dot, '\n');
-			dprintf("dot=%d=%s%s%s\n", dot - text, strdup(printable(dot[-1])), strdup(printable(*dot)), strdup(printable(dot[1])));
-			if (dot < end - 1)
-				dot = prev_line(dot + 1);
-			dprintf("dot=%d=%s%s\n", dot - text, strdup(printable(dot[-1])), strdup(printable(*dot)), strdup(printable(dot[1])));
+			was = dot >= end - 1;
+			insert_char(dot, '\n');
+			if (dot <= text)
+				dot--;
+			else if (was && dot >= end - 2)
+				dot++;
 		} else {
-			dot_begin_skipws(1);
+			dot = begin_line(dot);
 		}
 	} else if (strchr("eEbBft;0hl$^\b\x7f ", c)) {
 		dot = remove_hole_nx(p, q, c0 != 'd');
@@ -725,10 +778,14 @@ int dot_delrangec(unsigned n, int c0)
 // }}}
 // prompt parser {{{
 
+static
 int save_file(const char *path);
+static
 void edit_file(const char *path);
+static
 int open_file(const char *path);
 
+static
 int matchcmd(char **p, const char *cmd)
 {
 	char *q = *p;
@@ -743,6 +800,7 @@ int matchcmd(char **p, const char *cmd)
 	return 1;
 }
 
+static
 void do_prompt(void)
 {
 	int c;
@@ -763,15 +821,18 @@ void do_prompt(void)
 	redraw();
 	p = strdup(status_bar + 1);
 	//op = p;
-	if (matchcmd(&p, "open")) {
-		open_file(p);
+	if (matchcmd(&p, "")) {
+		/* Nothing */
+	} else if (matchcmd(&p, "open")) {
+		open_file(p ? p : g_path);
 	} else if (matchcmd(&p, "write")) {
 		save_file(p);
 	} else if (matchcmd(&p, "new")) {
 		open_file(NULL);
-	} else if (matchcmd(&p, "edit")) {
-		edit_file(p);
 	} else if (matchcmd(&p, "quit")) {
+		editing = 0;
+	} else if (matchcmd(&p, "wquit")) {
+		save_file(p);
 		editing = 0;
 	} else {
 		error("Bad command \":%s\"", p);
@@ -782,9 +843,10 @@ void do_prompt(void)
 // }}}
 // command parser {{{
 
-unsigned cmdcnt;
-int forward_char, forward_is_till;
+static unsigned cmdcnt;
+static int forward_char, forward_is_till;
 
+static
 int do_cmd(int c)
 {
 	char *p;
@@ -828,11 +890,11 @@ int do_cmd(int c)
 	case '$':
 		dot_dollar(cc);
 		break;
+	case '^':
+		cc = 1;
+		__attribute__((fallthrough));
 	case '_':
 		dot_begin_skipws(cc);
-		break;
-	case '^':
-		dot_begin_skipws(1);
 		break;
 	case '|':
 		dot_move_to_col(cc - 1);
@@ -915,7 +977,8 @@ modifying:
 			dot++;
 		goto cmd_i;
 	case 'I':
-		dot_begin_skipws(1);
+		dot = begin_line(dot);
+		dot = skip_spaces(dot);
 		__attribute__((fallthrough));
 	case 'i':
 cmd_i:
@@ -978,6 +1041,7 @@ done:
 	return 1;
 }
 
+static
 void do_key(int c)
 {
 	if (cmd_mode == 1) {
@@ -1003,6 +1067,7 @@ void do_key(int c)
 // }}}
 // body of edit_file {{{
 
+static
 void show_file_status(void)
 {
 	int lines = 0;
@@ -1024,6 +1089,7 @@ void show_file_status(void)
 	}
 }
 
+static
 int load_file(const char *path, int size)
 {
 	FILE *f;
@@ -1056,6 +1122,7 @@ err:		error("\"%s\" %s", path, strerror(errno));
 	return 0;
 }
 
+static
 int save_file(const char *path)
 {
 	FILE *f;
@@ -1090,6 +1157,7 @@ err:		error("\"%s\" Cannot write: %s", path, strerror(errno));
 	return 0;
 }
 
+static
 void new_text(int size)
 {
 	size *= 2;
@@ -1104,6 +1172,7 @@ void new_text(int size)
 	textend = text + size - 5;
 }
 
+static
 int file_size(const char *path)
 {
 	struct stat st;
@@ -1114,6 +1183,7 @@ int file_size(const char *path)
 	return st.st_size;
 }
 
+static
 int open_file(const char *path)
 {
 	int size = file_size(path);
@@ -1133,6 +1203,7 @@ int open_file(const char *path)
 	return 0;
 }
 
+static
 void edit_file(const char *path)
 {
 	int c;
@@ -1151,6 +1222,7 @@ void edit_file(const char *path)
 // }}}
 // switch to rawmode {{{
 
+static
 void cookmode(void)
 {
 	sitdown();
@@ -1159,6 +1231,7 @@ void cookmode(void)
 	tcsetattr(0, TCSANOW, &tc_orig);
 }
 
+static
 void rawmode(void)
 {
 	if (tcgetattr(0, &tc_orig) == -1) {

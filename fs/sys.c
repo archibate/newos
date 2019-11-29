@@ -279,7 +279,9 @@ int sys_unlinkat(int fd, const char *path, int flag)
 {
 	if (at_enter(fd) == -1)
 		return -1;
+	follow_policy_enter(0, 1);
 	int ret = unlinki(path, !!(flag & AT_REMOVEDIR));
+	follow_policy_leave();
 	at_leave();
 	return ret;
 }

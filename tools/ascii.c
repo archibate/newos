@@ -1,16 +1,13 @@
-#if 0 // {{{
-true /*
-set -e
-chmod +x $0
-gcc -D_ARGV0=\"$0\" $0 -o /tmp/$$ && /tmp/$$ $*
-x=$?
-rm -f /tmp/$$
-exit
-true */
+#if 0 ////////////////////////////////////////// {{{
+true /*; chmod +x $0
+if grep -q 'math\.h' $0; then C+=-lm; fi
+if grep -q 'pthread\.h' $0; then C+=-lpthread; fi
+if [ ! -z $GDB ]; then C+="-gstabs+ -ggdb -D_DEBUG"; fi
+gcc $C -Werror $0 -o /tmp/$$ && $GDB /tmp/$$ $*; x=$?
+rm -f /tmp/$$; exit $x
+true CCSH_signature123 */
 #endif
-#ifndef _ARGV0
-#define _ARGV0 (argv[0])
-#endif // }}}
+// # }}} [3J[H[2J
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

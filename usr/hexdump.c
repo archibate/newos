@@ -1,7 +1,8 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <string.h>
 
-int hex(const char *path)
+static int hexdump(const char *path)
 {
 	FILE *fp = !strcmp(path, "-") ? stdin : fopen(path, "r");
 	if (!fp) {
@@ -25,8 +26,8 @@ int hex(const char *path)
 int main(int argc, char **argv)
 {
 	int err = 0;
-	if (argc <= 1) err = hex("-");
+	if (argc <= 1) err = hexdump("-");
 	else for (int i = 1; i < argc; i++)
-		err = hex(argv[i]) || err;
+		err = hexdump(argv[i]) || err;
 	return err;
 }

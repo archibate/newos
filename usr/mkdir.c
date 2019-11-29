@@ -1,8 +1,9 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
-int do_mkdir(const char *path)
+static int do_mkdir(const char *path)
 {
 	if (mkdir(path, 0755) == -1) {
 		perror(path);

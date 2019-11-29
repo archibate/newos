@@ -1,17 +1,14 @@
-#if 0 // {{{
-true /*
-set -e
-chmod +x $0
-gcc -ggdb -gstabs+ -D_ARGV0=\"$0\" $0 -o /tmp/$$ && /tmp/$$ $*
-#cgdb /tmp/$$ $*
-x=$?
-rm -f /tmp/$$
-exit
-true */
+#if 0 ////////////////////////////////////////// {{{
+true /*; chmod +x $0
+if grep -q 'math\.h' $0; then C+=-lm; fi
+if grep -q 'pthread\.h' $0; then C+=-lpthread; fi
+if [ ! -z $GDB ]; then C+="-gstabs+ -ggdb -D_DEBUG"; fi
+gcc $C -Werror $0 -o /tmp/$$ && $GDB /tmp/$$ $*; x=$?
+rm -f /tmp/$$; exit $x
+true CCSH_signature123 */
 #endif
-#ifndef _ARGV0
-#define _ARGV0 (argv[0])
-#endif // }}}
+// # }}} [3J[H[2J
+#include "busybox.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -21,6 +18,9 @@ true */
 #include <stdlib.h>
 #include <errno.h>
 
+#ifndef _NEWOS
+#define strescape(x) (x)
+#endif
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #ifdef _DEBUG
 #define debug(...) eprintf(__VA_ARGS__)
@@ -33,40 +33,40 @@ enum {
 	T_ID, T_NUM, T_I, T_O, T_OO, T_PIPE,
 };
 
-int errcnt, token_type;
-char token_string[233];
+static int errcnt, token_type;
+static char token_string[233];
 
-void argv_push(const char *s);
-void open_push(const char *path, int fd, int flags);
-void term_push(void);
+static void argv_push(const char *s);
+static void open_push(const char *path, int fd, int flags);
+static void term_push(void);
 
-void error(const char *s)
+static void error(const char *s)
 {
 	eprintf("error: %s\n", s);
 	errcnt++;
 }
 
-const char *s;
+static const char *s;
 
-int sgetchr(void)
+static int sgetchr(void)
 {
 	return *s ? *s++ : EOF;
 }
 
-void sungetchr(int c)
+static void sungetchr(int c)
 {
 	*s--;
 }
 
-void ungetchar(int c)
+static void ungetchar(int c)
 {
 	ungetc(c, stdin);
 }
 
-int (*getchr)(void) = sgetchr;
-void (*ungetchr)(int c) = sungetchr;
+static int (*getchr)(void) = sgetchr;
+static void (*ungetchr)(int c) = sungetchr;
 
-void tokestr(void)
+static void tokestr(void)
 {
 	int c, i = 0;
 	while (1) {
@@ -116,7 +116,7 @@ rep_double_quoter:
 	token_string[i] = 0;
 }
 
-int str_is_digital(const char *s)
+static int str_is_digital(const char *s)
 {
 	for (; *s; s++)
 		if (!('0' <= *s && *s <= '9'))
@@ -124,7 +124,7 @@ int str_is_digital(const char *s)
 	return 1;
 }
 
-void toke(void)
+static void toke(void)
 {
 	int c;
 rep:
@@ -175,7 +175,7 @@ re_switch:
 	}
 }
 
-void factor(void)
+static void factor(void)
 {
 	if (token_type != T_ID) {
 		error("expect T_ID");
@@ -183,7 +183,7 @@ void factor(void)
 	}
 }
 
-void term(void)
+static void term(void)
 {
 	int fd, flags, had = 0;
 rep:
@@ -223,7 +223,7 @@ id:
 	goto rep;
 }
 
-void expr(void)
+static void expr(void)
 {
 	term();
 	while (token_type == T_PIPE) {
@@ -232,7 +232,7 @@ void expr(void)
 	}
 }
 
-void parse_input(void)
+static void parse_input(void)
 {
 	toke();
 	if (token_type == T_EOF)
@@ -259,7 +259,7 @@ struct term_info {
 } ts[MAX_TERM];
 int tc;
 
-void open_push(const char *path, int fd, int flags)
+static void open_push(const char *path, int fd, int flags)
 {
 	debug("open('%s', %d, %d)\n", path, fd, flags);
 	if (ts[tc].openc >= MAX_OPEN) {
@@ -272,7 +272,7 @@ void open_push(const char *path, int fd, int flags)
 	ts[tc].openc++;
 }
 
-void argv_push(const char *s)
+static void argv_push(const char *s)
 {
 	debug("argv('%s')\n", token_string);
 	if (ts[tc].argc >= MAX_ARGV) {
@@ -282,7 +282,7 @@ void argv_push(const char *s)
 	ts[tc].argv[ts[tc].argc++] = strdup(s);
 }
 
-void term_push(void)
+static void term_push(void)
 {
 	debug("term()\n");
 	tc++;
@@ -290,7 +290,7 @@ void term_push(void)
 	ts[tc].openc = 0;
 }
 
-void clear_state(void)
+static void clear_state(void)
 {
 	tc = 0;
 	ts[tc].argc = 0;
@@ -298,9 +298,9 @@ void clear_state(void)
 	errcnt = 0;
 }
 
-int last_exit_stat;
+static int last_exit_stat;
 
-void wait_for(pid_t pid)
+static void wait_for(pid_t pid)
 {
 	int stat;
 	if (waitpid(pid, &stat, 0) < 0) {
@@ -338,9 +338,9 @@ void wait_for(pid_t pid)
 	}
 }
 
-int last_pipe_fd;
+static int last_pipe_fd;
 
-int do_opens(int ti)
+static int do_opens(int ti)
 {
 	for (int i = 0; i < ts[ti].openc; i++) {
 		int fd = open(ts[ti].openv[i].path, ts[ti].openv[i].flags, S_IFREG | 0644);
@@ -355,7 +355,7 @@ int do_opens(int ti)
 	return 1;
 }
 
-__attribute__((noreturn)) void do_exec(int ti, int i)
+static __attribute__((noreturn)) void do_exec(int ti, int i)
 {
 	if (!do_opens(ti))
 		exit(EXIT_FAILURE);
@@ -367,7 +367,7 @@ __attribute__((noreturn)) void do_exec(int ti, int i)
 	exit(EXIT_FAILURE);
 }
 
-pid_t do_forkexec(int ti)
+static pid_t do_forkexec(int ti)
 {
 	int fd[2];
 	if (ti < tc - 1 && pipe(fd) == -1) {
@@ -403,9 +403,9 @@ pid_t do_forkexec(int ti)
 	return pid;
 }
 
-char pwd[233];
+static char pwd[233];
 
-void do_chdir(const char *path)
+static void do_chdir(const char *path)
 {
 	if (chdir(path) == -1) {
 		perror(path);
@@ -414,9 +414,9 @@ void do_chdir(const char *path)
 		pwd[0] = 0;
 }
 
-pid_t tpids[MAX_TERM];
+static pid_t tpids[MAX_TERM];
 
-void execute_ti(int ti)
+static void execute_ti(int ti)
 {
 	tpids[ti] = -1;
 	ts[ti].argv[ts[ti].argc] = NULL;
@@ -438,7 +438,7 @@ void execute_ti(int ti)
 		tpids[ti] = pid;
 }
 
-void execute(void)
+static void execute(void)
 {
 	debug("execute()\n");
 	last_pipe_fd = 0;
@@ -449,7 +449,7 @@ void execute(void)
 			wait_for(tpids[i]);
 }
 
-void run_input(void)
+static void run_input(void)
 {
 	parse_input();
 	if (!errcnt)

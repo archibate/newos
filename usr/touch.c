@@ -1,10 +1,11 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 
-int touch(const char *path)
+static int touch(const char *path)
 {
 	int fd = open(path, O_CREAT | O_EXCL, 0644 | S_IFREG);
 	if (fd >= 0) close(fd);

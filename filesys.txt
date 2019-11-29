@@ -1,9 +1,9 @@
 root {
-	n tools/numbers.txt
-	m tools/meltyland.txt
+	nums tools/numbers.txt
+	melt tools/meltyland.txt
 	looper -> looper
-	a tools/aa.txt
-	b {
+	file tools/aa.txt
+	dir {
 	}
 }
 usr {

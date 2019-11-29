@@ -71,6 +71,7 @@ vga_putc(int c)
 				count = (vga_pos + VGA_COLS - 1) % VGA_COLS + 1;
 				break;
 			case 2:
+			case 3:
 				start -= vga_pos % VGA_COLS;
 				count = VGA_COLS;
 				break;
@@ -92,19 +93,34 @@ fill:
 				count = vga_pos;
 				break;
 			case 2:
+			case 3:
 				count = VGA_SIZE;
 				break;
 			}
 			goto fill;
 		case 'm':
+			if (last_num) {
+				last_num ^= num;
+				num ^= last_num;
+				last_num ^= num;
+			}
+csim:
 			switch (num) {
 			case 0:
 				vga_color = 0x0700;
+				break;
+			case 1:
+				vga_color |= 0x0800;
 				break;
 			case 7:
 				vga_color = ((vga_color & 0xf000) >> 4)
 					  | ((vga_color & 0x0f00) << 4);
 				break;
+			}
+			if (last_num) {
+				num = last_num;
+				last_num = 0;
+				goto csim;
 			}
 			break;
 		case 'H':

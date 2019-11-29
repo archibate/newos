@@ -1,4 +1,5 @@
 DYN=1
+BBOX=1
 DISP=1
 #####################################
 ifdef RELEASE
@@ -32,7 +33,7 @@ KERN_DIRS=kern mm fs libc/pure
 KERN_SRCS=$(shell find $(KERN_DIRS) -name '*.[cS]' -type f)
 KERN_OBJS=build/scripts/stext.c.o $(KERN_SRCS:%=build/%.o) build/scripts/ebss.c.o
 USER_SRCS=$(shell find usr -name '*.[cS]' -type f)
-USER_BINS=$(shell echo $(USER_SRCS:%=build/%) | sed 's/\.[cS]//g')
+USER_OBJS=$(USER_SRCS:%=build/%.o)
 ifneq ($(DYN),)
 USER_LIBS=build/libc.dl
 endif
@@ -54,20 +55,22 @@ run: build/boot.img
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/filesys.txt $(USER_BINS) $(USER_LIBS)
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox build/filesys.txt $(USER_LIBS)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
-	@rm -f $@ && bximage -q -mode=create -imgmode=flat -hd=10M $@
+	@-rm -rf $@
+	@bximage -q -mode=create -imgmode=flat -hd=10M $@
 	@tools/dd.sh if=$< of=$@ bs=2048 count=1 conv=notrunc
 	@tools/dd.sh if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
-	@tools/mknefs.c $@ -r `tools/blks.c $(word 2, $^) | awk '{print $$1}'` -L NewOS -f $(word 3, $^)
+	@tools/mknefs.c $@ -r `tools/blks.c build/vmlinux.bin | awk '{print $$1}'` -L NewOS -f build/filesys.txt
 
 build/filesys.txt: filesys.txt usr
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $< > $@
 	@echo 'bin {' >> $@
-	@for x in $(USER_BINS); do echo 0755 `basename $$x` $$x >> $@; done
+	@echo 0755 busybox build/usr/busybox >> $@
+	@for x in $(USER_SRCS:%.c=%); do echo `basename $$x` '->' busybox >> $@; done
 	@echo '}' >> $@
 	@echo 'lib {' >> $@
 	@for x in $(USER_LIBS); do echo `basename $$x` $$x >> $@; done
@@ -123,10 +126,10 @@ ifneq ($(DYN),)
 $(foreach x, $(KERN_DIRS) libc, build/$x/%): CFLAGS+=-D_LIBC_EXP
 endif
 
-build/usr/%: build/usr/%.c.o $(CRT0_OBJS) scripts/user.ld build/libc.a
+build/usr/busybox: $(USER_OBJS) $(CRT0_OBJS) build/libc.a scripts/user.ld
 	@echo + '[ld]' $@
 	@mkdir -p $(@D)
-	@ld -nostdlib $(LDFLAGS) -T scripts/user.ld -L build -e _start -o $@ $(CRT0_OBJS) $< $(LIBGCC) -lc
+	@ld -nostdlib $(LDFLAGS) -T scripts/user.ld -L build -e _start -o $@ $(CRT0_OBJS) $(USER_OBJS) $(LIBGCC) -lc
 	@$(STRIP) $@
 
 .PHONY: info
@@ -175,18 +178,18 @@ endif
 build/%.a: build/%.dl.nostrip
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
-	@rm -rf $@
+	@-rm -rf $@
 	@tools/makedlo.sh $< $@ /lib/$*.dl
 endif
 
 .PHONY: clean
 clean:
-	rm -rf build
+	-rm -rf build
 
 .PHONY: dep
 dep: build/dep
 
-build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_BINS:%=%.d))
+build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_OBJS:%=%.d))
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $^ > $@

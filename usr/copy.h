@@ -3,7 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-int do_copy(const char *src, const char *dst)
+static int do_copy(const char *src, const char *dst)
 {
 	// TODO: cannot copy attrs when dst already exist. use unlink(dst) plz.
 	FILE *fin = fopen(src, "r");

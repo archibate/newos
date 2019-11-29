@@ -1,9 +1,10 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <string.h>
 
-int found, opt_v, show_prefix;
+static int found, opt_v, show_prefix;
 
-int grep(const char *exp, const char *path)
+static int grep(const char *exp, const char *path)
 {
 	FILE *fp = !strcmp(path, "-") ? stdin : fopen(path, "r");
 	if (!fp) {

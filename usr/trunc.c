@@ -1,10 +1,11 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
-size_t my_atoi(const char *s)
+static size_t my_atoi(const char *s)
 {
 	size_t r = strtol(s, (char **)&s, 10);
 	switch (*s) {
@@ -15,7 +16,7 @@ size_t my_atoi(const char *s)
 	}
 }
 
-size_t get_size(const char *sz, size_t size)
+static size_t get_size(const char *sz, size_t size)
 {
 	if ('0' <= sz[0] && sz[0] <= '9')
 		return my_atoi(sz);

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-int chrftype(mode_t mode)
+static int chrftype(mode_t mode)
 {
 	if (S_ISREG(mode))
 		return '-';
@@ -20,7 +20,7 @@ int chrftype(mode_t mode)
 	return '?';
 }
 
-char *strfaccess(mode_t mode)
+static char *strfaccess(mode_t mode)
 {
 	int i;
 	static char buf[11] = "?rwxrwxrwx";

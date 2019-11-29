@@ -1,9 +1,10 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
 
-int main(void)
+static int main(int argc, char **argv)
 {
 	int stat = 1;
 	for (int i = 0; i < _NSIG; i++)

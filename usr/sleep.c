@@ -1,8 +1,9 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-int do_sleep(const char *itstr)
+static int do_sleep(const char *itstr)
 {
 	return sleep(atoi(itstr));
 }

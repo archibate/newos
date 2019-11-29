@@ -1,7 +1,8 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 
-int rm(const char *path)
+static int rm(const char *path)
 {
 	if (unlink(path) == -1) {
 		perror(path);

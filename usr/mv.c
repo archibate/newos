@@ -1,10 +1,11 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include "copy.h"
 
-int do_move(const char *src, const char *dst)
+static int do_move(const char *src, const char *dst)
 {
 	if (link(src, dst) == -1) {
 		if (do_copy(src, dst))

@@ -1,9 +1,10 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include "strstat.h"
 
-char *strftype(mode_t mode)
+static char *strftype(mode_t mode)
 {
 	if (S_ISREG(mode))
 		return "regular file";
@@ -24,7 +25,7 @@ char *strftype(mode_t mode)
 	return buf;
 }
 
-int do_stat(const char *path)
+static int do_stat(const char *path)
 {
 	struct stat st;
 	if (lstat(path, &st) == -1) {

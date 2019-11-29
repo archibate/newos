@@ -16,6 +16,10 @@ SECTIONS {
 	.rodata : {
 		*(.rodata .rodata.* .rdata .rdata.*)
 		*(.gnu.linkonce.r.*)
+		. = ALIGN(16);
+		__BBOX_BEGIN__ = .;
+		*(.busybox)
+		__BBOX_END__ = .;
 		__CTORS_BEGIN__ = .;
 		*(.ctor*)
 		__CTORS_END__ = .;

@@ -1,9 +1,10 @@
+#include "busybox.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	if (argc != 3) {
 		fprintf(stderr, "ln: missing oprand\n");
