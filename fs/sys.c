@@ -52,6 +52,35 @@ static inline int badf(void)
 	return -1;
 }
 
+int open_fd_object(void *ptr, int type, int flags)
+{
+	int fd = alloc_fd(0);
+	if (fd == -1)
+		return -1;
+	struct file *f = fs_open_object(ptr, type, flags);
+	if (!f)
+		return -1;
+	current->filp[fd] = f;
+	return fd;
+}
+
+void *get_fd_object(int fd, int type)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return NULL;
+	struct file *f = current->filp[fd];
+	if (!f)
+		return NULL;
+	if (f->f_type != type)
+		return NULL;
+	return f->f_ptr;
+}
+
+void remove_fd_object(int fd)
+{
+	current->filp[fd] = 0;
+}
+
 int sys_open(const char *path, int flags, mode_t mode)
 {
 	int fd = alloc_fd(0);

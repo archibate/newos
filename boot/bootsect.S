@@ -56,7 +56,9 @@ disk_addr_packet:
 	dw 0xaa55
 
 stage2:
-	;call set_video
+%ifdef _VIDEO
+	call set_video
+%endif
 	mov si, disk_addr_packet
 	mov word [si + 8], 4
 	mov word [si + 6], tmp_kaddr >> 4
@@ -130,10 +132,15 @@ done_msg:
 	db "done", 13, 10, 0
 buffer:
 
-	times 1016-($-$$) db 0
-vram_addr: ; access me at 0x7ff8
+	times 1012-($-$$) db 0
+vram_addr: ; access me at 0x7ff4
 	dd 0
-	dw 0
+vram_nx:
+	dw 320
+vram_ny:
+	dw 200
+vram_bpp:
+	dw 8
 stage2_signature:
 	dw 0x55aa
 

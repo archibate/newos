@@ -42,7 +42,7 @@ int ftruncate(int fd, off_t length)
 
 int truncate(const char *path, off_t length)
 {
-	int fd = open(path, O_WRONLY | O_CREAT, 0644 | S_IFREG);
+	int fd = open(path, O_RDWR | O_CREAT, 0644 | S_IFREG);
 	if (fd == -1)
 		return -1;
 	int ret = ftruncate(fd, length);

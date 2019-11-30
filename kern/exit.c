@@ -22,7 +22,7 @@ static void tell_parent(int pid)
 			return;
 		}
 	}
-	printk("WARNING: no parent ppid=%d found", pid);
+	//printk("WARNING: no parent ppid=%d found", pid);
 	return;
 }
 
@@ -77,7 +77,8 @@ repeat:
 			return task[i]->pid;
 		} else if (task[i]->state == TASK_ZOMBIE) {
 			flag = task[i]->pid;
-			*stat_loc = task[i]->exit_code;
+			if (stat_loc)
+				*stat_loc = task[i]->exit_code;
 			free_task(task[i]);
 			task[i] = NULL;
 			return flag;

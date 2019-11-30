@@ -11,7 +11,7 @@ struct busybox_entry
 #ifndef _BUSYBOX_C
 static int main(int argc, char **argv);
 static char __this_file__[] = __BASE_FILE__;
-static __attribute__((section(".busybox")))
+__attribute__((section(".busybox"), weak))
 struct busybox_entry __busybox_this__ =
 {
 	// skip "usr/":

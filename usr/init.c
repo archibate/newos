@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-static int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int stat = 1;
 	for (int i = 0; i < _NSIG; i++)
@@ -12,7 +12,7 @@ static int main(int argc, char **argv)
 
 	pid_t pid = fork();
 	if (pid == 0) {
-		execl("/bin/sh", "/bin/sh", NULL);
+		execl("/bin/sh", "/bin/sh", "/etc/rcS", NULL);
 		perror("/bin/sh");
 	} else if (pid < 0) {
 		perror("fork");

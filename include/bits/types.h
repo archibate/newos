@@ -14,7 +14,7 @@ typedef char __int8_t, __int_fast8_t;
 typedef short __int16_t;
 typedef int __int32_t, __int_least8_t, __int_least16_t, __int_least32_t,
 	__int_fast16_t, __int_fast32_t, __pid_t, __blksize_t, __blkcnt_t;
-typedef long __intptr_t, __ssize_t, __off_t, __ptrdiff_t, __wchar_t, __suseconds_t;
+typedef long __intptr_t, __ssize_t, __off_t, __ptrdiff_t, __wchar_t, __suseconds_t, __key_t;
 typedef long long __int64_t, __int_least64_t, __int_fast64_t, __intmax_t;
 
 #endif

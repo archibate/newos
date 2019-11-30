@@ -5,12 +5,10 @@
 #include <bits/dirent.h>
 // Get struct stat.
 #include <bits/stat.h>
+// Get struct msqid_ds.
+#include <bits/msg.h>
 // Get intptr_t.
 #include <stdint.h>
-
-#ifndef __user
-#define __user
-#endif
 
 #ifndef _SYSCALL
 #define _SYSCALL
@@ -182,6 +180,10 @@ _syscall2(31, int, munmap, void *, size_t);
 _syscall2(32, int, ftruncate_s, int, size_t);
 _syscall3(33, int, ioctl, int, int, long);
 _syscall1(34, time_t, alarm, time_t);
+_syscall2(35, int, msgget, key_t, int);
+_syscall3(36, int, msgctl, int, int, struct msqid_ds *);
+_syscall5(37, ssize_t, msgrcv, int, void *, size_t, long, int);
+_syscall4(38, int, msgsnd, int, const void *, size_t, int);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

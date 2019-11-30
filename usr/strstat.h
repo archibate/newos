@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 
 static int chrftype(mode_t mode)
@@ -23,10 +24,11 @@ static int chrftype(mode_t mode)
 static char *strfaccess(mode_t mode)
 {
 	int i;
-	static char buf[11] = "?rwxrwxrwx";
+	static char buf[11];
+	strcpy(buf, "?rwxrwxrwx");
 	buf[0] = chrftype(mode);
 	for (int i = 0; i < 9; i++) {
-		if (!(mode & 1 << (8 - i)))
+		if (!(mode & (1 << (8 - i))))
 			buf[1 + i] = '-';
 	}
 	return buf;

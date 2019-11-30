@@ -51,5 +51,8 @@
 #ifndef blkcnt_t
 #define blkcnt_t __blkcnt_t
 #endif
+#ifndef key_t
+#define key_t __key_t
+#endif
 
 #endif

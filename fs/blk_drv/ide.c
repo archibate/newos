@@ -13,13 +13,13 @@ static int ide_wait(void)
 
 	while ((r = inb(IDE_STAT)) & IDE_BSY) {
 		if (timeout-- <= 0) {
-			printk("WARNING: IDE wait timed out");
+			printk("ERROR: IDE wait timed out");
 			return 0;
 		}
 	}
 
 	if (r & (IDE_DF|IDE_ERR)) {
-		printk("WARNING: IDE error %#x", r);
+		printk("ERROR: IDE error %#x", r);
 		return 0;
 	}
 
@@ -47,7 +47,7 @@ static void ide_seek(int ide, int sectnr, int nsects)
 
 void ll_rw_block(struct buf *b, int rw)
 {
-	ide_seek(b->b_dev - 1, (b->b_blkno - 1) * PBPB, PBPB);
+	ide_seek(b->b_dev - DRV_HDA, (b->b_blkno - 1) * PBPB, PBPB);
 	if (rw == READ)
 		outb(IDE_CMD, PBPB == 1 ? IDE_CMD_READ : IDE_CMD_RDMUL);
 	else if (rw == WRITE)

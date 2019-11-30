@@ -10,9 +10,10 @@
 #include <bits/stat.h>
 #include <ds/ring.h>
 
-#define DEV_NULL	0
-#define DEV_ZERO	1
-#define DEV_TTY0	2
+#define DEV_NULL	0x000
+#define DEV_ZERO	0x001
+#define DEV_FB0		0x002
+#define DEV_TTY0	0x100
 
 #define DRV_HDA		1
 #define DRV_HDB		2
@@ -101,9 +102,15 @@ struct super_block {
 #define s_itab_blknr s_nefs.s_nefs_itab_blknr
 #define s_data_blknr s_nefs.s_nefs_data_blknr
 
+#define FT_INODE	0
+#define FT_MSGQ		1
 struct file {
-	struct inode *f_ip;
+	union {
+		struct inode *f_ip;
+		void *f_ptr;
+	};
 	off_t f_offset;
+	int f_type;
 	int f_flags;
 	int f_fdargs;
 };
@@ -117,7 +124,8 @@ extern struct super_block super[NR_SUPER];
 // blk_drv/
 void ll_rw_block(struct buf *b, int rw);
 // chr_drv/
-size_t chr_drv_rw(int rw, int nr, off_t pos, void *buf, size_t size);
+size_t chr_drv_rw(int rw, int nr, size_t pos, void *buf, size_t size);
+ssize_t chr_drv_seek(int nr, size_t pos);
 int chr_drv_ioctl(int nr, int req, long arg);
 // buffer.c
 struct buf *bread(dev_t dev, blkno_t blkno);
@@ -147,6 +155,7 @@ size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int istat(struct inode *ip, struct stat *st);
 int iioctl(struct inode *ip, int req, long arg);
 int iaccess(struct inode *ip, mode_t amode, int eacc);
+ssize_t iseek(struct inode *ip, size_t size);
 struct inode *alloc_m_inode(void);
 void dump_inode(int more);
 // namei.c
@@ -159,6 +168,7 @@ void follow_policy_enter(int nofollow, int symlink_nofollow);
 void follow_policy_leave(void);
 // file.c
 struct file *fs_open(const char *path, int flags, mode_t mode);
+struct file *fs_open_object(void *ptr, int type, int flags);
 struct file *fs_dup(struct file *f);
 size_t fs_read(struct file *f, void *buf, size_t size);
 size_t fs_write(struct file *f, const void *buf, size_t size);
@@ -174,5 +184,9 @@ size_t pipe_read(struct inode *ip, void *buf, size_t size);
 size_t pipe_write(struct inode *ip, const void *buf, size_t size);
 void close_pipe(struct inode *ip);
 void free_pipe(struct inode *ip);
+// sys.c
+int open_fd_object(void *ptr, int type, int flags);
+void *get_fd_object(int fd, int type);
+void remove_fd_object(int fd);
 
 #endif

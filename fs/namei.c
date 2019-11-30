@@ -314,6 +314,7 @@ static struct inode *new_inode(struct inode *pip, mode_t mode, int nod)
 		dir_add_entry(ip, pip, "..", 2);
 	} else if (S_ISNOD(mode)) {
 		ip->i_nodnr = nod;
+		ip->i_size = -1;
 	}
 	return ip;
 }

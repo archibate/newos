@@ -40,12 +40,29 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 		iput(ip);
 		return NULL;
 	}
-	if (flags & O_TRUNC)
-		ip->i_size = 0;
+	if (flags & O_TRUNC) {
+		ssize_t size = iseek(ip, 0);
+		if (size != -1)
+			ip->i_size = size;
+		errno = 0;
+	}
 
 	struct file *f = calloc(sizeof(struct file), 1);
 	f->f_ip = ip;
+	f->f_type = FT_INODE;
 	f->f_offset = flags & O_APPEND ? ip->i_size : 0;
+	f->f_flags = flags;
+	if (flags & O_CLOEXEC)
+		f->f_fdargs |= FD_CLOEXEC;
+	return f;
+}
+
+struct file *fs_open_object(void *ptr, int type, int flags)
+{
+	struct file *f = calloc(sizeof(struct file), 1);
+	f->f_type = type;
+	f->f_ptr = ptr;
+	f->f_offset = 0;
 	f->f_flags = flags;
 	if (flags & O_CLOEXEC)
 		f->f_fdargs |= FD_CLOEXEC;
@@ -62,14 +79,17 @@ struct file *fs_dup(struct file *f)
 
 void fs_close(struct file *f)
 {
-	iput(f->f_ip);
+	if (f->f_type == FT_INODE) {
+		iput(f->f_ip);
+	}
 	free(f);
 }
 
 size_t fs_read(struct file *f, void *buf, size_t size)
 {
-	if ((f->f_flags & (O_RDONLY | O_DIRECTORY)) != O_RDONLY) {
-		errno = EPERM;
+	if (f->f_type != FT_INODE ||
+	    (f->f_flags & (O_RDONLY | O_DIRECTORY)) != O_RDONLY) {
+		errno = EBADF;
 		return 0;
 	}
 	size = iread(f->f_ip, f->f_offset, buf, size);
@@ -79,8 +99,9 @@ size_t fs_read(struct file *f, void *buf, size_t size)
 
 size_t fs_write(struct file *f, const void *buf, size_t size)
 {
-	if ((f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY) {
-		errno = EPERM;
+	if (f->f_type != FT_INODE ||
+	    (f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY) {
+		errno = EBADF;
 		return 0;
 	}
 	size = iwrite(f->f_ip, f->f_offset, buf, size);
@@ -106,9 +127,12 @@ off_t fs_seek(struct file *f, off_t offset, int whence)
 		errno = EINVAL;
 		return -1;
 	}
+	offset = iseek(f->f_ip, offset);
+	if (offset == -1)
+		return -1;
 	if (offset < 0)
 		offset = 0;
-	else if (offset > (off_t)f->f_ip->i_size)
+	else if ((size_t)offset > f->f_ip->i_size)
 		offset = (off_t)f->f_ip->i_size;
 	f->f_offset = offset;
 	return offset;
@@ -116,8 +140,10 @@ off_t fs_seek(struct file *f, off_t offset, int whence)
 
 int fs_dirread(struct file *f, struct dirent *de)
 {
-	if ((f->f_flags & (O_RDONLY | O_DIRECTORY)) != (O_RDONLY | O_DIRECTORY)) {
-		errno = EPERM;
+	if (f->f_type != FT_INODE ||
+	    (f->f_flags & (O_RDONLY | O_DIRECTORY))
+	    != (O_RDONLY | O_DIRECTORY)) {
+		errno = EBADF;
 		return 0;
 	}
 	// since dirent = nefs_dir_entry!
@@ -148,12 +174,14 @@ int fs_pipe(struct file *fs[2])
 
 int fs_truncate_s(struct file *f, size_t length)
 {
-	if ((f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY) {
-		errno = EPERM;
+	if (f->f_type != FT_INODE ||
+	    (f->f_flags & (O_RDWR | O_DIRECTORY)) != O_RDWR) {
+		errno = EBADF;
 		return -1;
 	}
-	if (length >= f->f_ip->i_size)
-		return 1;
-	f->f_ip->i_size = length;
+	ssize_t size = iseek(f->f_ip, length);
+	if (size == -1)
+		return -1;
+	f->f_ip->i_size = size;
 	return 0;
 }

@@ -470,7 +470,6 @@ int main(int argc, char **argv)
 			run_input();
 		return last_exit_stat;
 	} else if (argv[1]) {
-		fclose(stdin);
 		stdin = fopen(argv[1], "r");
 		if (!stdin) {
 			perror(argv[1]);

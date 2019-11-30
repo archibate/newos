@@ -61,6 +61,9 @@ main(void)
 	INIT(sched);
 	INIT(fs);
 	INIT(kbd);
+#ifdef _VIDEO
+	INIT(video);
+#endif
 
 	//kernel_thread(test_thread_1, NULL);
 	//kernel_thread(test_thread_2, NULL);

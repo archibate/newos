@@ -5,6 +5,18 @@ def cn
 		target remote localhost:1234
 end
 
+def i16
+set architecture i8086
+end
+
+def ia
+set disassembly-flavor intel
+end
+
+def da
+set disassembly-next-line on
+end
+
 def lk
 		add-symbol-file build/vmlinux
 end
@@ -37,6 +49,7 @@ define u
 end
 
 cn
+ia
 lk
 lu busybox
 ll libc

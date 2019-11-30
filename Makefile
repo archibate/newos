@@ -1,6 +1,6 @@
 DYN=1
-BBOX=1
 DISP=1
+VIDEO=1
 #####################################
 ifdef RELEASE
 OPTIM=3
@@ -15,15 +15,21 @@ COPT+=$(if $(OPTIM), -O$(OPTIM))
 CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-fno-stack-protector -Iinclude -Wall -Wextra \
 	-Wno-unused -Wno-main -Wno-frame-address \
-	-Wno-builtin-declaration-mismatch \
-	-Werror=int-conversion -Werror=implicit-int \
-	-Werror=implicit-function-declaration \
-	-Wno-format-zero-length -D_NEWOS
+	-Wno-builtin-declaration-mismatch -Werror=return-type \
+	-Werror=int-conversion -Werror=return-local-addr \
+	-Werror=implicit-function-declaration -Werror=implicit-int \
+	-Werror=discarded-qualifiers -Wno-format-zero-length \
+	-Werror=incompatible-pointer-types -D_NEWOS
 ifeq ($(DYN),)
 CFLAGS+=-D_LIBC_EXP
 endif
+ifneq ($(VIDEO),)
+CFLAGS+=-D_TTY_SERIAL -D_VIDEO
+NASMFLAGS+=-D_VIDEO
+else
 ifeq ($(DISP),)
 CFLAGS+=-D_TTY_SERIAL
+endif
 endif
 LDFLAGS=-m elf_i386
 QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
@@ -55,7 +61,7 @@ run: build/boot.img
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox build/filesys.txt $(USER_LIBS)
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox build/filesys.txt rcs.txt $(USER_LIBS)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@-rm -rf $@
@@ -94,22 +100,22 @@ build/vmlinux.bin: build/vmlinux
 build/%.S.o: %.S
 	@echo - '[as]' $<
 	@mkdir -p $(@D)
-	@nasm -felf -o $@ $<
+	@nasm -felf $(NASMFLAGS) -o $@ $<
 
 build/%.S.o.d: %.S
 	@echo - '[dep]' $<
 	@mkdir -p $(@D)
-	@nasm -M -MT $(@:%.d=%) -felf $< > $@
+	@nasm -M -MT $(@:%.d=%) -felf $(NASMFLAGS) $< > $@
 
 build/%.S.bin: %.S
 	@echo - '[as]' $<
 	@mkdir -p $(@D)
-	@nasm -fbin -o $@ $<
+	@nasm -fbin $(NASMFLAGS) -o $@ $<
 
 build/%.S.bin.d: %.S
 	@echo - '[dep]' $<
 	@mkdir -p $(@D)
-	@nasm -M -MT $(@:%.d=%) -fbin $< > $@
+	@nasm -M -MT $(@:%.d=%) $(NASMFLAGS) -fbin $< > $@
 
 build/%.c.o: %.c
 	@echo - '[cc]' $<
@@ -169,6 +175,7 @@ build/libc.dl.nostrip: $(LIBC_OBJS) scripts/dynlib.ld
 	@tools/dd.sh of=$@ if=tools/elfdynsig.bin seek=8 count=1 bs=2 conv=notrunc
 
 build/%.dl: build/%.dl.nostrip
+	@echo + '[gen]' $@
 ifeq ($(STRIP),:)
 	@cp $< $@
 else

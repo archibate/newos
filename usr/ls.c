@@ -14,7 +14,7 @@ static int ls_stat(int fd, const char *path)
 		perror(path);
 		return 1;
 	}
-	printf("%9s %5ld %s\n", strfaccess(st.st_mode), st.st_size, path);
+	printf("%s %5ld %s\n", strfaccess(st.st_mode), st.st_size, path);
 	return 0;
 }
 

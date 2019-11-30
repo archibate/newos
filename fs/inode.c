@@ -54,6 +54,7 @@ struct inode *alloc_m_inode(void)
 	ip->i_ino = 0;
 	ip->i_mode = 0777;
 	ip->i_nlink = -233;
+	ip->i_size = -1;
 	return ip;
 }
 
@@ -230,6 +231,16 @@ int iioctl(struct inode *ip, int req, long arg)
 notty:
 	errno = ENOTTY;
 	return -1;
+}
+
+ssize_t iseek(struct inode *ip, size_t pos)
+{
+	if (ip->i_fstype == IFS_PIPE) {
+		errno = ESPIPE;
+		return -1;
+	} if (S_ISCHR(ip->i_mode))
+		return chr_drv_seek(ip->i_nodnr, pos);
+	return pos;
 }
 
 size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)

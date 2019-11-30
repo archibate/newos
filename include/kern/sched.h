@@ -39,9 +39,9 @@ struct task {
 	void *stack;
 	clock_t alarm;
 
-	int exit_code;
 	sigset_t signal, blocked;
 	struct sigaction sigact[_NSIG];
+	int exit_code;
 
 	struct inode *cwd;
 	struct inode *root;
