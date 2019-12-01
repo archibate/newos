@@ -1,0 +1,5 @@
+XSplashScreen	: int num
+XFillRect	: int hdc, int x0, int y0, int x1, int y1
+XSetFillStyle	: int hdc, int color, int alpha
+XCreateDC	: out int hdc, int flags
+XDestroyDC	: int hdc

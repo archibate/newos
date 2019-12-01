@@ -1,4 +1,4 @@
-ENTRY(_start)
+ENTRY(__elf_start)
 
 PHDRS
 {
@@ -8,7 +8,7 @@ PHDRS
 }
 
 SECTIONS {
-	. = 0x40000000;
+	. = 0xd0000000;
 	PROVIDE(__elf_start = .);
 	.text : {
 		*(.text .text.*)
@@ -17,10 +17,6 @@ SECTIONS {
 	.rodata : {
 		*(.rodata .rodata.* .rdata .rdata.*)
 		*(.gnu.linkonce.r.*)
-		. = ALIGN(16);
-		__BBOX_BEGIN__ = .;
-		*(.busybox)
-		__BBOX_END__ = .;
 		__CTORS_BEGIN__ = .;
 		*(.ctor*)
 		__CTORS_END__ = .;

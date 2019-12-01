@@ -1,5 +1,7 @@
 BEGIN {
 	i = 0;
+	print ".section .dlt";
+	print "dlt:";
 }
 {
 	if (NF != 3)
@@ -10,20 +12,20 @@ BEGIN {
 		print ".section .dlt";
 		print "\t.long 0x"$1;
 		print ".text";
-		print ".globl "$3;
+		print ".weak "$3;
 		print ".type "$3", @function";
 		print $3":";
-		print "\tjmp *__DLT_BEGIN__ + 4 * "i;
+		print "\tjmp *dlt + 4 * "i;
 		i++;
 	} else if ($2 == "D" || $2 == "B") {
 		print ".section .dlt";
-		print ".globl IMP$"$3;
+		print ".weak IMP$"$3;
 		print ".type "$3", @object";
 		print "IMP$"$3":";
 		print "\t.long 0x"$1;
 		i++;
-	} else {
-		print ".error \"none-function "$2" symbol "$3"\"";
+	} else if ($2 != "W") {
+		print ".warning \"none-function "$2" symbol "$3"\"";
 	}
 }
 END {

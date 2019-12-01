@@ -1,14 +1,15 @@
-ENTRY(__dynlib_elf_start)
+ENTRY(__elf_start)
 
 PHDRS
 {
 	text PT_LOAD FILEHDR PHDRS;
 	data PT_LOAD;
+	dynamic PT_DYNAMIC;
 }
 
 SECTIONS {
 	. = 0xc0000000;
-	PROVIDE(__dynlib_elf_start = .);
+	PROVIDE(__elf_start = .);
 	.text : {
 		*(.text .text.*)
 		*(.gnu.linkonce.t.*)
@@ -25,6 +26,15 @@ SECTIONS {
 		*(.eh_frame)
 	} :text
 	. = ALIGN(4K);
+	.dynamic : {
+		__DLS_BEGIN__ = .;
+		*(.dls)
+		LONG(0) LONG(0)
+		__DLS_END__ = .;
+		__DLT_BEGIN__ = .;
+		*(.dlt)
+		__DLT_END__ = .;
+	} :data :dynamic
 	.data : {
 		*(.data .data.*)
 		*(.gnu.linkonce.d.*)

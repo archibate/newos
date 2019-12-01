@@ -10,5 +10,5 @@ target=${2-`dirname $1`/`basename -s.dl $1`.a}
 echo compiling source into $target...
 rm -rf $target
 ar cqs $target /tmp/$$.o
-test -f $target
 rm -rf /tmp/$$.o /tmp/$$.S
+test -f $target || (echo cannot compile $target && false)

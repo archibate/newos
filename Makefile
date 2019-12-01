@@ -1,4 +1,3 @@
-DYN=1
 DISP=1
 VIDEO=1
 #####################################
@@ -20,9 +19,6 @@ CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-Werror=implicit-function-declaration -Werror=implicit-int \
 	-Werror=discarded-qualifiers -Wno-format-zero-length \
 	-Werror=incompatible-pointer-types -D_NEWOS
-ifeq ($(DYN),)
-CFLAGS+=-D_LIBC_EXP
-endif
 ifneq ($(VIDEO),)
 CFLAGS+=-D_TTY_SERIAL -D_VIDEO
 NASMFLAGS+=-D_VIDEO
@@ -39,13 +35,12 @@ KERN_DIRS=kern mm fs libc/pure
 KERN_SRCS=$(shell find $(KERN_DIRS) -name '*.[cS]' -type f)
 KERN_OBJS=build/scripts/stext.c.o $(KERN_SRCS:%=build/%.o) build/scripts/ebss.c.o
 USER_SRCS=$(shell find usr -name '*.[cS]' -type f)
-USER_OBJS=$(USER_SRCS:%=build/%.o)
-ifneq ($(DYN),)
-USER_LIBS=build/libc.dl
+USER_LIBS=c
+ifneq ($(VIDEO),)
+USER_LIBS+=rax
 endif
-LIBC_SRCS=$(shell find libc -name '*.[cS]' -type f)
-LIBC_OBJS=$(LIBC_SRCS:%=build/%.o)
 CRT0_OBJS=build/scripts/crt0.c.o
+SRCS=$(shell find -L . -name '*.[cS]' -type f | sed 's/\.\///' | uniq -u | grep -v '\(trash\|tools\)')
 
 .PHONY: default
 default: all
@@ -61,7 +56,7 @@ run: build/boot.img
 bochs: build/boot.img
 	@-bochs -qf tools/bochsrc.bxrc
 
-build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox build/filesys.txt rcs.txt $(USER_LIBS)
+build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox build/filesys.txt rcs.txt $(USER_LIBS:%=build/lib%.dl)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@-rm -rf $@
@@ -79,7 +74,7 @@ build/filesys.txt: filesys.txt usr
 	@for x in $(USER_SRCS:%.c=%); do echo `basename $$x` '->' busybox >> $@; done
 	@echo '}' >> $@
 	@echo 'lib {' >> $@
-	@for x in $(USER_LIBS); do echo `basename $$x` $$x >> $@; done
+	@for x in $(USER_LIBS); do echo lib$$x.dl build/lib$$x.dl >> $@; done
 	@echo '}' >> $@
 
 build/boot/bootsect.S.bin: build/boot/kerninfo.inc
@@ -127,51 +122,34 @@ build/%.c.o.d: %.c
 	@mkdir -p $(@D)
 	@gcc -M -MT $(@:%.d=%) $(CFLAGS) -c -o $@ $<
 
-ifneq ($(DYN),)
-#build/libc/%: CFLAGS+=-fPIC
-$(foreach x, $(KERN_DIRS) libc, build/$x/%): CFLAGS+=-D_LIBC_EXP
-endif
-
-build/usr/busybox: $(USER_OBJS) $(CRT0_OBJS) build/libc.a scripts/user.ld
-	@echo + '[ld]' $@
-	@mkdir -p $(@D)
-	@ld -nostdlib $(LDFLAGS) -T scripts/user.ld -L build -e _start -o $@ $(CRT0_OBJS) $(USER_OBJS) $(LIBGCC) -lc
-	@$(STRIP) $@
-
-.PHONY: info
-info:
-	@echo CFLAGS=$(CFLAGS)
-	@echo QEMUCMD=$(QEMUCMD)
-	@echo KERN_DIRS=$(KERN_DIRS)
-	@echo KERN_SRCS=$(KERN_SRCS)
-	@echo LIBC_SRCS=$(LIBC_SRCS)
-	@echo USER_SRCS=$(USER_SRCS)
-	@echo USER_BINS=$(USER_BINS)
-	@echo CRT0_OBJS=$(CRT0_OBJS)
-	@echo LDSCRIPT=$(LDSCRIPT)
-	@echo LIBGCC=$(LIBGCC)
-
-.PHONY: kernel
-kernel: build/vmlinux
-
 build/vmlinux: $(KERN_OBJS)
 	@echo + '[ld]' $@
 	@mkdir -p $(@D)
 	@ld $(LDFLAGS) -static -e _start -Ttext 0x100000 -o $@ $^ $(LIBGCC)
 	@$(STRIP) $@
 
-ifeq ($(DYN),)
-build/libc.a: $(LIBC_OBJS)
-	@echo + '[ar]' $@
-	@mkdir -p $(@D)
-	@-rm -rf $@
-	@ar cqs $@ $^
-	@$(STRIP) $@
-else
-build/libc.dl.nostrip: $(LIBC_OBJS) scripts/dynlib.ld
+build/%.dl.nostrip build/%.a build/usr/%: SRCS=$(shell find $* -name '*.[cS]' -type f)
+
+include/idl/%.c include/idl/%.h: scripts/%.idl
+	@tools/idl.py $< include/idl/$*.c include/idl/$*.h
+
+#build/lib%: CFLAGS+=-fPIC
+$(foreach x, $(KERN_DIRS) libc, build/$x/%): CFLAGS+=-D_LIBC_EXP
+
+build/librax.%: LIBS+=c
+
+build/usr/busybox: $(USER_SRCS:%=build/%.o) $(CRT0_OBJS) build/libc.a scripts/user.ld
+	@make $(USER_LIBS:%=build/lib%.a)
 	@echo + '[ld]' $@
 	@mkdir -p $(@D)
-	@ld $(LDFLAGS) -static -T scripts/dynlib.ld -o $@ $(LIBC_OBJS)
+	@ld -nostdlib $(LDFLAGS) -T scripts/user.ld -L build -o $@ $(CRT0_OBJS) $(USER_SRCS:%=build/%.o) $(LIBGCC) $(USER_LIBS:%=-l%)
+	@$(STRIP) $@
+
+build/%.dl.nostrip: scripts/%.ld
+	@make $(SRCS:%=build/%.o) $(LIBS:%=build/lib%.a)
+	@echo + '[ld]' $@
+	@mkdir -p $(@D)
+	@ld $(LDFLAGS) -static -T scripts/$*.ld -L build -o $@ $(SRCS:%=build/%.o) $(LIBS:%=-l%)
 	@tools/dd.sh of=$@ if=tools/elfdynsig.bin seek=8 count=1 bs=2 conv=notrunc
 
 build/%.dl: build/%.dl.nostrip
@@ -187,20 +165,20 @@ build/%.a: build/%.dl.nostrip
 	@mkdir -p $(@D)
 	@-rm -rf $@
 	@tools/makedlo.sh $< $@ /lib/$*.dl
-endif
 
 .PHONY: clean
 clean:
 	-rm -rf build
 
-.PHONY: dep
-dep: build/dep
+.PHONY: distclean
+distclean:
+	-rm -rf build dep
 
-build/dep: $(filter %.o.d, $(KERN_OBJS:%=%.d) $(LIBC_OBJS:%=%.d) $(USER_OBJS:%=%.d))
+dep: $(SRCS:%=build/%.o.d)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $^ > $@
 
 .PRECIOUS: build/scripts/% build/%.a build/%.dl
 
-include build/dep
+-include dep

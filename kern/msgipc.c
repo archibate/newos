@@ -65,7 +65,8 @@ ssize_t msqueue_receive(struct msqueue *msq, int *type,
 	*type = msq->type;
 	size = msq->size;
 	memcpy(buf, msq->buf, size);
-	msq->sender_now = 0;
+	msq->sender_now = NULL;
+	msq->msq.msg_lspid = current->pid;
 	wake_up(&msq->wait_send);
 	return size;
 }
@@ -86,7 +87,8 @@ int msqueue_send(struct msqueue *msq, int type,
 	msq->type = type;
 	msq->size = size;
 	memcpy(msq->buf, buf, size);
-	msq->recver_now = 0;
+	msq->recver_now = NULL;
+	msq->msq.msg_lrpid = current->pid;
 	wake_up(&msq->wait_recv);
 	return 0;
 }
