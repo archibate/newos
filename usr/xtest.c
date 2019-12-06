@@ -6,25 +6,29 @@
 void ff(int aa) {}
 int main(int argc, char **argv)
 {
+	int hdc, hwnd, hbtn;
 	if (XOpenServer() == -1) {
 		perror("cannot open X server");
 		return 1;
 	}
 
-	XSplashScreen(16);
+	XCreateWindow(&hwnd, 0, 30, 30, 200, 150, WS_CAPTION | WF_MOVE);
 
-	int hdc;
-	XCreateDC(&hdc, 0);
-	int alpha = argv[1] ? atoi(argv[1]) : 0;
-	for (int i = 0; i <= 320; i++) {
-		int x0 = rand() % 320;
-		int x1 = rand() % 320;
-		int y0 = rand() % 200;
-		int y1 = rand() % 200;
+	XGetDC(&hdc, hwnd);
+	for (int i = 0; i <= 1000; i++) {
+		int x0 = rand() % 200;
+		int x1 = rand() % 200;
+		int y0 = rand() % 150;
+		int y1 = rand() % 150;
 		int color = rand() % 256;
-		XSetFillStyle(hdc, color, alpha);
+		XSetFillStyle(hdc, color);
 		XFillRect(hdc, x0, y0, x1, y1);
 	}
 	XDestroyDC(hdc);
+
+	XCreateWindow(&hbtn, hwnd, 70, 120, 60, 18, WS_BUTTON | WF_MOVE);
+
+	XUpdateWindow(hbtn);
+	XUpdateWindow(hwnd);
 	return 0;
 }

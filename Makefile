@@ -13,12 +13,13 @@ endif
 COPT+=$(if $(OPTIM), -O$(OPTIM))
 CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
 	-fno-stack-protector -Iinclude -Wall -Wextra \
-	-Wno-unused -Wno-main -Wno-frame-address \
+	-Wno-unused -Wno-frame-address -Waddress-of-packed-member \
 	-Wno-builtin-declaration-mismatch -Werror=return-type \
 	-Werror=int-conversion -Werror=return-local-addr \
 	-Werror=implicit-function-declaration -Werror=implicit-int \
 	-Werror=discarded-qualifiers -Wno-format-zero-length \
-	-Werror=incompatible-pointer-types -D_NEWOS
+	-Werror=incompatible-pointer-types -Wno-main \
+	-D_NEWOS
 ifneq ($(VIDEO),)
 CFLAGS+=-D_TTY_SERIAL -D_VIDEO
 NASMFLAGS+=-D_VIDEO
@@ -40,7 +41,7 @@ ifneq ($(VIDEO),)
 USER_LIBS+=rax
 endif
 CRT0_OBJS=build/scripts/crt0.c.o
-SRCS=$(shell find -L . -name '*.[cS]' -type f | sed 's/\.\///' | uniq -u | grep -v '\(trash\|tools\)')
+SRCS=$(shell find -L . -name '*.[cS]' -type f | sed 's/\.\///' | uniq -u | grep -v '\(trash\|tools\|include\/idl\)')
 
 .PHONY: default
 default: all
@@ -130,8 +131,9 @@ build/vmlinux: $(KERN_OBJS)
 
 build/%.dl.nostrip build/%.a build/usr/%: SRCS=$(shell find $* -name '*.[cS]' -type f)
 
-include/idl/%.c include/idl/%.h: scripts/%.idl
-	@tools/idl.py $< include/idl/$*.c include/idl/$*.h
+include/idl/%.c include/idl/%.h include/idl/%.svr.c: scripts/%.idl tools/idl.py
+	@echo - '[idl]' $<
+	@tools/idl.py $< include/idl/$*.c include/idl/$*.h include/idl/$*.svr.c
 
 #build/lib%: CFLAGS+=-fPIC
 $(foreach x, $(KERN_DIRS) libc, build/$x/%): CFLAGS+=-D_LIBC_EXP
@@ -168,10 +170,6 @@ build/%.a: build/%.dl.nostrip
 
 .PHONY: clean
 clean:
-	-rm -rf build
-
-.PHONY: distclean
-distclean:
 	-rm -rf build dep
 
 dep: $(SRCS:%=build/%.o.d)
@@ -179,6 +177,6 @@ dep: $(SRCS:%=build/%.o.d)
 	@mkdir -p $(@D)
 	@cat $^ > $@
 
-.PRECIOUS: build/scripts/% build/%.a build/%.dl
+.PRECIOUS: %.d build/scripts/% build/%.a build/%.dl
 
 -include dep

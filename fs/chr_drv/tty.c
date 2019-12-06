@@ -14,14 +14,15 @@ tty_putc(struct tty_struct *tty, int c)
 }
 
 static int
-tty_getc(struct tty_struct *tty)
+tty_getc(struct tty_struct *tty, int *c)
 {
-	int c;
-	while (sring_empty(&tty->read_q))
-		block_on(&tty->read_wait);
+	while (sring_empty(&tty->read_q)) {
+		if (sleep_on(&tty->read_wait))
+			return -1;
+	}
 	// tty_intr filled one, we pop it
-	sring_get(&tty->read_q, c);
-	return c;
+	sring_get(&tty->read_q, *c);
+	return 0;
 }
 static void
 tty_put_printable_c(struct tty_struct *tty, int c)
@@ -54,7 +55,8 @@ tty_intr(int num)
 					&& c == tty->tc.c_cc[VEOL]))
 				tty_put_printable_c(tty, c);
 			sring_put(&tty->read_q, c);
-			if ((tty->tc.c_lflag & ISIG) && c == tty->tc.c_cc[VINTR])
+			if ((tty->tc.c_lflag & ISIG) &&
+					c == tty->tc.c_cc[VINTR])
 				goto wake;
 			if (!(tty->tc.c_lflag & ICANON)
 					|| c == tty->tc.c_cc[VEOL]
@@ -85,7 +87,9 @@ tty_read(int num, char *buf, size_t n)
 	size_t i = 0;
 	struct tty_struct *tty = &ttys[num];
 	while (i < n) {
-		int c = tty_getc(tty);
+		int c;
+		if (tty_getc(tty, &c) == -1)
+			break;
 		if ((tty->tc.c_lflag & ICANON) && c == tty->tc.c_cc[VEOF])
 			break;
 		if ((tty->tc.c_lflag & ISIG) && c == tty->tc.c_cc[VINTR]) {

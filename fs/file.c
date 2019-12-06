@@ -1,5 +1,6 @@
 #include <kern/fs.h>
 #include <kern/kernel.h>
+#include <kern/sched.h>
 #include <malloc.h>
 #include <string.h>
 #include <string.h>
@@ -155,7 +156,21 @@ int fs_dirread(struct file *f, struct dirent *de)
 
 int fs_ioctl(struct file *f, int req, long arg)
 {
+	if (f->f_type != FT_INODE) {
+		errno = ENODEV;
+		return -1;
+	}
 	return iioctl(f->f_ip, req, arg);
+}
+
+int fs_ionotify(struct file *f, int flags)
+{
+	if (f->f_type != FT_INODE) {
+		errno = ENODEV;
+		return -1;
+	}
+	int ret = iionotify(f->f_ip, flags);
+	return ret;
 }
 
 int fs_pipe(struct file *fs[2])

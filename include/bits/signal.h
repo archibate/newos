@@ -15,6 +15,7 @@
 #define SIGTERM	15
 #define SIGCHLD	17
 #define SIGSTOP	19
+#define SIGPOLL	23
 #define _NSIG	32
 
 #define SIG_DFL ((void (*)(int))0)

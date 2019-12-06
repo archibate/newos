@@ -19,6 +19,7 @@ void fs_init(void)
 	iput(creati("/dev/hdb", 1, S_IFBLK | 0660, DRV_HDB));
 #ifdef _VIDEO
 	iput(creati("/dev/fb0", 1, S_IFCHR | 0660, DEV_FB0));
+	iput(creati("/dev/mouse", 1, S_IFCHR | 0660, DEV_MOUSE));
 #endif
 	//do_mount(DRV_HDB, namei("/mnt"));
 }

@@ -31,6 +31,5 @@ int sys_raise(int sig)
 		errno = EINVAL;
 		return -1;
 	}
-	do_kill(current, sig);
-	return 0;
+	return do_kill(current, sig);
 }

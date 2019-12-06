@@ -54,11 +54,20 @@ static void do_signal(int sig)
 	current->blocked |= sa->sa_mask;
 	if (sa->sa_flags & SA_ONESHOT)
 		sa->sa_handler = SIG_DFL;
+	current->interrupted = 1;
 }
 
 void check_signal(void)
 {
 	int sig;
+	if (!current->mm)
+		return;
+#if 0
+	if (current->state == TASK_SLEEPING)
+		current->state = 0;
+	else if (current->state != 0)
+		return;
+#endif
 	sigset_t signal = task_signal(current);
 	for (sig = 1; signal && sig <= _NSIG; sig++) {
 		if (signal & 1) {

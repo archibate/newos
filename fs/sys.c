@@ -116,20 +116,20 @@ int sys_fcntl(int fd, int cmd, int arg)
 		return badf();
 
 	switch (cmd) {
+	case F_DUPFD_CLOEXEC:
 	case F_DUPFD:
 		fd = alloc_fd(arg);
 		if (fd == -1)
 			return -1;
 		current->filp[fd] = fs_dup(f);
+		if (cmd == F_DUPFD_CLOEXEC)
+			current->filp[fd]->f_fdargs |= FD_CLOEXEC;
+		else
+			current->filp[fd]->f_fdargs &= ~FD_CLOEXEC;
 		return fd;
 
 	case F_GETFL:
 		return f->f_flags;
-#if 0
-	case F_SETFL:
-		f->f_flags = (f->f_flags & ~_O_FLAGS_EDIABLE) | (arg & _O_FLAGS_EDIABLE);
-		return 0;
-#endif
 	case F_SETFD:
 		f->f_fdargs = arg;
 		return 0;
@@ -197,6 +197,16 @@ int sys_ioctl(int fd, int req, long arg)
 	if (!f)
 		return badf();
 	return fs_ioctl(f, req, arg);
+}
+
+int sys_ionotify(int fd, int flags)
+{
+	if ((unsigned)fd >= NR_OPEN)
+		return badf();
+	struct file *f = current->filp[fd];
+	if (!f)
+		return badf();
+	return fs_ionotify(f, flags);
 }
 
 int sys_pipe(int fd[2])

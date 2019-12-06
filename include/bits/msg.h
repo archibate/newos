@@ -5,6 +5,7 @@
 #include <bits/ipc.h>
 
 #define MSG_NOERROR	2
+#define MSG_REPLYSEQ	4
 
 typedef size_t msgqnum_t;
 typedef size_t msglen_t;

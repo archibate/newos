@@ -351,6 +351,19 @@ int istat(struct inode *ip, struct stat *st)
 	return 0;
 }
 
+int iionotify(struct inode *ip, int flags)
+{
+	if (ip->i_fstype == IFS_PIPE)
+		goto notsupp;
+
+	if (S_ISCHR(ip->i_mode))
+		return chr_drv_ionotify(ip->i_nodnr, flags);
+
+notsupp:
+	errno = ENODEV;
+	return -1;
+}
+
 int iaccess(struct inode *ip, mode_t amode, int eacces)
 {
 	mode_t mode = ip->i_mode >> 6;

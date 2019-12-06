@@ -42,6 +42,7 @@ struct task {
 	sigset_t signal, blocked;
 	struct sigaction sigact[_NSIG];
 	int exit_code;
+	int interrupted;
 
 	struct inode *cwd;
 	struct inode *root;
@@ -62,10 +63,12 @@ extern struct task *current;
 extern struct task *exit_wait;
 
 void switch_to(int i);
-void schedule(void);
+int schedule(void);
 void do_pause(void);
+void block_policy_enter(int o_nonblock);
+void block_policy_leave(void);
 void block_on(struct task **p);
-void sleep_on(struct task **p);
+int sleep_on(struct task **p);
 void wake_up(struct task **p);
 int get_pid_index(pid_t pid);
 struct task *new_task(struct task *parent);

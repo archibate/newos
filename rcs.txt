@@ -1,4 +1,2 @@
 xinitd
-sleep 1
-xtest
 sh

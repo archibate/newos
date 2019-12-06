@@ -3,8 +3,11 @@
 #include <string.h>
 #include <errno.h>
 
-extern size_t rw_dev_fb0(int rw, size_t pos, void *buf, size_t size);
 extern int ioctl_dev_fb0(int req, long arg);
+extern int ioctl_dev_mouse(int req, long arg);
+extern int ionotify_dev_mouse(int flags);
+extern size_t rw_dev_fb0(int rw, size_t pos, void *buf, size_t size);
+size_t rw_dev_mouse(int rw, size_t pos, void *buf, size_t size);
 
 static size_t rw_dev_null(int rw, size_t pos, void *buf, size_t size)
 {
@@ -36,6 +39,7 @@ size_t chr_drv_rw(int rw, int nr, size_t pos, void *buf, size_t size)
 	case DEV_ZERO: return rw_dev_zero(rw, pos, buf, size);
 #ifdef _VIDEO
 	case DEV_FB0: return rw_dev_fb0(rw, pos, buf, size);
+	case DEV_MOUSE: return rw_dev_mouse(rw, pos, buf, size);
 #endif
 	}
 	errno = ENODEV;
@@ -60,6 +64,18 @@ int chr_drv_ioctl(int nr, int req, long arg)
 	switch (nr) {
 #ifdef _VIDEO
 	case DEV_FB0: return ioctl_dev_fb0(req, arg);
+	case DEV_MOUSE: return ioctl_dev_mouse(req, arg);
+#endif
+	}
+	errno = ENODEV;
+	return -1;
+}
+
+int chr_drv_ionotify(int nr, int flags)
+{
+	switch (nr) {
+#ifdef _VIDEO
+	case DEV_MOUSE: return ionotify_dev_mouse(flags);
 #endif
 	}
 	errno = ENODEV;

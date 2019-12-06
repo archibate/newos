@@ -14,11 +14,12 @@
 #define	O_NOFOLLOW	256
 #define	O_PATH		512
 #define	O_SYMLINK	1024
+#define	O_NONBLOCK	2048
 
-#define F_DUPFD	0
-#define F_GETFD	1
-#define F_SETFD	2
-#define F_GETFL	3
+#define F_DUPFD		0
+#define F_GETFD		1
+#define F_SETFD		2
+#define F_GETFL		3
 #define F_DUPFD_CLOEXEC	5
 
 #define FD_CLOEXEC	1

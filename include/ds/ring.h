@@ -22,6 +22,7 @@
 	(r)->buf = (_buf); \
 	(r)->size = (_size); \
 } while (0)
+#define ring_clear(r) ((void)((r)->head = (r)->tail = 0))
 #define ring_type(r) typeof((r)->buf[0])
 #define ring_capacity(r) ((r)->size - 1)
 #define ring_left(r) (((r)->tail - (r)->head) % (r)->size)

@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stddef.h>
+#include <errno.h>
 
 clock_t jiffies;
 struct task *task[NTASKS];
@@ -35,10 +36,9 @@ void dump_tasks(void)
 
 static void switch_to_current_from(struct task *previous)
 {
-	if (current->mm) {
+	if (current->mm)
 		switch_to_mm(current->mm);
-		check_signal();
-	}
+	check_signal();
 
 	tss0.ts_esp0 = (unsigned long)(current->stack + STACK_SIZE);
 	switch_context(previous->kregs, current->kregs);
@@ -62,7 +62,7 @@ time_t sys_alarm(time_t secs)
 	return old ? (old - jiffies) / CLOCKS_PER_SEC : 0;
 }
 
-void
+int
 schedule(void)
 {
 
@@ -72,8 +72,9 @@ schedule(void)
 			p->signal |= _S(SIGALRM);
 			p->alarm = 0;
 		}
-		if (p && p->state == TASK_SLEEPING && task_signal(p))
+		if (p && p->state == TASK_SLEEPING && task_signal(p)) {
 			p->state = 0;
+		}
 	}
 
 	int next;
@@ -93,6 +94,9 @@ schedule(void)
 		}
 	}
 	switch_to(next);
+	int ret = current->interrupted;
+	current->interrupted = 0;
+	return ret;
 }
 
 void
@@ -127,19 +131,24 @@ block_on(struct task **p)
 	if (old) old->state = 0;
 }
 
-void
+int
 sleep_on(struct task **p)
 {
 	struct task *old = *p;
 	*p = current;
 repeat:	current->state = TASK_SLEEPING;
-	schedule();
+	int ret = schedule();
 	if (*p && *p != current) {
 		(*p)->state = 0;
 		goto repeat;
 	}
 	*p = NULL;
 	if (old) old->state = 0;
+	if (ret) {
+		errno = EINTR;
+		return 1;
+	}
+	return 0;
 }
 
 void

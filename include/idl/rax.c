@@ -1,12 +1,42 @@
-void XSplashScreen(int num)
+void XGetDC(int *hdc, int hwnd)
 {
 	struct msg {
 		long cmd;
-		int num;
-	} __attribute__((packed)) msg;
-	msg.cmd = 1;
-	msg.num = num;
-	msgsnd(g_msq, &msg, sizeof(msg) - sizeof(msg.cmd), 0);
+		int hwnd;
+	} m;
+	m.cmd = 1;
+	m.hwnd = hwnd;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+	struct rep {
+		long seq;
+		int hdc;
+	} r;
+	msgrcv(g_msq_r, &r, sizeof(r) - sizeof(r.seq), 0, MSG_REPLYSEQ);
+	*hdc = r.hdc;
+}
+
+void XDestroyDC(int hint)
+{
+	struct msg {
+		long cmd;
+		int hint;
+	} m;
+	m.cmd = 2;
+	m.hint = hint;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XSetFillStyle(int hdc, int color)
+{
+	struct msg {
+		long cmd;
+		int hdc;
+		int color;
+	} m;
+	m.cmd = 3;
+	m.hdc = hdc;
+	m.color = color;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 }
 
 void XFillRect(int hdc, int x0, int y0, int x1, int y1)
@@ -18,56 +48,51 @@ void XFillRect(int hdc, int x0, int y0, int x1, int y1)
 		int y0;
 		int x1;
 		int y1;
-	} __attribute__((packed)) msg;
-	msg.cmd = 2;
-	msg.hdc = hdc;
-	msg.x0 = x0;
-	msg.y0 = y0;
-	msg.x1 = x1;
-	msg.y1 = y1;
-	msgsnd(g_msq, &msg, sizeof(msg) - sizeof(msg.cmd), 0);
+	} m;
+	m.cmd = 4;
+	m.hdc = hdc;
+	m.x0 = x0;
+	m.y0 = y0;
+	m.x1 = x1;
+	m.y1 = y1;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 }
 
-void XSetFillStyle(int hdc, int color, int alpha)
+void XCreateWindow(int *hwnd, int hparent, int x0, int y0, int nx, int ny, int flags)
 {
 	struct msg {
 		long cmd;
-		int hdc;
-		int color;
-		int alpha;
-	} __attribute__((packed)) msg;
-	msg.cmd = 3;
-	msg.hdc = hdc;
-	msg.color = color;
-	msg.alpha = alpha;
-	msgsnd(g_msq, &msg, sizeof(msg) - sizeof(msg.cmd), 0);
-}
-
-void XCreateDC(int *hdc, int flags)
-{
-	struct msg {
-		long cmd;
+		int hparent;
+		int x0;
+		int y0;
+		int nx;
+		int ny;
 		int flags;
-	} __attribute__((packed)) msg;
-	msg.cmd = 4;
-	msg.flags = flags;
-	msgsnd(g_msq, &msg, sizeof(msg) - sizeof(msg.cmd), 0);
+	} m;
+	m.cmd = 5;
+	m.hparent = hparent;
+	m.x0 = x0;
+	m.y0 = y0;
+	m.nx = nx;
+	m.ny = ny;
+	m.flags = flags;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 	struct rep {
-		long cmd;
-		int hdc;
-	} __attribute__((packed)) rep;
-	msgrcv(g_msq, &rep, sizeof(rep) - sizeof(rep.cmd), msg.cmd, 0);
-	*hdc = rep.hdc;
+		long seq;
+		int hwnd;
+	} r;
+	msgrcv(g_msq_r, &r, sizeof(r) - sizeof(r.seq), 0, MSG_REPLYSEQ);
+	*hwnd = r.hwnd;
 }
 
-void XDestroyDC(int hdc)
+void XUpdateWindow(int hwnd)
 {
 	struct msg {
 		long cmd;
-		int hdc;
-	} __attribute__((packed)) msg;
-	msg.cmd = 5;
-	msg.hdc = hdc;
-	msgsnd(g_msq, &msg, sizeof(msg) - sizeof(msg.cmd), 0);
+		int hwnd;
+	} m;
+	m.cmd = 6;
+	m.hwnd = hwnd;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 }
 

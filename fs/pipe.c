@@ -32,7 +32,8 @@ size_t pipe_read(struct inode *ip, void *buf, size_t size)
 			wake_up(&ip->i_p_write_wait);
 			if (ip->i_count < 2)
 				return m;
-			sleep_on(&ip->i_p_read_wait);
+			if (sleep_on(&ip->i_p_read_wait))
+				return m;
 		}
 		s = ip->i_p_ring.size - ip->i_p_ring.head;
 		if (s > size)
@@ -62,7 +63,8 @@ size_t pipe_write(struct inode *ip, const void *buf, size_t size)
 				errno = EPIPE;
 				return m;
 			}
-			sleep_on(&ip->i_p_write_wait);
+			if (sleep_on(&ip->i_p_write_wait))
+				return m;
 		}
 		s = ip->i_p_ring.size - ip->i_p_ring.tail;
 		if (s > size)

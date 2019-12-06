@@ -134,8 +134,13 @@ rep:
 	token_string[0] = 0;
 re_switch:
 	switch (c) {
-	case EOF:
 	case '#':
+		c = getchr();
+		while (c != '\n' && c != EOF)
+			c = getchr();
+		ungetchr(c);
+		__attribute__((fallthrough));
+	case EOF:
 	case '\n':
 	case ';':
 		token_type = T_EOF;

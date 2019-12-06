@@ -1,6 +1,8 @@
+#ifdef _VIDEO
 #include <kern/fs.h>
 #include <bits/ioctl.h>
 #include <kern/kernel.h>
+#include <sys/io.h>
 #include <string.h>
 #include <errno.h>
 
@@ -8,17 +10,25 @@ static char *vram;
 static size_t vram_size;
 static size_t vram_nx, vram_ny;
 
-#ifdef _VIDEO
+static void palette_init(void)
+{
+	outb(0x3c8, 0);
+	for (int i = 0; i < 256; i++) {
+		outb(0x3c9, (i & 3) << 4);
+		outb(0x3c9, ((i >> 2) & 7) << 3);
+		outb(0x3c9, ((i >> 5) & 7) << 3);
+	}
+}
+
 void video_init(void)
 {
-	size_t i;
 	vram = *(char **)0x7ff4;
+	if (!(vram && !((long)vram & 0x7fff)))
+		panic("cannot get video info from boot stage");
 	vram_nx = *(short *)0x7ff8;
 	vram_ny = *(short *)0x7ffa;
 	vram_size = vram_nx * vram_ny;
-	if (!(vram && !((long)vram & 0x7fff))) {
-		panic("cannot get video infomation from boot stage");
-	}
+	palette_init();
 	printk("vram at %p (%dx%d)", vram, vram_nx, vram_ny);
 }
 

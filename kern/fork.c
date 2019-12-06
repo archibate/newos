@@ -14,6 +14,8 @@ static void do_fork(struct task *child, struct task *parent)
 	task_regs(child)[EAX] = 0;
 	for (int i = 0; i < NR_OPEN; i++)
 		child->filp[i] = FS_DUP(parent->filp[i]);
+
+	child->command = strdup(current->command);
 }
 
 int fork_start(void *unused)

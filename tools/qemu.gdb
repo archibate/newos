@@ -14,7 +14,7 @@ set disassembly-flavor intel
 end
 
 def da
-set disassembly-next-line on
+set disassemble-next-line on
 end
 
 def lk

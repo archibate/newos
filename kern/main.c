@@ -63,6 +63,7 @@ main(void)
 	INIT(kbd);
 #ifdef _VIDEO
 	INIT(video);
+	INIT(mouse);
 #endif
 
 	//kernel_thread(test_thread_1, NULL);
