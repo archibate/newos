@@ -2,3 +2,5 @@ dep
 build
 trash
 .bash_localrc
+.directory
+.DS_Store

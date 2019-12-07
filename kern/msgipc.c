@@ -48,29 +48,32 @@ void destroy_msqueue(struct msqueue *msq)
 
 static int matchtype(int wanted, int type)
 {
+	if (wanted < 0)
+		return type <= -wanted;
 	return !wanted || wanted == type;
 }
 
 ssize_t msqueue_receive(struct msqueue *msq, int wanted, int *type,
-		void *buf, size_t size)
+		void *buf, size_t size, int nowait)
 {
 	if (size > msq->msq.msg_qbytes) {
 		errno = EINVAL;
 		return -1;
 	}
-	while (!msq->sender_now || msq->sender_now == current ||
-		(msq->recver_now && msq->recver_now != current) ||
-		!matchtype(wanted, msq->type)) {
-		//printk("mq_recv(%p): sleep", msq);
+	while (!msq->sender_now || !matchtype(wanted, msq->type)) {
+		if (nowait) {
+			errno = EAGAIN;
+			return -1;
+		}
+		//printk("%d mq_recv(%p): sleep", current->pid, msq);
 		msq->recver_now = current;
 		if (sleep_on(&msq->wait_recv))
 			return -1;
 	}
-	//printk("mq_recv(%p): ok", msq);
+	//printk("%d mq_recv(%p): ok", current->pid, msq);
 	msq->recver_now = current;
-	if (size < msq->size) {
+	if (size > msq->size)
 		size = msq->size;
-	}
 	*type = msq->type;
 	size = msq->size;
 	memcpy(buf, msq->buf, size);
@@ -81,20 +84,23 @@ ssize_t msqueue_receive(struct msqueue *msq, int wanted, int *type,
 }
 
 int msqueue_send(struct msqueue *msq, int type,
-		const void *buf, size_t size)
+		const void *buf, size_t size, int nowait)
 {
 	if (size > msq->msq.msg_qbytes) {
 		errno = EINVAL;
 		return -1;
 	}
-	while (!msq->recver_now || msq->recver_now == current ||
-		(msq->sender_now && msq->sender_now != current)) {
-		//printk("mq_send(%p): sleep", msq);
+	while (!msq->recver_now) {
+		if (nowait) {
+			errno = EAGAIN;
+			return -1;
+		}
+		//printk("%d mq_send(%p): sleep", current->pid, msq);
 		msq->sender_now = current;
 		if (sleep_on(&msq->wait_send))
 			return -1;
 	}
-	//printk("mq_send(%p): ok", msq);
+	//printk("%d mq_send(%p): ok", current->pid, msq);
 	msq->sender_now = current;
 	msq->type = type;
 	msq->size = size;
@@ -163,7 +169,7 @@ ssize_t sys_msgrcv(int msqid, void *msgb, size_t msgsz,
 		return -1;
 	}
 	return msqueue_receive(msq, msgtyp, (int *)msgb,
-			msgb + sizeof(long), msgsz);
+			msgb + sizeof(long), msgsz, msgflg & IPC_NOWAIT);
 }
 
 int sys_msgsnd(int msqid, const void *msgb, size_t msgsz, int msgflg)
@@ -173,5 +179,6 @@ int sys_msgsnd(int msqid, const void *msgb, size_t msgsz, int msgflg)
 		errno = EINVAL;
 		return -1;
 	}
-	return msqueue_send(msq, *(int *)msgb, msgb + sizeof(long), msgsz);
+	return msqueue_send(msq, *(int *)msgb, msgb + sizeof(long),
+			msgsz, msgflg & IPC_NOWAIT);
 }

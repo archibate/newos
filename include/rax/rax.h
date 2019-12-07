@@ -4,6 +4,7 @@
 #include <rax/bits.h>
 #include <idl/rax.h>
 
-int XOpenServer(void);
+int XClientInit(void);
+int XListen(int hlst, struct Message *msg);
 
 #endif

@@ -2,6 +2,7 @@
 #include <kern/fs.h>
 #include <kern/sched.h>
 #include <bits/ioctl.h>
+#include <bits/notify.h>
 #include <kern/kernel.h>
 #include <kern/irq.h>
 #include <ds/ring.h>
@@ -11,8 +12,14 @@
 static sring_t(char, 1024) mouse_q;
 struct task *mouse_wait, *mouse_notify;
 
-int ionotify_dev_mouse(void)
+int ionotify_dev_mouse(int flags)
 {
+	if (flags & ~ION_READ) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!(flags & ION_READ))
+		return 0;
 	if (mouse_notify) {
 		errno = EAGAIN;
 		return -1;
@@ -54,6 +61,7 @@ static void mouse_intr(void)
 			sring_put(&mouse_q, button & 0xff);
 			sring_put(&mouse_q, x & 0xff);
 			sring_put(&mouse_q, y & 0xff);
+			wake_up(&mouse_wait);
 			if (mouse_notify) {
 				do_kill(mouse_notify, SIGPOLL);
 				mouse_notify = NULL;

@@ -14,7 +14,12 @@ static int ls_stat(int fd, const char *path)
 		perror(path);
 		return 1;
 	}
-	printf("%s %5ld %s\n", strfaccess(st.st_mode), st.st_size, path);
+	printf("%s ", strfaccess(st.st_mode));
+	if (S_ISREG(st.st_mode) || S_ISDIR(st.st_mode) || S_ISLNK(st.st_mode))
+		printf("%5ld ", st.st_size);
+	else
+		printf("<%3d> ", st.st_rdev);
+	printf("%s\n", path);
 	return 0;
 }
 

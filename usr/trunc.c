@@ -39,7 +39,7 @@ static size_t get_size(const char *sz, size_t size)
 	}
 }
 
-int do_truncate(const char *sz, const char *path)
+static int do_truncate(const char *sz, const char *path)
 {
 	struct stat st;
 	stat(path, &st);

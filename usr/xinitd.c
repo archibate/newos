@@ -1,3 +1,4 @@
+#ifdef _VIDEO
 #include "busybox.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +15,7 @@
 // Part of Handle: {{{
 enum handle_type {
 	HT_None = 0,
-	HT_DC, HT_Window,
+	HT_DC, HT_Window, HT_Listener,
 };
 
 struct handle {
@@ -26,9 +27,9 @@ struct handle {
 #define HASH_MAX 23
 #define HASH(x) ((x) * 257 % 23)
 
-struct handle *handles[HASH_MAX];
+static struct handle *handles[HASH_MAX];
 
-void *GetHandle(int hint, int type)
+static void *GetHandle(int hint, int type)
 {
 	int i = HASH(hint);
 	struct handle *h;
@@ -45,7 +46,7 @@ void *GetHandle(int hint, int type)
 
 static int now_hint_top = 1;
 
-void *CreateHandle(int type, size_t size)
+static void *CreateHandle(int type, size_t size)
 {
 	int hint = now_hint_top++;
 	int i = HASH(hint);
@@ -60,7 +61,7 @@ void *CreateHandle(int type, size_t size)
 	return h;
 }
 
-void DestroyHandle(void *hp)
+static void DestroyHandle(void *hp)
 {
 	struct handle *h = hp;
 	if (h->next)
@@ -144,11 +145,12 @@ static void buf_subRect(struct buf *b, struct buf *d,
 	d->ismybuf = 0;
 }
 
-static void buf_blitSub(struct buf *b, struct buf *d,
-		int x0, int y0)
+static void buf_blitSubSub(struct buf *b, struct buf *d,
+		int x0, int y0, int sx0, int sy0, int sx1, int sy1)
 {
 	RGB *p, *q;
-	int x, y, xo = x0, yo = y0, x1 = x0 + d->nx, y1 = y0 + d->ny;
+	int x, y, xo = x0 - sx0, yo = y0 - sy0;
+	int x1 = x0 + sx1 - sx0, y1 = y0 + sy1 - sy0;
 	buf_rectSanity(b, &x0, &y0, &x1, &y1);
 	//printf("blit %p <- %p: %d %d %d %d\n", b, d, x0, y0, x1, y1);
 	if (d->col_inv == -1) {
@@ -169,6 +171,11 @@ static void buf_blitSub(struct buf *b, struct buf *d,
 			}
 		}
 	}
+}
+static void buf_blitSub(struct buf *b, struct buf *d,
+		int x0, int y0)
+{
+	buf_blitSubSub(b, d, x0, y0, 0, 0, d->nx, d->ny);
 }
 
 static void buf_fillRect(struct buf *b,
@@ -240,34 +247,33 @@ static void UpdateScreen(void)
 }
 
 // }}}
-// Part of DC: {{{
+// Part of Listener: {{{
 
-struct DC {
+static int g_msq_m;
+
+struct Listener
+{
 	struct handle h;
-	struct buf b;
-	int color, alpha;
 };
 
-static void do_XDestroyDC(int hint)
+static void ListenerCallback(struct Listener *l, struct Message *msg)
 {
-	struct DC *dc = GetHandle(hint, HT_DC);
-	if (!dc) return;
-	buf_destroy(&dc->b);
-	DestroyHandle(dc);
+	msg->hlst = l->h.hint;
+	msgsnd(g_msq_m, msg, sizeof(*msg) - sizeof(msg->hwnd),
+			IPC_NOWAIT | MSG_NOERROR);
 }
 
-static void do_XSetFillStyle(int hdc, int color)
+static void do_XCreateListener(int *hlst)
 {
-	struct DC *dc = GetHandle(hdc, HT_DC);
-	if (!dc) return;
-	dc->color = color;
+	struct Listener *l = CreateHandle(HT_Listener, sizeof(struct Listener));
+	*hlst = l->h.hint;
 }
 
-static void do_XFillRect(int hdc, int x0, int y0, int x1, int y1)
+static void do_XDestroyListener(int hlst)
 {
-	struct DC *dc = GetHandle(hdc, HT_DC);
-	if (!dc) return;
-	buf_fillRect(&dc->b, x0, y0, x1, y1, dc->color);
+	struct Listener *l = GetHandle(hlst, HT_Listener);
+	if (!l) return;
+	DestroyHandle(l);
 }
 
 // }}}
@@ -277,37 +283,40 @@ static void do_XFillRect(int hdc, int x0, int y0, int x1, int y1)
 
 struct Window {
 	struct handle h;
-	struct buf b;
+	struct buf b, *dcb;
 	int x0, y0, zindex;
 	int cx0, cy0, cx1, cy1;
 	struct Window *parent, *children;
 	struct Window *next, **pprev;
-	char *text;
+	struct Listener *listener;
 	int flags;
+	int isdown;
+	char *text;
 };
 
 struct Window *g_desktop;
 
-static struct DC *GetDC(struct Window *w)
+static void ListenerBind(struct Listener *l, struct Window *w, int deep)
 {
-	struct DC *dc = CreateHandle(HT_DC, sizeof(struct DC));
-	buf_subRect(&w->b, &dc->b, w->cx0, w->cy0, w->cx1, w->cy1);
-	return dc;
-}
-
-static void do_XGetDC(int *hdc, int hwnd)
-{
-	struct Window *w = g_desktop;
-	if (hwnd) {
-		w = GetHandle(hwnd, HT_Window);
-		if (!w) return;
+	w->listener = l;
+	if (deep) {
+		struct Window *u;
+		for (u = w->children; u; u = u->next)
+			ListenerBind(l, u, deep);
 	}
-	struct DC *dc = GetDC(w);
-	if (!dc) return;
-	*hdc = dc->h.hint;
 }
 
-static void draw_button(struct Window *w)
+static void draw_label(struct Window *w)
+{
+	struct buf *b = &w->b;
+	buf_fillRect(b, 0, 0, b->nx, b->ny, 4 RG 4 GB 4);
+	if (w->text)
+		buf_textOut(b, 0,//b->nx / 2 - 4 * strlen(w->text),
+				b->ny / 2 - 8, w->text,
+				strlen(w->text), 0 RG 0 GB 0);
+}
+
+static void draw_button_up(struct Window *w)
 {
 	struct buf *b = &w->b;
 	buf_fillRect(b, 0, 0, b->nx, b->ny, 6 RG 6 GB 6);
@@ -323,7 +332,23 @@ static void draw_button(struct Window *w)
 				strlen(w->text), 0 RG 0 GB 0);
 }
 
-static void draw_window_margin(struct Window *w)
+static void draw_button_down(struct Window *w)
+{
+	struct buf *b = &w->b;
+	buf_fillRect(b, 0, 0, b->nx, b->ny, 4 RG 4 GB 4);
+	buf_fillRect(b, 0, 0, b->nx, 2, 2 RG 2 GB 2);
+	buf_fillRect(b, 0, 0, 2, b->ny, 2 RG 2 GB 2);
+	buf_fillRect(b, 0, 0, b->nx, 1, 0 RG 0 GB 0);
+	buf_fillRect(b, 0, 0, 1, b->ny, 0 RG 0 GB 0);
+	buf_fillRect(b, 0, b->ny - 1, b->nx, b->ny, 6 RG 6 GB 6);
+	buf_fillRect(b, b->nx - 1, 0, b->nx, b->ny, 6 RG 6 GB 6);
+	if (w->text)
+		buf_textOut(b, b->nx / 2 - 4 * strlen(w->text) + 1,
+				b->ny / 2 - 7, w->text,
+				strlen(w->text), 0 RG 0 GB 0);
+}
+
+static void draw_caption(struct Window *w)
 {
 	int i;
 	struct buf b0, *b = &w->b;
@@ -362,13 +387,35 @@ static void draw_window_margin(struct Window *w)
 	buf_setPixel(b, WMTOP - 7, WMTOP - 7, 2 RG 2 GB 2);
 }
 
+static void SetWindowText(struct Window *w, const char *text)
+{
+	if (text) {
+		if (w->text)
+			free(w->text);
+		w->text = strndup(text, 32);
+	}
+
+	if ((w->flags & 0xff) == WT_CAPTION) {
+		draw_caption(w);
+
+	} else if ((w->flags & 0xff) == WT_BUTTON) {
+		if (w->isdown)
+			draw_button_down(w);
+		else
+			draw_button_up(w);
+
+	} else if ((w->flags & 0xff) == WT_LABEL) {
+		draw_label(w);
+	}
+}
+
 static struct Window *CreateWindow(struct Window *parent,
-		int x0, int y0, int zindex, int nx, int ny, int flags)
+		int x0, int y0, int nx, int ny, int zindex, int flags)
 {
 	struct Window *w, **pp;
 	w = CreateHandle(HT_Window, sizeof(struct Window));
 
-	if (flags & WS_CAPTION) {
+	if ((flags & 0xff) == WT_CAPTION) {
 		nx += 2;
 		ny += WMTOP;
 	}
@@ -395,29 +442,15 @@ static struct Window *CreateWindow(struct Window *parent,
 	w->cx0 = w->cy0 = 0;
 	w->cx1 = w->b.nx;
 	w->cy1 = w->b.ny;
-	if (flags & WS_CAPTION) {
-		w->text = strdup("Window");
+
+	if ((w->flags & 0xff) == WT_CAPTION) {
 		w->cx0 = 1;
 		w->cy0 = WMTOP - 1;
 		w->cx1 = w->b.nx - 1;
 		w->cy1 = w->b.ny - 1;
-		draw_window_margin(w);
-
-	} else if (flags & WS_BUTTON) {
-		w->text = strdup("Button");
-		draw_button(w);
 	}
+	SetWindowText(w, NULL);
 	return w;
-}
-
-static void DestroyWindow(struct Window *w)
-{
-	if (w->text) free(w->text);
-	buf_destroy(&w->b);
-	if (w->next)
-		w->next->pprev = w->pprev;
-	*w->pprev = w->next;
-	DestroyHandle(w);
 }
 
 static struct Window *JustUpdateWindow(struct Window *w)
@@ -442,6 +475,12 @@ static void UpdateWindow(struct Window *w)
 		UpdateScreen();
 }
 
+#if 0
+static int HasWindowIntersection(struct Window *u, struct Window *v)
+{
+}
+#endif
+
 static void EraseWindow(struct Window *w)
 {
 	struct buf pcb;
@@ -449,12 +488,64 @@ static void EraseWindow(struct Window *w)
 	buf_subRect(&parent->b, &pcb,
 			parent->cx0, parent->cy0,
 			parent->cx1, parent->cy1);
-	buf_fillRect(&pcb, w->x0, w->y0,
-			w->x0 + w->b.nx, w->y0 + w->b.ny, 0);
+	if (parent->dcb) {
+		buf_blitSubSub(&pcb, parent->dcb,
+				w->x0, w->y0, w->x0, w->y0,
+				w->x0 + w->b.nx, w->y0 + w->b.ny);
+	} else {
+		buf_fillRect(&pcb, w->x0, w->y0,
+				w->x0 + w->b.nx, w->y0 + w->b.ny, 0);
+	}
 	for (u = parent->children; u && u != w; u = u->next) {
 		// if (HasWindowIntersection(u, v))
 		buf_blitSub(&parent->b, &u->b, u->x0, u->y0);
 	}
+}
+
+static void RefreshWindow(struct Window *w, int deep)
+{
+	struct Window *u;
+	struct buf pcb;
+	SetWindowText(w, NULL);
+	buf_subRect(&w->b, &pcb, w->cx0, w->cy0, w->cx1, w->cy1);
+	for (u = w->children; u; u = u->next) {
+		if (deep) RefreshWindow(u, deep);
+		buf_blitSub(&pcb, &u->b, u->x0, u->y0);
+	}
+}
+
+static void DestroyWindow(struct Window *w)
+{
+	EraseWindow(w);
+	if (w->text) free(w->text);
+	buf_destroy(&w->b);
+	if (w->next)
+		w->next->pprev = w->pprev;
+	*w->pprev = w->next;
+	DestroyHandle(w);
+}
+
+static void SendMessage(struct Window *w, struct Message *msg)
+{
+	if (!w->listener)
+		return;
+	msg->hwnd = w->h.hint;
+	ListenerCallback(w->listener, msg);
+}
+
+static void on_window_lbutton(struct Window *w, int isdown, int x, int y)
+{
+	if (!(w->flags & WF_CLICK))
+		return;
+	struct Message msg;
+	memset(&msg, 0, sizeof(msg));
+	msg.type = isdown ? WM_MOUSE_LDOWN : WM_MOUSE_LUP;
+	msg.pos.x = x;
+	msg.pos.y = y;
+	w->isdown = isdown;
+	RefreshWindow(w, 0);
+	UpdateWindow(w);
+	SendMessage(w, &msg);
 }
 
 static void SetWindowPos(struct Window *w, int x0, int y0)
@@ -472,26 +563,31 @@ static int IsPointInWindowRect(struct Window *w, int x, int y)
 }
 
 static struct Window *FindWindowUnder(struct Window *w,
-		int x, int y, struct Window **mov)
+		int *px, int *py, struct Window **mov)
 {
+	int x = *px, y = *py;
 	x -= w->cx0; y -= w->cy0;
 	struct Window *u, *r = NULL;
 	for (u = w->children; u; u = u->next) {
-		if (u->flags & WF_SYSTEM)
+		if (u->flags & WF_NOSEL)
 			continue;
 		if (!IsPointInWindowRect(u, x, y))
 			continue;
 		r = u;
 	}
-	if (!r) goto out;
-
-	x -= r->x0; y -= r->y0;
-	if (r->flags & WF_MOVE)
-		*mov = r;
-	if ((r = FindWindowUnder(r, x, y, mov)))
-		return r;
-out:
-	return w->flags & WF_SYSTEM ? NULL : w;
+	if (r) {
+		x -= r->x0; y -= r->y0;
+		if (r->flags & WF_MOVE)
+			*mov = r;
+		r = FindWindowUnder(r, &x, &y, mov);
+	}
+	if (!r && !(w->flags & WF_NOSEL))
+		r = w;
+	if (r) {
+		*px = x;
+		*py = y;
+	}
+	return r;
 }
 
 static void do_XCreateWindow(int *hwnd, int hparent,
@@ -502,8 +598,8 @@ static void do_XCreateWindow(int *hwnd, int hparent,
 		parent = GetHandle(hparent, HT_Window);
 		if (!parent) return;
 	}
-	w = CreateWindow(parent, x0, y0, 1,
-			nx, ny, flags);
+	w = CreateWindow(parent, x0, y0,
+			nx, ny, 1, flags);
 	*hwnd = w->h.hint;
 }
 
@@ -512,6 +608,13 @@ static void do_XSetWindowPos(int hwnd, int x0, int y0)
 	struct Window *w = GetHandle(hwnd, HT_Window);
 	if (!w) return;
 	SetWindowPos(w, x0, y0);
+}
+
+static void do_XSetWindowText(int hwnd, const char *text)
+{
+	struct Window *w = GetHandle(hwnd, HT_Window);
+	if (!w) return;
+	SetWindowText(w, text);
 }
 
 static void do_XDestroyWindow(int hint)
@@ -528,10 +631,101 @@ static void do_XUpdateWindow(int hwnd)
 	UpdateWindow(w);
 }
 
+static void do_XRefreshWindow(int hwnd, int deep)
+{
+	struct Window *w = g_desktop;
+	if (hwnd) {
+		w = GetHandle(hwnd, HT_Window);
+		if (!w) return;
+	}
+	RefreshWindow(w, deep);
+}
+
+static void do_XListenerBind(int hlst, int hwnd, int deep)
+{
+	struct Listener *l = GetHandle(hlst, HT_Listener);
+	if (!l) return;
+	struct Window *w = GetHandle(hwnd, HT_Window);
+	if (!w) return;
+	ListenerBind(l, w, deep);
+}
+
 static void desktop_init(void)
 {
-	g_desktop = CreateWindow(NULL, 0, 0, 0, g_nx, g_ny, WF_SYSTEM);
+	g_desktop = CreateWindow(NULL, 0, 0, g_nx, g_ny, 0, WF_NOSEL);
 	g_vram = g_desktop->b.rgb;
+}
+
+// }}}
+// Part of DC: {{{
+
+struct DC {
+	struct handle h;
+	struct buf b;
+	struct Window *window;
+	int color, alpha;
+};
+
+static struct DC *CreateDC(struct Window *w)
+{
+	if (w->dcb)
+		return NULL;
+	struct DC *dc = CreateHandle(HT_DC, sizeof(struct DC));
+	//buf_subRect(&w->b, &dc->b, w->cx0, w->cy0, w->cx1, w->cy1);
+	dc->window = w;
+	buf_create(&dc->b, w->cx1 - w->cx0, w->cy1 - w->cy0);
+	w->dcb = &dc->b;
+	return dc;
+}
+
+static void UpdateDC(struct DC *dc)
+{
+	struct Window *w = dc->window;
+	buf_blitSub(&w->b, &dc->b, w->cx0, w->cy0);
+}
+
+static void DestroyDC(struct DC *dc)
+{
+	buf_destroy(&dc->b);
+	dc->window->dcb = NULL;
+	DestroyHandle(dc);
+}
+
+static void do_XCreateDC(int *hdc, int hwnd)
+{
+	struct Window *w = GetHandle(hwnd, HT_Window);
+	if (!w) return;
+	struct DC *dc = CreateDC(w);
+	if (!dc) return;
+	*hdc = dc->h.hint;
+}
+
+static void do_XUpdateDC(int hdc)
+{
+	struct DC *dc = GetHandle(hdc, HT_DC);
+	if (!dc) return;
+	UpdateDC(dc);
+}
+
+static void do_XDestroyDC(int hint)
+{
+	struct DC *dc = GetHandle(hint, HT_DC);
+	if (!dc) return;
+	DestroyDC(dc);
+}
+
+static void do_XSetFillStyle(int hdc, int color)
+{
+	struct DC *dc = GetHandle(hdc, HT_DC);
+	if (!dc) return;
+	dc->color = color;
+}
+
+static void do_XFillRect(int hdc, int x0, int y0, int x1, int y1)
+{
+	struct DC *dc = GetHandle(hdc, HT_DC);
+	if (!dc) return;
+	buf_fillRect(&dc->b, x0, y0, x1, y1, dc->color);
 }
 
 // }}}
@@ -543,16 +737,24 @@ static int g_mouse_fd;
 #define MMB 2
 #define RMB 4
 static int g_mouse_button;
-static int g_mx, g_my;
+static int g_mx, g_my, g_sel_x, g_sel_y;
 static struct Window *g_sel_win, *g_mov_win;
 
 static void on_mouse_lbutton(int isdown)
 {
 	if (isdown) {
 		g_mov_win = NULL;
+		g_sel_x = g_mx;
+		g_sel_y = g_my;
 		g_sel_win = FindWindowUnder(g_desktop,
-				g_mx, g_my, &g_mov_win);
-	} else {
+				&g_sel_x, &g_sel_y, &g_mov_win);
+	}
+	if (g_sel_win) {
+		ssetmask(~0);
+		on_window_lbutton(g_sel_win, isdown, g_sel_x, g_sel_y);
+		ssetmask(0);
+	}
+	if (!isdown) {
 		g_sel_win = NULL;
 		g_mov_win = NULL;
 	}
@@ -608,7 +810,7 @@ static void do_mouse(int sig)
 {
 	char data[3];
 	signal(SIGPOLL, do_mouse);
-	if (-1 == ionotify(g_mouse_fd))
+	if (-1 == ionotify(g_mouse_fd, ION_READ))
 		perror("cannot ionotify /dev/mouse");
 	while (1) {
 		data[0] = data[1] = data[2] = 0;
@@ -651,14 +853,14 @@ static void mouse_init(void)
 
 	ioctl(g_mouse_fd, I_CLBUF);
 	signal(SIGPOLL, do_mouse);
-	if (-1 == ionotify(g_mouse_fd))
+	if (-1 == ionotify(g_mouse_fd, ION_READ))
 		perror("cannot ionotify /dev/mouse");
 
 	g_mx = g_nx / 2;
 	g_my = g_ny / 2;
 
-	g_mouse = CreateWindow(g_desktop, g_mx, g_my, 256,
-			8, 16, WF_SYSTEM);
+	g_mouse = CreateWindow(g_desktop, g_mx, g_my,
+			8, 16, 256, WF_NOSEL);
 	g_mouse->b.col_inv = 0xff;
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 8; j++) {
@@ -686,18 +888,22 @@ static void ipc_init(void)
 		perror("/dev/fb0");
 		exit(1);
 	}
-
 	key_t key_r = ftok("/dev/fb0", 6666);
+	key_t key_m = ftok("/dev/fb0", 8888);
 
 	g_msq = msgget(key, IPC_CREAT | IPC_EXCL);
 	if (g_msq == -1) {
 		perror("cannot create msqueue for X server");
 		exit(1);
 	}
-
 	g_msq_r = msgget(key_r, IPC_CREAT | IPC_EXCL);
 	if (g_msq_r == -1) {
 		perror("cannot create replying msqueue for X server");
+		exit(1);
+	}
+	g_msq_m = msgget(key_m, IPC_CREAT | IPC_EXCL);
+	if (g_msq_m == -1) {
+		perror("cannot create transfering msqueue for X server");
 		exit(1);
 	}
 }
@@ -713,7 +919,6 @@ int main(int argc, char **argv)
 	}
 	if (pid > 0) {
 		printf("X-server started in background, pid=%d\n", pid);
-		system("xtest");
 		return 0;
 	}
 
@@ -729,3 +934,4 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
+#endif

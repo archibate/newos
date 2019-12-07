@@ -44,6 +44,7 @@ vga_putc(int c)
 
 	if (state == 2) {
 		switch (c) {
+		case '?':
 		case '[':
 			state = 3;
 			return 1;
@@ -128,7 +129,12 @@ csim:
 				last_num = num;
 				num = 1;
 			}
+			if (!last_num) last_num = 1;
 			vga_pos = (last_num - 1) * VGA_COLS + (num - 1);
+			break;
+		case 'h':
+		case 'l':
+			/* Hide / Show not supported for now */
 			break;
 		case ';':
 			last_num = num;

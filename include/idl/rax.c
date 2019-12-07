@@ -1,4 +1,4 @@
-void XGetDC(int *hdc, int hwnd)
+void XCreateDC(int *hdc, int hwnd)
 {
 	struct msg {
 		long cmd;
@@ -15,14 +15,25 @@ void XGetDC(int *hdc, int hwnd)
 	*hdc = r.hdc;
 }
 
-void XDestroyDC(int hint)
+void XUpdateDC(int hdc)
 {
 	struct msg {
 		long cmd;
-		int hint;
+		int hdc;
 	} m;
 	m.cmd = 2;
-	m.hint = hint;
+	m.hdc = hdc;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XDestroyDC(int hdc)
+{
+	struct msg {
+		long cmd;
+		int hdc;
+	} m;
+	m.cmd = 3;
+	m.hdc = hdc;
 	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 }
 
@@ -33,7 +44,7 @@ void XSetFillStyle(int hdc, int color)
 		int hdc;
 		int color;
 	} m;
-	m.cmd = 3;
+	m.cmd = 4;
 	m.hdc = hdc;
 	m.color = color;
 	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
@@ -49,7 +60,7 @@ void XFillRect(int hdc, int x0, int y0, int x1, int y1)
 		int x1;
 		int y1;
 	} m;
-	m.cmd = 4;
+	m.cmd = 5;
 	m.hdc = hdc;
 	m.x0 = x0;
 	m.y0 = y0;
@@ -69,7 +80,7 @@ void XCreateWindow(int *hwnd, int hparent, int x0, int y0, int nx, int ny, int f
 		int ny;
 		int flags;
 	} m;
-	m.cmd = 5;
+	m.cmd = 6;
 	m.hparent = hparent;
 	m.x0 = x0;
 	m.y0 = y0;
@@ -91,8 +102,101 @@ void XUpdateWindow(int hwnd)
 		long cmd;
 		int hwnd;
 	} m;
-	m.cmd = 6;
+	m.cmd = 7;
 	m.hwnd = hwnd;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XDestroyWindow(int hwnd)
+{
+	struct msg {
+		long cmd;
+		int hwnd;
+	} m;
+	m.cmd = 8;
+	m.hwnd = hwnd;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XRefreshWindow(int hwnd, int deep)
+{
+	struct msg {
+		long cmd;
+		int hwnd;
+		int deep;
+	} m;
+	m.cmd = 9;
+	m.hwnd = hwnd;
+	m.deep = deep;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XSetWindowText(int hwnd, const char *text)
+{
+	struct msg {
+		long cmd;
+		int hwnd;
+		char text[33];
+	} m;
+	m.cmd = 10;
+	m.hwnd = hwnd;
+	memcpy(m.text, text, 33 * sizeof(char));
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XSetWindowPos(int hwnd, int x0, int y0)
+{
+	struct msg {
+		long cmd;
+		int hwnd;
+		int x0;
+		int y0;
+	} m;
+	m.cmd = 11;
+	m.hwnd = hwnd;
+	m.x0 = x0;
+	m.y0 = y0;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XCreateListener(int *hlst)
+{
+	struct msg {
+		long cmd;
+	} m;
+	m.cmd = 12;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+	struct rep {
+		long seq;
+		int hlst;
+	} r;
+	msgrcv(g_msq_r, &r, sizeof(r) - sizeof(r.seq), 0, MSG_REPLYSEQ);
+	*hlst = r.hlst;
+}
+
+void XDestroyListener(int hlst)
+{
+	struct msg {
+		long cmd;
+		int hlst;
+	} m;
+	m.cmd = 13;
+	m.hlst = hlst;
+	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
+}
+
+void XListenerBind(int hlst, int hwnd, int deep)
+{
+	struct msg {
+		long cmd;
+		int hlst;
+		int hwnd;
+		int deep;
+	} m;
+	m.cmd = 14;
+	m.hlst = hlst;
+	m.hwnd = hwnd;
+	m.deep = deep;
 	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 }
 

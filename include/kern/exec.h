@@ -5,7 +5,7 @@
 #include <kern/fs.h>
 #include <kern/sched.h>
 
-#define USER_STACK_SIZE (1024*4096)
+#define USER_STACK_SIZE (8192*4096)
 
 int do_execve(struct inode *ip, char *const *argv, char *const *envp);
 int sys_execve(const char *path, char *const *argv, char *const *envp);

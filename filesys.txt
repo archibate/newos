@@ -9,9 +9,9 @@ root {
 usr {
 	bin -> /bin
 	sbin -> /sbin
+	lib -> /lib
 	src {
-		snake.c tools/snake.c
-		ascii.c tools/ascii.c
+		snake.c usr/snake.c
 	}
 }
 etc {

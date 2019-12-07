@@ -73,6 +73,10 @@ int chr_drv_ioctl(int nr, int req, long arg)
 
 int chr_drv_ionotify(int nr, int flags)
 {
+	if (nr >= DEV_TTY0) {
+		nr -= DEV_TTY0;
+		return tty_ionotify(nr, flags);
+	}
 	switch (nr) {
 #ifdef _VIDEO
 	case DEV_MOUSE: return ionotify_dev_mouse(flags);

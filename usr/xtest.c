@@ -1,34 +1,72 @@
+#ifdef _VIDEO
 #include "busybox.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <rax/rax.h>
 
-void ff(int aa) {}
+void do_message(struct Message *msg)
+{
+	switch (msg->type) {
+	case WM_CLICK:
+		printf("hwnd %d clicked at (%d, %d)\n",
+			msg->hwnd, msg->pos.x, msg->pos.y);
+		break;
+	}
+}
+
 int main(int argc, char **argv)
 {
-	int hdc, hwnd, hbtn;
-	if (XOpenServer() == -1) {
-		perror("cannot open X server");
+	struct Message msg;
+	int hdc, hwnd, hbtn, hchld, hlbl, hlst, i, x0, x1, y0, y1, color;
+
+	if (XClientInit() == -1) {
+		perror("cannot connect X server");
 		return 1;
 	}
 
-	XCreateWindow(&hwnd, 0, 30, 30, 200, 150, WS_CAPTION | WF_MOVE);
+	XCreateWindow(&hwnd, 0, 30, 30, 200, 150, WT_CAPTION | WF_MOVE);
+	XSetWindowText(hwnd, "Window 1");
 
-	XGetDC(&hdc, hwnd);
-	for (int i = 0; i <= 1000; i++) {
-		int x0 = rand() % 200;
-		int x1 = rand() % 200;
-		int y0 = rand() % 150;
-		int y1 = rand() % 150;
-		int color = rand() % 256;
+	XCreateDC(&hdc, hwnd);
+	for (i = 0; i <= 1000; i++) {
+		x0 = rand() % 200;
+		x1 = rand() % 200;
+		y0 = rand() % 150;
+		y1 = rand() % 150;
+		color = rand() % 256;
 		XSetFillStyle(hdc, color);
 		XFillRect(hdc, x0, y0, x1, y1);
 	}
-	XDestroyDC(hdc);
+	XUpdateDC(hdc);
 
-	XCreateWindow(&hbtn, hwnd, 70, 120, 60, 18, WS_BUTTON | WF_MOVE);
+	XCreateWindow(&hchld, hwnd, 50, 40, 100, 80, WT_CAPTION | WF_MOVE | WF_CLICK);
+	XSetWindowText(hchld, "Window 2");
+	XUpdateWindow(hchld);
 
+	XCreateWindow(&hlbl, hchld, 8, 8, 60, 18, WT_LABEL | WF_NOSEL);
+	XSetWindowText(hlbl, "Label:");
+	XUpdateWindow(hlbl);
+
+	XCreateWindow(&hbtn, hchld, 20, 56, 60, 18, WT_BUTTON | WF_CLICK);
+	XSetWindowText(hbtn, "OK");
 	XUpdateWindow(hbtn);
+
 	XUpdateWindow(hwnd);
+
+	XCreateListener(&hlst);
+	XListenerBind(hlst, hwnd, 1);
+
+	while (1) {
+		if (-1 == XListen(hlst, &msg)) {
+			perror("XListen");
+			continue;
+		}
+		do_message(&msg);
+	}
+
+	XDestroyDC(hdc);
+	XDestroyListener(hlst);
+
 	return 0;
 }
+#endif

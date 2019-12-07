@@ -208,11 +208,12 @@ static struct inode *ifollow(struct inode *ip, struct inode *pip)
 		iput(ip);
 		return NULL;
 	}
-	char buf[ip->i_size];
+	char buf[ip->i_size + 1];
 	if (iread(ip, 0, buf, ip->i_size) != ip->i_size) {
 		iput(ip);
 		return NULL;
 	}
+	buf[ip->i_size] = 0;
 	iput(ip);
 	struct inode *old_cwd = current->cwd;
 	current->cwd = pip;

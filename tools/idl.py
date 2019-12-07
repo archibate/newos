@@ -193,9 +193,10 @@ import sys
 with open(sys.argv[1]) if len(sys.argv) > 1 else sys.stdin as f:
 	ifaces = []
 	for line in f.readlines():
-		line = line.split(';')[0]
-		i = parse_iface(line)
-		ifaces.append(i)
+		line = line.split(';')[0].strip()
+		if len(line):
+			i = parse_iface(line)
+			ifaces.append(i)
 
 with open(sys.argv[2], 'w') if len(sys.argv) > 2 else sys.stdout as f:
 	for n, i in enumerate(ifaces):

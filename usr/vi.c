@@ -8,19 +8,23 @@ rm -f /tmp/$$; exit $x
 true CCSH_signature123 */
 #endif
 // # }}} [3J[H[2J
-#define _GNU_SOURCE
 #ifdef _NEWOS
 #include "busybox.h"
 #endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <signal.h>
-#include <sys/stat.h>
 #include <string.h>
-#include <termios.h>
 #include <errno.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#ifndef _WIN32
+#include <signal.h>
+#include <termios.h>
+#else
+#include <windows.h>
+#define __attribute__(x) /* Nothing */
+#endif
 
 static int isident(int c)
 {
@@ -51,14 +55,17 @@ static FILE *stdlog;
 
 #define TABS 8
 
+#ifndef _WIN32
 static struct termios tc_orig, tc_vi;
+#endif
 static int editing, modified, readonly, newfile, cmd_mode, status_error, cx, cy;
 static char *text, *undotext, *textend, *top, *dot, *doll, *end;
 static char status_bar[100];
 static const char *g_path;
 
-// ANSI control sequences {{{ 
+// ANSI control sequences {{{
 
+#ifndef _WIN32
 static
 void gotoy0(int y)
 {
@@ -136,22 +143,79 @@ void cmdown(void)
 }
 
 static
-void cmbol(void)
+void cmright(void)
 {
-	putchar('\r');
+	printf("\033[C");
 }
 
 static
-void cmdown0(void)
+void cmleft(void)
 {
-	putchar('\n');
+	printf("\033[D");
 }
 
 static
-void beep(void)
+void hidecur(void)
 {
-	putchar('\a');
+    printf("\033[100l");
 }
+
+static
+void showcur(void)
+{
+    printf("\033[100h");
+}
+#else // Win32 replacements {{{
+static
+void gotoyx(int y, int x)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD c = {x, y};
+    SetConsoleCursorPosition(h, c);
+}
+
+#define gotoy0(y) gotoyx(y, 0)
+
+static
+void standup(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(h, 0x70);
+}
+
+static
+void sitdown(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(h, 0x07);
+}
+
+static
+void hidecur(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO ci;
+    ci.dwSize = 10;
+    ci.bVisible = FALSE;
+    SetConsoleCursorInfo(h, &ci);
+}
+
+static
+void showcur(void)
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO ci;
+    ci.dwSize = 100;
+    ci.bVisible = TRUE;
+    SetConsoleCursorInfo(h, &ci);
+}
+
+static
+void ceos(void)
+{
+    system("cls");
+}
+#endif // }}}
 
 // }}}
 // move-in-text operations {{{
@@ -232,11 +296,25 @@ char *skip_spaces(char *p)
 	sprintf(status_bar, __VA_ARGS__); \
 } while (0)
 
+#ifndef _WIN32
+#define getch() getchar()
+#endif
 static
-int getkb(void)
+int getkb()
 {
-	int n, c = getchar();
-	return c;
+    int c = getch();
+    if (c == '\r')
+        c = '\n';
+    else if (c == 22) {
+#ifndef _WIN32
+        putchar('^');
+        cmleft();
+#else
+        printf("^\b");
+#endif
+        c = getch();
+    }
+    return c;
 }
 
 static
@@ -344,12 +422,13 @@ void redraw(void)
 	char *tp;
 	sync_cursor();
 	tp = top;
+	hidecur();
 	gotoy0(0);
 	ceos();
 	for (y = 0; y < NY; y++) {
 		format_line(tp, y);
 		while (tp < end && *tp++ != '\n');
-		cmdown0();
+		putchar('\n');
 	}
 	if (status_error)
 		standup();
@@ -357,6 +436,7 @@ void redraw(void)
 	if (status_error)
 		sitdown();
 	gotoyx(cy, cx);
+	showcur();
 }
 
 // }}}
@@ -454,11 +534,6 @@ char *insert_char(char *p, int c)
 		info("");
 		if (p > text && p[-1] != '\n')
 			p--;
-	} else if (c == 22) { // ^V
-		just_insert_char(p, '^');
-		redraw();
-		c = getkb();
-		*p++ = c;
 	} else if (c == '\b' || c == 0x7f) {
 		if (p > text && p[-1] != '\n') {
 			p--;
@@ -691,6 +766,17 @@ void dot_delchar(unsigned n, int rsv)
 }
 
 static
+void dot_replace(unsigned n, int c)
+{
+	if (*dot == '\n')
+		return;
+	remove_hole_nx(dot, dot + n - 1, 1);
+    char *p = dot;
+    while (p <= doll)
+        insert_char(p++, c);
+}
+
+static
 void dot_delete_to_eol(int rsv)
 {
 	char *q = dollar_line(dot);
@@ -785,6 +871,24 @@ void edit_file(const char *path);
 static
 int open_file(const char *path);
 
+static void just_rawmode(void);
+static void cookmode(void);
+
+static
+void run_syscmd(const char *cmd)
+{
+    cookmode();
+    int ret = system(cmd);
+	putchar('\n');
+	if (ret)
+		printf("Shell returned 0x%x, ", ret);
+    printf("Press any key to continue");
+#ifndef _WIN32
+    just_rawmode();
+#endif
+    getch();
+}
+
 static
 int matchcmd(char **p, const char *cmd)
 {
@@ -821,7 +925,9 @@ void do_prompt(void)
 	redraw();
 	p = strdup(status_bar + 1);
 	//op = p;
-	if (matchcmd(&p, "")) {
+	if (p[0] == '!') {
+	    run_syscmd(p + 1);
+	} else if (matchcmd(&p, "")) {
 		/* Nothing */
 	} else if (matchcmd(&p, "open")) {
 		open_file(p ? p : g_path);
@@ -834,7 +940,7 @@ void do_prompt(void)
 	} else if (matchcmd(&p, "wquit")) {
 		save_file(p);
 		editing = 0;
-	} else {
+    } else {
 		error("Bad command \":%s\"", p);
 	}
 	//free(op);
@@ -1009,6 +1115,9 @@ cmd_i:
 		if (c == 's')
 			goto cmd_i;
 		break;
+    case 'r':
+        dot_replace(cc, getkb());
+		break;
 	case 'v':
 		dot_right(1);
 		__attribute__((fallthrough));
@@ -1116,8 +1225,10 @@ err:		error("\"%s\" %s", path, strerror(errno));
 	end = text + size;
 	ret = fread(text, size, 1, f);
 	fclose(f);
+#ifndef _WIN32
 	if (ret != 1)
 		goto err;
+#endif
 
 	return 0;
 }
@@ -1193,7 +1304,7 @@ int open_file(const char *path)
 	if (path)
 		load_file(path, size);
 	if (end[-1] != '\n')
-		insert_char(text, '\n');
+		insert_char(end, '\n');
 
 	if (!status_error) {
 		g_path = path;
@@ -1228,7 +1339,16 @@ void cookmode(void)
 	sitdown();
 	gotoy0(NY);
 	putchar('\n');
+#ifndef _WIN32
 	tcsetattr(0, TCSANOW, &tc_orig);
+#endif
+}
+
+#ifndef _WIN32
+static
+void just_rawmode(void)
+{
+    tcsetattr(0, TCSANOW, &tc_vi);
 }
 
 static
@@ -1240,17 +1360,20 @@ void rawmode(void)
 	}
 	memcpy(&tc_vi, &tc_orig, sizeof(struct termios));
 	tc_vi.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(0, TCSANOW, &tc_vi);
+	just_rawmode();
 	atexit(cookmode);
 	signal(SIGINT, exit);
 }
+#endif
 
 // }}}
 
 int main(int argc, char **argv)
 {
 	int i;
+#ifndef _WIN32
 	rawmode();
+#endif
 #ifdef _LOG
 	stdlog = fopen("/tmp/vi.log", "w");
 	if (!stdlog) {
@@ -1261,7 +1384,7 @@ int main(int argc, char **argv)
 	fprintf(stdlog, "\033[2J\033[H\033[3J");
 #endif
 #ifdef _DEBUG
-	edit_file("tools/ol.txt");
+	edit_file("tools/test.txt");
 #else
 	if (argc <= 1) {
 		edit_file(NULL);

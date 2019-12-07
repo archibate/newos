@@ -1,6 +1,15 @@
-XGetDC		: out int hdc, int hwnd
-XDestroyDC	: int hint
+; vim: ft=c noai ts=20 sts=20 sw=20
+XCreateDC	: out int hdc, int hwnd
+XUpdateDC	: int hdc
+XDestroyDC	: int hdc
 XSetFillStyle	: int hdc, int color
 XFillRect	: int hdc, int x0, int y0, int x1, int y1
 XCreateWindow	: out int hwnd, int hparent, int x0, int y0, int nx, int ny, int flags
 XUpdateWindow	: int hwnd
+XDestroyWindow	: int hwnd
+XRefreshWindow	: int hwnd, int deep
+XSetWindowText	: int hwnd, char text[33]
+XSetWindowPos	: int hwnd, int x0, int y0
+XCreateListener	: out int hlst
+XDestroyListener	: int hlst
+XListenerBind	: int hlst, int hwnd, int deep

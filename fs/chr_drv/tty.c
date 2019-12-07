@@ -1,6 +1,7 @@
 #include <kern/tty.h>
 #include <kern/sched.h>
 #include <bits/ioctl.h>
+#include <bits/notify.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
@@ -66,6 +67,10 @@ tty_intr(int num)
 			continue;
 		wake:
 			wake_up(&tty->read_wait);
+			if (tty->notify) {
+				do_kill(tty->notify, SIGPOLL);
+				tty->notify = NULL;
+			}
 		}
 	}
 }
@@ -126,4 +131,22 @@ tty_ioctl(int num, int req, long arg)
 	}
 	errno = EINVAL;
 	return -1;
+}
+
+int
+tty_ionotify(int num, int flags)
+{
+	if (flags & ~ION_READ) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!(flags & ION_READ))
+		return 0;
+	struct tty_struct *tty = &ttys[num];
+	if (tty->notify) {
+		errno = EAGAIN;
+		return -1;
+	}
+	tty->notify = current;
+	return 0;
 }
