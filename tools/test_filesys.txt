@@ -1,6 +1,0 @@
-work {
-	dd.sh tools/dd.sh
-	xiaomin.c tools/xiaomin.c
-	compress.c tools/compress.c
-	vi.c tools/vi.c
-}

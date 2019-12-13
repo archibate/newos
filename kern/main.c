@@ -17,8 +17,8 @@ int initial_thread(const char *path)
 {
 	char *argv[] = {(char *)path, "-s", NULL};
 	char *envp[] = {"PATH=/bin", "HOME=/root", NULL};
-	current->filp[0] = fs_open("/dev/tty/std", O_RDONLY, 0);
-	current->filp[1] = fs_open("/dev/tty/std", O_WRONLY, 0);
+	current->filp[0] = fs_open("/dev/tty", O_RDONLY, 0);
+	current->filp[1] = fs_open("/dev/tty", O_WRONLY, 0);
 	current->filp[2] = current->filp[1] ? fs_dup(current->filp[1]) : NULL;
 	sys_execve(path, argv, envp);
 	panic("cannot exec %s", path);

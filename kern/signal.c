@@ -40,13 +40,15 @@ static void do_signal(int sig)
 			do_exit(0xffff | ((sig & 0xff) << 16));
 	}
 
+	reg_t arg = current->siginfo[sig];
 	reg_t *sp = (reg_t *)regs[ESP];
 	*--sp = regs[EIP];
 	*--sp = regs[EFLAGS];
 	*--sp = regs[EDX];
 	*--sp = regs[ECX];
 	*--sp = regs[EAX];
-	*--sp = (sa->sa_flags & SA_NOMASK) ? 0 : current->blocked;
+	*--sp = arg;
+	*--sp = (sa->sa_flags & SA_NOMASK) ? arg : (reg_t)current->blocked;
 	*--sp = sig;
 	*--sp = (reg_t)sa->sa_restorer;
 	regs[ESP] = (reg_t)sp;
@@ -54,7 +56,7 @@ static void do_signal(int sig)
 	current->blocked |= sa->sa_mask;
 	if (sa->sa_flags & SA_ONESHOT)
 		sa->sa_handler = SIG_DFL;
-	current->interrupted = 1;
+	current->kr_interrupted = 2;
 }
 
 void check_signal(void)

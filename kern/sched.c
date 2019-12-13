@@ -38,7 +38,7 @@ static void switch_to_current_from(struct task *previous)
 {
 	if (current->mm)
 		switch_to_mm(current->mm);
-	check_signal();
+	//check_signal();
 
 	tss0.ts_esp0 = (unsigned long)(current->stack + STACK_SIZE);
 	switch_context(previous->kregs, current->kregs);
@@ -53,6 +53,7 @@ switch_to(int i)
 		current = task[i];
 		switch_to_current_from(previous);
 	}
+	check_signal();
 }
 
 time_t sys_alarm(time_t secs)
@@ -74,6 +75,7 @@ schedule(void)
 		}
 		if (p && p->state == TASK_SLEEPING && task_signal(p)) {
 			p->state = 0;
+			p->kr_interrupted = 1;
 		}
 	}
 
@@ -94,8 +96,8 @@ schedule(void)
 		}
 	}
 	switch_to(next);
-	int ret = current->interrupted;
-	current->interrupted = 0;
+	int ret = current->kr_interrupted;
+	current->kr_interrupted = 0;
 	return ret;
 }
 
@@ -134,20 +136,26 @@ block_on(struct task **p)
 int
 sleep_on(struct task **p)
 {
+	if (current->ks_nowait) {
+		errno = EAGAIN;
+		return 1;
+	}
 	struct task *old = *p;
 	*p = current;
 repeat:	current->state = TASK_SLEEPING;
-	int ret = schedule();
+	if (schedule()) {
+		//printk("sleep bad %p", __builtin_return_address(0));
+		errno = EINTR;
+		return 1;
+	}
+	if (task_signal(current))
+		//printk("rep within signal");
 	if (*p && *p != current) {
 		(*p)->state = 0;
 		goto repeat;
 	}
 	*p = NULL;
 	if (old) old->state = 0;
-	if (ret) {
-		errno = EINTR;
-		return 1;
-	}
 	return 0;
 }
 
@@ -155,6 +163,7 @@ void
 wake_up(struct task **p)
 {
 	if (!*p) return;
+	if ((*p)->state != TASK_SLEEPING) return;
 	(*p)->state = 0;
 	*p = NULL;
 }

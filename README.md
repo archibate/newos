@@ -29,6 +29,7 @@ A hobby unix-like operating system
 - nasm 2.14.02
 - binutils 2.32 (for ld, strip, objcopy)
 - coreutils 8.31 (for cat, dd, etc.)
+- make 4.2.1 (for Makefile)
 - qemu-system-i386 4.1.0 (for simulation)
 - bochs 2.6.9 (for bximage)
 - python 3.8.0 (for tools/idl.py)

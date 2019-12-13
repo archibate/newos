@@ -14,6 +14,8 @@ long sgetmask(void);
 long ssetmask(long mask);
 __sighandler_t signal(int sig, __sighandler_t handler);
 __sighandler_t signal_r(int sig, __sighandler_t handler, void *restorer);
+int kill_a(pid_t pid, int sig, long arg);
+int raise_a(int sig, long arg);
 int kill(pid_t pid, int sig);
 int raise(int sig);
 

@@ -12,7 +12,8 @@
 			} a3;
 			struct a4 {
 				int hdc;
-				int color;
+				int bgcolor;
+				int fgcolor;
 			} a4;
 			struct a5 {
 				int hdc;
@@ -22,42 +23,54 @@
 				int y1;
 			} a5;
 			struct a6 {
+				int hdc;
+				int x0;
+				int y0;
+				char text[33];
+				int count;
+			} a6;
+			struct a7 {
+				int hdc;
+				int x0;
+				int y0;
+			} a7;
+			struct a8 {
 				int hparent;
 				int x0;
 				int y0;
 				int nx;
 				int ny;
 				int flags;
-			} a6;
-			struct a7 {
-				int hwnd;
-			} a7;
-			struct a8 {
-				int hwnd;
 			} a8;
 			struct a9 {
 				int hwnd;
-				int deep;
 			} a9;
 			struct a10 {
 				int hwnd;
-				char text[33];
 			} a10;
 			struct a11 {
 				int hwnd;
-				int x0;
-				int y0;
+				int deep;
 			} a11;
 			struct a12 {
+				int hwnd;
+				char text[33];
 			} a12;
 			struct a13 {
-				int hlst;
+				int hwnd;
+				int x0;
+				int y0;
 			} a13;
 			struct a14 {
+			} a14;
+			struct a15 {
+				int hlst;
+			} a15;
+			struct a16 {
 				int hlst;
 				int hwnd;
 				int deep;
-			} a14;
+			} a16;
 		} u;	
 	} m;
 	memset(&m, 0, sizeof(m));
@@ -78,46 +91,52 @@
 		do_XDestroyDC(m.u.a3.hdc);
 		break;
 	case 4:
-		do_XSetFillStyle(m.u.a4.hdc, m.u.a4.color);
+		do_XSetFillStyle(m.u.a4.hdc, m.u.a4.bgcolor, m.u.a4.fgcolor);
 		break;
 	case 5:
 		do_XFillRect(m.u.a5.hdc, m.u.a5.x0, m.u.a5.y0, m.u.a5.x1, m.u.a5.y1);
 		break;
 	case 6:
-		;struct r6 {
-			long seq;
-			int hwnd;
-		} r6;
-		do_XCreateWindow(&r6.hwnd, m.u.a6.hparent, m.u.a6.x0, m.u.a6.y0, m.u.a6.nx, m.u.a6.ny, m.u.a6.flags);
-		msgsnd(g_msq_r, &r6, sizeof(r6) - sizeof(r6.seq), IPC_NOWAIT | MSG_NOERROR | MSG_REPLYSEQ);
+		do_XTextOut(m.u.a6.hdc, m.u.a6.x0, m.u.a6.y0, m.u.a6.text, m.u.a6.count);
 		break;
 	case 7:
-		do_XUpdateWindow(m.u.a7.hwnd);
+		do_XSetPixel(m.u.a7.hdc, m.u.a7.x0, m.u.a7.y0);
 		break;
 	case 8:
-		do_XDestroyWindow(m.u.a8.hwnd);
+		;struct r8 {
+			long seq;
+			int hwnd;
+		} r8;
+		do_XCreateWindow(&r8.hwnd, m.u.a8.hparent, m.u.a8.x0, m.u.a8.y0, m.u.a8.nx, m.u.a8.ny, m.u.a8.flags);
+		msgsnd(g_msq_r, &r8, sizeof(r8) - sizeof(r8.seq), IPC_NOWAIT | MSG_NOERROR | MSG_REPLYSEQ);
 		break;
 	case 9:
-		do_XRefreshWindow(m.u.a9.hwnd, m.u.a9.deep);
+		do_XUpdateWindow(m.u.a9.hwnd);
 		break;
 	case 10:
-		do_XSetWindowText(m.u.a10.hwnd, m.u.a10.text);
+		do_XDestroyWindow(m.u.a10.hwnd);
 		break;
 	case 11:
-		do_XSetWindowPos(m.u.a11.hwnd, m.u.a11.x0, m.u.a11.y0);
+		do_XRefreshWindow(m.u.a11.hwnd, m.u.a11.deep);
 		break;
 	case 12:
-		;struct r12 {
-			long seq;
-			int hlst;
-		} r12;
-		do_XCreateListener(&r12.hlst);
-		msgsnd(g_msq_r, &r12, sizeof(r12) - sizeof(r12.seq), IPC_NOWAIT | MSG_NOERROR | MSG_REPLYSEQ);
+		do_XSetWindowText(m.u.a12.hwnd, m.u.a12.text);
 		break;
 	case 13:
-		do_XDestroyListener(m.u.a13.hlst);
+		do_XSetWindowPos(m.u.a13.hwnd, m.u.a13.x0, m.u.a13.y0);
 		break;
 	case 14:
-		do_XListenerBind(m.u.a14.hlst, m.u.a14.hwnd, m.u.a14.deep);
+		;struct r14 {
+			long seq;
+			int hlst;
+		} r14;
+		do_XCreateListener(&r14.hlst);
+		msgsnd(g_msq_r, &r14, sizeof(r14) - sizeof(r14.seq), IPC_NOWAIT | MSG_NOERROR | MSG_REPLYSEQ);
+		break;
+	case 15:
+		do_XDestroyListener(m.u.a15.hlst);
+		break;
+	case 16:
+		do_XListenerBind(m.u.a16.hlst, m.u.a16.hwnd, m.u.a16.deep);
 		break;
 	}

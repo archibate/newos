@@ -21,12 +21,13 @@ typedef sring_t(char, TTY_BUFSIZ) tty_queue_t;
 
 struct tty_struct
 {
-	int (*putc)(int);
-	int (*getc)(int *);
+	int (*putc)(int, int);
+	int (*getc)(int *, int);
 	tty_queue_t read_q;
 	struct task *read_wait;
 	struct termios tc;
 	struct task *notify;
+	long notify_arg;
 };
 
 struct tty_struct ttys[NTTYS];
@@ -34,8 +35,8 @@ struct tty_struct ttys[NTTYS];
 void tty_intr(int num);
 size_t tty_read(int num, char *buf, size_t n);
 void tty_write(int num, const char *buf, size_t n);
-void tty_register(int num, int (*putc)(int), int (*getc)(int *));
+void tty_register(int num, int (*putc)(), int (*getc)());
 int tty_ioctl(int num, int req, long arg);
-extern int tty_ionotify(int num, int flags);
+int tty_ionotify(int num, int flags, long arg);
 
 #endif

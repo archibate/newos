@@ -3,9 +3,7 @@
 
 #include <bits/errno.h>
 
-#ifndef _LIBC_EXP
-#define errno (*IMP$errno)
-#endif
-extern int errno;
+extern int *__errno_location(void);
+#define errno (*__errno_location())
 
 #endif

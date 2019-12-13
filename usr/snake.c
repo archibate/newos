@@ -89,7 +89,7 @@ static int kbready;
 static void sigpoll(int sig)
 {
 	signal(SIGPOLL, sigpoll);
-	ionotify(0, ION_READ);
+	ionotify(0, ION_READ, 0);
 	kbready = 1;
 }
 
@@ -127,7 +127,7 @@ static void init_conio(void)
 	pthread_create(&conio_pid, NULL, conio_routine, NULL);
 #else
 	signal(SIGPOLL, sigpoll);
-	if (ionotify(0, ION_READ) == -1) {
+	if (ionotify(0, ION_READ, 0) == -1) {
 		perror("cannot ionotify stdin");
 		exit(1);
 	}

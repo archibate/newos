@@ -17,9 +17,12 @@ printk(const char *fmt, ...)
 int
 vprintk(const char *fmt, va_list ap)
 {
-	char buf[1024];
-	int ret = vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
-	size_t len = strnlen(buf, sizeof(buf) - 2);
+	static char buf[1024];
+	unsigned int tick;
+	asm volatile ("rdtsc" : "=a" (tick));
+	snprintf(buf, 15, "[%10ui] ", tick);
+	int ret = vsnprintf(buf + 14, sizeof(buf) - 1, fmt, ap);
+	size_t len = strnlen(buf + 14, sizeof(buf) - 2) + 14;
 	buf[len++] = '\n';
 	buf[len] = 0;
 	tty_write(TTY_VGA, buf, len);

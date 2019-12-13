@@ -1,0 +1,3 @@
+xinitd
+xtest
+sh

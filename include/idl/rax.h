@@ -1,8 +1,10 @@
 void XCreateDC(int *hdc, int hwnd);
 void XUpdateDC(int hdc);
 void XDestroyDC(int hdc);
-void XSetFillStyle(int hdc, int color);
+void XSetFillStyle(int hdc, int bgcolor, int fgcolor);
 void XFillRect(int hdc, int x0, int y0, int x1, int y1);
+void XTextOut(int hdc, int x0, int y0, const char *text, int count);
+void XSetPixel(int hdc, int x0, int y0);
 void XCreateWindow(int *hwnd, int hparent, int x0, int y0, int nx, int ny, int flags);
 void XUpdateWindow(int hwnd);
 void XDestroyWindow(int hwnd);

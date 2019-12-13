@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/ioctl.h>
@@ -10,6 +11,7 @@
 #include <signal.h>
 #include <rax/bits.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <fcntl.h>
 
 // Part of Handle: {{{
@@ -206,7 +208,9 @@ static void buf_textOut(struct buf *b,
 	buf_rectSanity(b, &x0, &y0, &x1, &y1);
 	extern const char asc16[256 * 16];
 	for (int x = x0; x < x1; x += 8) {
-		const char *a = asc16 + *s++ * 16;
+		int c = *s++;
+		if (!isascii(c)) c = '?';
+		const char *a = asc16 + c * 16;
 		for (int i = 0; i < 16; i++) {
 			for (int j = 0; j < 8; j++) {
 				if (a[i] & (1 << (7 - j)))
@@ -294,7 +298,7 @@ struct Window {
 	char *text;
 };
 
-struct Window *g_desktop;
+struct Window *g_desktop, *g_act_win;
 
 static void ListenerBind(struct Listener *l, struct Window *w, int deep)
 {
@@ -420,6 +424,9 @@ static struct Window *CreateWindow(struct Window *parent,
 		ny += WMTOP;
 	}
 
+	if (!(flags & WF_NOSEL))
+		g_act_win = w;
+
 	w->parent = parent;
 	if (parent) {
 		pp = &parent->children;
@@ -442,7 +449,6 @@ static struct Window *CreateWindow(struct Window *parent,
 	w->cx0 = w->cy0 = 0;
 	w->cx1 = w->b.nx;
 	w->cy1 = w->b.ny;
-
 	if ((w->flags & 0xff) == WT_CAPTION) {
 		w->cx0 = 1;
 		w->cy0 = WMTOP - 1;
@@ -663,7 +669,7 @@ struct DC {
 	struct handle h;
 	struct buf b;
 	struct Window *window;
-	int color, alpha;
+	int bgcolor, fgcolor;
 };
 
 static struct DC *CreateDC(struct Window *w)
@@ -674,6 +680,8 @@ static struct DC *CreateDC(struct Window *w)
 	//buf_subRect(&w->b, &dc->b, w->cx0, w->cy0, w->cx1, w->cy1);
 	dc->window = w;
 	buf_create(&dc->b, w->cx1 - w->cx0, w->cy1 - w->cy0);
+	dc->bgcolor = 0 RG 0 GB 0;
+	dc->fgcolor = 6 RG 6 GB 6;
 	w->dcb = &dc->b;
 	return dc;
 }
@@ -714,18 +722,34 @@ static void do_XDestroyDC(int hint)
 	DestroyDC(dc);
 }
 
-static void do_XSetFillStyle(int hdc, int color)
+static void do_XSetFillStyle(int hdc, int bgcolor, int fgcolor)
 {
 	struct DC *dc = GetHandle(hdc, HT_DC);
 	if (!dc) return;
-	dc->color = color;
+	dc->fgcolor = fgcolor;
+	dc->bgcolor = bgcolor;
 }
 
 static void do_XFillRect(int hdc, int x0, int y0, int x1, int y1)
 {
 	struct DC *dc = GetHandle(hdc, HT_DC);
 	if (!dc) return;
-	buf_fillRect(&dc->b, x0, y0, x1, y1, dc->color);
+	buf_fillRect(&dc->b, x0, y0, x1, y1, dc->bgcolor);
+}
+
+static void do_XSetPixel(int hdc, int x0, int y0)
+{
+	struct DC *dc = GetHandle(hdc, HT_DC);
+	if (!dc) return;
+	buf_setPixel(&dc->b, x0, y0, dc->fgcolor);
+}
+
+static void do_XTextOut(int hdc, int x0, int y0,
+		const char *text, int count)
+{
+	struct DC *dc = GetHandle(hdc, HT_DC);
+	if (!dc) return;
+	buf_textOut(&dc->b, x0, y0, text, count, dc->fgcolor);
 }
 
 // }}}
@@ -740,6 +764,8 @@ static int g_mouse_button;
 static int g_mx, g_my, g_sel_x, g_sel_y;
 static struct Window *g_sel_win, *g_mov_win;
 
+static void do_poll(int sig, sigset_t blk, long arg);
+
 static void on_mouse_lbutton(int isdown)
 {
 	if (isdown) {
@@ -748,11 +774,10 @@ static void on_mouse_lbutton(int isdown)
 		g_sel_y = g_my;
 		g_sel_win = FindWindowUnder(g_desktop,
 				&g_sel_x, &g_sel_y, &g_mov_win);
+		g_act_win = g_sel_win;
 	}
 	if (g_sel_win) {
-		ssetmask(~0);
 		on_window_lbutton(g_sel_win, isdown, g_sel_x, g_sel_y);
-		ssetmask(0);
 	}
 	if (!isdown) {
 		g_sel_win = NULL;
@@ -764,11 +789,9 @@ static void on_mouse_move(int dx, int dy)
 {
 	static int wx, wy;
 	if (g_mov_win) {
-		ssetmask(~0);
 		SetWindowPos(g_mov_win,
 			g_mov_win->x0 + dx,
 			g_mov_win->y0 + dy);
-		ssetmask(0);
 	}
 	SetWindowPos(g_mouse, g_mx, g_my);
 }
@@ -806,18 +829,19 @@ static void on_mouse_pos_change(int dx, int dy)
 	on_mouse_move(dx, dy);
 }
 
-static void do_mouse(int sig)
+static void do_mouse(void)
 {
 	char data[3];
-	signal(SIGPOLL, do_mouse);
-	if (-1 == ionotify(g_mouse_fd, ION_READ))
+	if (-1 == ionotify(g_mouse_fd, ION_READ, 1))
 		perror("cannot ionotify /dev/mouse");
 	while (1) {
 		data[0] = data[1] = data[2] = 0;
-		read(g_mouse_fd, data, 1);
+		if (read(g_mouse_fd, data, 1) != 1)
+			break;
 		if (data[0] != 27)
 			continue;
-		read(g_mouse_fd, data, 3);
+		if (read(g_mouse_fd, data, 3) != 3)
+			break;
 		on_mouse_button_change(data[0]);
 		if (data[1] || data[2])
 			on_mouse_pos_change(data[1], data[2]);
@@ -852,8 +876,7 @@ static void mouse_init(void)
 	}
 
 	ioctl(g_mouse_fd, I_CLBUF);
-	signal(SIGPOLL, do_mouse);
-	if (-1 == ionotify(g_mouse_fd, ION_READ))
+	if (-1 == ionotify(g_mouse_fd, ION_READ, 1))
 		perror("cannot ionotify /dev/mouse");
 
 	g_mx = g_nx / 2;
@@ -874,6 +897,71 @@ static void mouse_init(void)
 		}
 	}
 	UpdateWindow(g_mouse);
+}
+
+// }}}
+// Part of Keyboard: {{{
+ 
+static int g_keybd_fd;
+
+static void on_window_keybd(struct Window *w, int isdown, int key)
+{
+	if (!(w->flags & WF_KEYDOWN))
+		return;
+	struct Message msg;
+	memset(&msg, 0, sizeof(msg));
+	msg.type = isdown ? WM_KEYBD_DOWN : WM_KEYBD_UP;
+	msg.key = key;
+	SendMessage(w, &msg);
+}
+
+static void on_keybd(int isdown, int key)
+{
+	if (g_act_win) {
+		on_window_keybd(g_act_win, isdown, key);
+	}
+}
+
+static void do_keybd(void)
+{
+	char data[1];
+	if (-1 == ionotify(g_keybd_fd, ION_READ, 2))
+		perror("cannot ionotify /dev/keybd");
+	while (1) {
+		if (read(g_keybd_fd, data, 1) != 1)
+			break;
+		//printf("kbd got [%c]\n", data[0]);
+		on_keybd(1, data[0]);
+	}
+}
+
+struct termios tc_orig, tc_raw;
+
+static void cookmode(void)
+{
+	tcsetattr(g_keybd_fd, TCSANOW, &tc_orig);
+}
+
+static void keybd_init(void)
+{
+	g_keybd_fd = open("/dev/keybd", O_RDONLY | O_NONBLOCK);
+	if (g_keybd_fd == -1) {
+		perror("/dev/keybd");
+		exit(1);
+	}
+
+	ioctl(g_keybd_fd, I_CLBUF);
+	if (-1 != tcgetattr(g_keybd_fd, &tc_orig)) {
+		memcpy(&tc_raw, &tc_orig, sizeof(struct termios));
+		tc_raw.c_lflag &= ~(ICANON | ECHO | ISIG);
+		if (-1 == tcsetattr(g_keybd_fd, TCSANOW, &tc_raw))
+			perror("cannot tcsetattr /dev/keybd");
+		else
+			atexit(cookmode);
+	}
+
+	if (-1 == ionotify(g_keybd_fd, ION_READ, 2))
+		perror("cannot ionotify /dev/keybd");
 }
 
 // }}}
@@ -910,6 +998,19 @@ static void ipc_init(void)
 
 // }}}
 
+static void do_poll(int sig, sigset_t blk, long arg)
+{
+	ssetmask(-1);
+	signal(SIGPOLL, (void *)do_poll);
+	//printf("do_poll %ld\n", arg);
+	if (arg == 1) {
+		do_mouse();
+	} else if (arg == 2) {
+		do_keybd();
+	}
+	ssetmask(0);
+}
+
 int main(int argc, char **argv)
 {
 	pid_t pid = fork();
@@ -927,7 +1028,9 @@ int main(int argc, char **argv)
 	ipc_init();
 	screen_init();
 	desktop_init();
+	signal(SIGPOLL, (void *)do_poll);
 	mouse_init();
+	keybd_init();
 
 	while (1) {
 #include <idl/rax.svr.c>

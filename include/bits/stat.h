@@ -1,8 +1,8 @@
 #ifndef _BITS_STAT_H
 #define _BITS_STAT_H 1
 
-#include <kip/stat.h>
 #include <sys/types.h>
+#include <nefs/stat.h>
 #include <bits/time.h>
 
 struct stat {

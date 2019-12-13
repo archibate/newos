@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _KERN_SCHED_H
+#define _KERN_SCHED_H 1
 
 // Get pid_t.
 #include <sys/types.h>
@@ -41,8 +42,10 @@ struct task {
 
 	sigset_t signal, blocked;
 	struct sigaction sigact[_NSIG];
+	long siginfo[_NSIG];
 	int exit_code;
-	int interrupted;
+	int kr_interrupted;
+	int ks_nowait;
 
 	struct inode *cwd;
 	struct inode *root;
@@ -75,9 +78,11 @@ struct task *new_task(struct task *parent);
 struct task *kernel_thread(void *start, void *arg);
 __attribute__((noreturn)) void sys_exit(int status);
 __attribute__((noreturn)) void do_exit(int exit_code);
-int do_kill(struct task *p, int sig);
-int sys_kill(pid_t pid, int sig);
-int sys_raise(int sig);
+int do_kill(struct task *p, int sig, long arg);
+int sys_kill_a(pid_t pid, int sig, long arg);
+int sys_raise_a(int sig, long arg);
 void sched_timer_callback(void);
 void check_signal(void);
 void dump_tasks(void);
+
+#endif

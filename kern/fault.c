@@ -86,7 +86,7 @@ dump:
 	printk(">>>> CORE DUMP END <<<<");
 raise:
 	if (sig != -1)
-		sys_raise(sig);
+		sys_raise_a(sig, -1);
 	return;
 panic:
 	dump_context(regs);

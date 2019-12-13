@@ -49,9 +49,6 @@ static int __do_execve(struct inode *ip, char **argv, char **envp)
 	struct mm_struct *mm = create_mm();
 	if (mm_load_exec(mm, task_regs(current), ip) == -1)
 		return -1;
-	if (current->mm)
-		free_mm(current->mm);
-	switch_to_mm(current->mm = mm);
 	void **psp = (void **)&task_regs(current)[ESP];
 	argv = *psp = push_free1_arr2d(*psp, argv, &argc);
 	envp = *psp = push_free1_arr2d(*psp, envp, &envc);

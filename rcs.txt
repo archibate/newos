@@ -1,2 +1,1 @@
-xinitd
-sh
+scripts/rcs.txt

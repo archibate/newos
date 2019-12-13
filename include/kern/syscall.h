@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _KERN_SYSCALL_H
+#define _KERN_SYSCALL_H
 
 #include <sys/types.h>
 // Get struct dirent.
@@ -150,7 +151,7 @@ _syscall3(1, ssize_t, read, int, void *, size_t);
 _syscall3(2, ssize_t, write, int, const void *, size_t);
 _syscall3(3, off_t, lseek, int, off_t, int);
 _syscallz(4, int, close, int);
-_syscall3(5, int, fcntl, int, int, int);
+_syscall3(5, int, fcntl, int, int, long);
 _syscall2(6, int, kdebug, int, long);
 _syscall3(7, int, open, const char *, int, mode_t);
 _syscall0(8, int, pause);
@@ -161,8 +162,8 @@ _syscall3(12, pid_t, waitpid, pid_t, int *, int);
 _syscall0(13, long, sgetmask);
 _syscall1(14, long, ssetmask, long);
 _syscall3(15, long, signal_r, int, void *, void *);
-_syscall2(16, int, kill, pid_t, int);
-_syscall1(17, int, raise, int);
+_syscall3(16, int, kill_a, pid_t, int, long);
+_syscall2(17, int, raise_a, int, long);
 _syscall3(18, int, mkdirat, int, const char *, mode_t);
 _syscall3(19, int, unlinkat, int, const char *, int);
 _syscall2(20, int, link, const char *, const char *);
@@ -184,7 +185,7 @@ _syscall2(35, int, msgget, key_t, int);
 _syscall3(36, int, msgctl, int, int, struct msqid_ds *);
 _syscall5(37, ssize_t, msgrcv, int, void *, size_t, long, int);
 _syscall4(38, int, msgsnd, int, const void *, size_t, int);
-_syscall2(39, int, ionotify, int, int);
+_syscall3(39, int, ionotify, int, int, long);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:
@@ -192,4 +193,6 @@ _syscall2(39, int, ionotify, int, int);
 		regs[EAX] = -1;
 		regs[ECX] = -ENOSYS;
 	}
+#endif
+
 #endif

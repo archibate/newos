@@ -3,6 +3,6 @@
 
 #include <bits/notify.h>
 
-int ionotify(int fd, int flags);
+int ionotify(int fd, int flags, long arg);
 
 #endif

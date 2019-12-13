@@ -31,8 +31,8 @@ typedef int sigset_t;
 struct sigaction {
 	void (*sa_handler)(int);
 	void (*sa_restorer)(void);
-	int sa_flags;
 	sigset_t sa_mask;
+	int sa_flags;
 };
 
 #endif

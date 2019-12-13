@@ -29,6 +29,8 @@ static void tell_parent(int pid)
 __attribute__((noreturn)) void
 do_exit(int exit_code)
 {
+	/*printk("do_exit %d %#x from usrip:%p\n", current->pid, exit_code,
+			1[(void**)0[(void**)task_regs(current)[EBP]]]);*/
 	if (current->pid == 0)
 		panic("idle task trying to exit");
 	if (current->pid == 1)
@@ -47,7 +49,8 @@ do_exit(int exit_code)
 	current->exit_code = exit_code;
 	tell_parent(current->ppid);
 	schedule();
-	panic("sys_exit schedule does return");
+	panic("sys_exit schedule does return (%d %d)",
+			current->pid, current->state);
 }
 
 __attribute__((noreturn)) void

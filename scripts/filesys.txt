@@ -1,0 +1,20 @@
+root {
+	melty.txt tools/melty.txt
+	README.md README.md
+}
+usr {
+	bin -> /bin
+	sbin -> /sbin
+	lib -> /lib
+	src {
+		snake.c usr/snake.c
+	}
+}
+etc {
+	rcS scripts/rcs.txt
+}
+sbin -> bin
+dev {
+}
+mnt {
+}

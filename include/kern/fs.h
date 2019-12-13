@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 #include <sys/types.h>
-#include <kip/nefs.h>
+#include <nefs/nefs.h>
 #include <bits/dirent.h>
 #include <bits/fcntl.h>
 #include <bits/unistd.h>
@@ -14,6 +14,7 @@
 #define DEV_ZERO	0x001
 #define DEV_FB0		0x002
 #define DEV_MOUSE	0x003
+#define DEV_PTYS0	0x090
 #define DEV_TTY0	0x100
 
 #define DRV_HDA		1
@@ -54,6 +55,8 @@ struct pipe_inode {
 	ring_t(char) p_ring;
 	struct task *p_read_wait;
 	struct task *p_write_wait;
+	struct task *p_notify;
+	long p_notify_arg;
 };
 
 #define IFS_NEFS 0
@@ -84,6 +87,8 @@ struct inode {
 #define i_p_ring i_pipe.p_ring
 #define i_p_read_wait i_pipe.p_read_wait
 #define i_p_write_wait i_pipe.p_write_wait
+#define i_p_notify i_pipe.p_notify
+#define i_p_notify_arg i_pipe.p_notify_arg
 
 struct super_block {
 	struct nefs_super_block s_nefs;
@@ -128,7 +133,7 @@ void ll_rw_block(struct buf *b, int rw);
 size_t chr_drv_rw(int rw, int nr, size_t pos, void *buf, size_t size);
 ssize_t chr_drv_seek(int nr, size_t pos);
 int chr_drv_ioctl(int nr, int req, long arg);
-int chr_drv_ionotify(int nr, int flags);
+int chr_drv_ionotify(int nr, int flags, long arg);
 // buffer.c
 struct buf *bread(dev_t dev, blkno_t blkno);
 void bwrite(struct buf *b);
@@ -156,7 +161,7 @@ size_t iread(struct inode *ip, size_t pos, void *buf, size_t size);
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size);
 int istat(struct inode *ip, struct stat *st);
 int iioctl(struct inode *ip, int req, long arg);
-int iionotify(struct inode *ip, int flags);
+int iionotify(struct inode *ip, int flags, long arg);
 int iaccess(struct inode *ip, mode_t amode, int eacc);
 ssize_t iseek(struct inode *ip, size_t size);
 struct inode *alloc_m_inode(void);
@@ -181,11 +186,12 @@ int fs_dirread(struct file *f, struct dirent *de);
 int fs_ioctl(struct file *f, int req, long arg);
 int fs_pipe(struct file *fs[2]);
 int fs_truncate_s(struct file *f, size_t length);
-int fs_ionotify(struct file *f, int flags);
+int fs_ionotify(struct file *f, int flags, long arg);
 // pipe.c
 struct inode *make_pipe(void);
 size_t pipe_read(struct inode *ip, void *buf, size_t size);
 size_t pipe_write(struct inode *ip, const void *buf, size_t size);
+int pipe_ionotify(struct inode *ip, int flags, long arg);
 void close_pipe(struct inode *ip);
 void free_pipe(struct inode *ip);
 // sys.c

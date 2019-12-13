@@ -14,7 +14,7 @@ true */
 #endif // }}}
 #define _TOS(x) #x
 #define TOS(x) _TOS(x)
-#define INC_KIP(x) TOS(ABS_PATH/include/x)
+#define INC_NEFS(x) TOS(ABS_PATH/include/x)
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #include <stdio.h>
 #include <stddef.h>
@@ -23,7 +23,7 @@ true */
 #include <string.h>
 #include <assert.h>
 #include <strings.h>
-#include INC_KIP(kip/nefs.h)
+#include INC_NEFS(nefs/nefs.h)
 
 #define BSIZE 1024
 

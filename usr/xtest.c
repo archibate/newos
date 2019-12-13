@@ -4,12 +4,24 @@
 #include <stdlib.h>
 #include <rax/rax.h>
 
-void do_message(struct Message *msg)
+static int hdc, hwnd, hbtn, hchld, hlbl, hlst;
+
+static void do_message(struct Message *msg)
 {
 	switch (msg->type) {
-	case WM_CLICK:
+	case WM_MOUSE_LDOWN:
+		if (msg->hwnd == hbtn) {
+			XSetWindowText(hlbl, "Mouse Down");
+			XUpdateWindow(hlbl);
+		}
+		break;
+	case WM_MOUSE_LUP:
 		printf("hwnd %d clicked at (%d, %d)\n",
 			msg->hwnd, msg->pos.x, msg->pos.y);
+		if (msg->hwnd == hbtn) {
+			XSetWindowText(hlbl, "Mouse Up");
+			XUpdateWindow(hlbl);
+		}
 		break;
 	}
 }
@@ -17,7 +29,7 @@ void do_message(struct Message *msg)
 int main(int argc, char **argv)
 {
 	struct Message msg;
-	int hdc, hwnd, hbtn, hchld, hlbl, hlst, i, x0, x1, y0, y1, color;
+	int i, x0, x1, y0, y1, color;
 
 	if (XClientInit() == -1) {
 		perror("cannot connect X server");
@@ -34,7 +46,7 @@ int main(int argc, char **argv)
 		y0 = rand() % 150;
 		y1 = rand() % 150;
 		color = rand() % 256;
-		XSetFillStyle(hdc, color);
+		XSetFillStyle(hdc, color, 0);
 		XFillRect(hdc, x0, y0, x1, y1);
 	}
 	XUpdateDC(hdc);
@@ -43,7 +55,7 @@ int main(int argc, char **argv)
 	XSetWindowText(hchld, "Window 2");
 	XUpdateWindow(hchld);
 
-	XCreateWindow(&hlbl, hchld, 8, 8, 60, 18, WT_LABEL | WF_NOSEL);
+	XCreateWindow(&hlbl, hchld, 8, 8, 84, 18, WT_LABEL | WF_NOSEL);
 	XSetWindowText(hlbl, "Label:");
 	XUpdateWindow(hlbl);
 

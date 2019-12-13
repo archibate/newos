@@ -1,25 +1,15 @@
 DISP=1
-#VIDEO=1
+VIDEO=1
 #####################################
 ifdef RELEASE
 OPTIM=3
 STRIP=strip
 else
-COPT+=-ggdb -gstabs+ -D_KDEBUG
+CFLAGS+=-ggdb -gstabs+ -D_KDEBUG
 endif
 ifeq ($(STRIP),)
 STRIP=:
 endif
-COPT+=$(if $(OPTIM), -O$(OPTIM))
-CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(COPT) \
-	-fno-stack-protector -Iinclude -Wall -Wextra \
-	-Wno-unused -Wno-frame-address -Waddress-of-packed-member \
-	-Wno-builtin-declaration-mismatch -Werror=return-type \
-	-Werror=int-conversion -Werror=return-local-addr \
-	-Werror=implicit-function-declaration -Werror=implicit-int \
-	-Werror=discarded-qualifiers -Wno-format-zero-length \
-	-Werror=incompatible-pointer-types -Wno-main \
-	-D_NEWOS
 ifneq ($(VIDEO),)
 CFLAGS+=-D_TTY_SERIAL -D_VIDEO
 NASMFLAGS+=-D_VIDEO
@@ -28,12 +18,21 @@ ifeq ($(DISP),)
 CFLAGS+=-D_TTY_SERIAL
 endif
 endif
+#####################################
+CFLAGS+=-m32 -march=i386 -nostdlib -nostdinc $(OPTIM:%=-O%) \
+	-fno-stack-protector -Iinclude -Wall -Wextra \
+	-Wno-unused -Wno-frame-address -Waddress-of-packed-member \
+	-Wno-builtin-declaration-mismatch -Werror=return-type \
+	-Werror=int-conversion -Werror=return-local-addr \
+	-Werror=implicit-function-declaration -Werror=implicit-int \
+	-Werror=discarded-qualifiers -Wno-format-zero-length \
+	-Werror=incompatible-pointer-types -Wno-main \
+	-D_NEWOS
 LDFLAGS=-m elf_i386
 QEMUOPT=-m 128 -serial stdio $(if $(DISP),,-display none)
 QEMUCMD=qemu-system-i386 $(QEMUOPT)
 LIBGCC=$(shell gcc $(CFLAGS) -print-libgcc-file-name)
-KERN_DIRS=kern mm fs libc/pure
-KERN_SRCS=$(shell find $(KERN_DIRS) -name '*.[cS]' -type f)
+KERN_SRCS=$(shell find kern libc/pure -name '*.[cS]' -type f)
 KERN_OBJS=build/scripts/stext.c.o $(KERN_SRCS:%=build/%.o) build/scripts/ebss.c.o
 USER_SRCS=$(shell find usr -name '*.[cS]' -type f)
 USER_LIBS=c
@@ -66,7 +65,7 @@ build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox bu
 	@tools/dd.sh if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
 	@tools/mknefs.c $@ -r `tools/blks.c build/vmlinux.bin | awk '{print $$1}'` -L NewOS -f build/filesys.txt
 
-build/filesys.txt: filesys.txt usr
+build/filesys.txt: scripts/filesys.txt usr
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $< > $@
@@ -135,8 +134,8 @@ include/idl/%.c include/idl/%.h include/idl/%.svr.c: scripts/%.idl tools/idl.py
 	@echo - '[idl]' $<
 	@tools/idl.py $< include/idl/$*.c include/idl/$*.h include/idl/$*.svr.c
 
-#build/lib%: CFLAGS+=-fPIC
-$(foreach x, $(KERN_DIRS) libc, build/$x/%): CFLAGS+=-D_LIBC_EXP
+build/lib%: CFLAGS+=-fPIC -D_LIBC_EXP
+build/kern/%: CFLAGS+=-D_LIBC_EXP
 
 build/librax.%: LIBS+=c
 
@@ -147,11 +146,18 @@ build/usr/busybox: $(USER_SRCS:%=build/%.o) $(CRT0_OBJS) build/libc.a scripts/us
 	@ld -nostdlib $(LDFLAGS) -T scripts/user.ld -L build -o $@ $(CRT0_OBJS) $(USER_SRCS:%=build/%.o) $(LIBGCC) $(USER_LIBS:%=-l%)
 	@$(STRIP) $@
 
-build/%.dl.nostrip: scripts/%.ld
-	@make $(SRCS:%=build/%.o) $(LIBS:%=build/lib%.a)
+build/%.static.a:
+	@make $(SRCS:%=build/%.o)
+	@echo + '[ar]' $@
+	@mkdir -p $(@D)
+	@-rm -rf $@
+	@ar cqs $@ $(SRCS:%=build/%.o)
+
+build/%.dl.nostrip: scripts/dynlib.ld
+	@make $(LIBS:%=build/lib%.static.a) $(SRCS:%=build/%.o)
 	@echo + '[ld]' $@
 	@mkdir -p $(@D)
-	@ld $(LDFLAGS) -static -T scripts/$*.ld -L build -o $@ $(SRCS:%=build/%.o) $(LIBS:%=-l%)
+	@ld $(LDFLAGS) -static -T scripts/dynlib.ld -L build -o $@ $(SRCS:%=build/%.o) $(LIBS:%=-l%.static)
 	@tools/dd.sh of=$@ if=tools/elfdynsig.bin seek=8 count=1 bs=2 conv=notrunc
 
 build/%.dl: build/%.dl.nostrip
@@ -166,17 +172,21 @@ build/%.a: build/%.dl.nostrip
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@-rm -rf $@
+	@test $<
 	@tools/makedlo.sh $< $@ /lib/$*.dl
 
 .PHONY: clean
 clean:
-	-rm -rf build dep
+	-rm -rf build .dep
 
-dep: $(SRCS:%=build/%.o.d)
+.PHONY: dep
+dep: .dep
+
+.dep: $(SRCS:%=build/%.o.d)
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@cat $^ > $@
 
 .PRECIOUS: %.d build/scripts/% build/%.a build/%.dl
 
--include dep
+-include .dep

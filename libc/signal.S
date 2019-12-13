@@ -2,7 +2,7 @@
 
 global __signal_restorer
 __signal_restorer:
-	add esp, 8
+	add esp, 12
 	pop eax
 	pop ecx
 	pop edx
