@@ -7,28 +7,43 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
 #include <sys/notify.h>
 #include <rax/rax.h>
 
-static int ptys, hdc, hwnd;
+static int ptmx, hdc, hwnd, over;
 
 #define CON_COLS 25
 #define CON_ROWS 8
 #define CON_SIZE (CON_COLS * CON_ROWS)
 const int xWin = CON_COLS * 8, yWin = CON_ROWS * 16;
 
-static int con_pos;
+static int con_pos, hide_cur;
 static char con_buf[CON_SIZE];
 
 static void con_update(void)
 {
 	int i, j;
+	XSetFillStyle(hdc, 0, 3 + 6*4 + 6*32);
 	XFillRect(hdc, 0, 0, xWin, yWin);
 	for (i = 0; i < CON_ROWS; i++) {
 		XTextOut(hdc, 0, i * 16, con_buf + i * CON_COLS, CON_COLS);
 	}
+	int cx = (con_pos % CON_COLS) * 8, cy = (con_pos / CON_COLS) * 16;
+	if (!hide_cur) XSetFillStyle(hdc, 3 + 6*4 + 6*32, 0);
+	XFillRect(hdc, cx, cy, cx + 8, cy + 16);
+	XTextOut(hdc, 0, cy * 16, con_buf + con_pos, CON_COLS);
 	XUpdateDC(hdc);
 	XUpdateWindow(hwnd);
+}
+
+static void on_alarm(int sig)
+{
+	signal(SIGALRM, on_alarm);
+	alarm(1);
+
+	hide_cur = !hide_cur;
+	con_update();
 }
 
 static void con_putc(int c)
@@ -36,6 +51,8 @@ static void con_putc(int c)
 	static int state, num, last_num;
 	int count, start;
 	c &= 0xff;
+
+	hide_cur = 0;
 
 	if (!state)
 		num = last_num = 0;
@@ -173,6 +190,14 @@ static void con_write(const char *buf, size_t size)
 		con_putc(*buf++);
 }
 
+static void on_child(int sig)
+{
+	int stat = 0;
+	wait(&stat);
+	printf("xterm: child exited %#x\n", stat);
+	over = 1;
+}
+
 static void open_child_shell(char *const *argv)
 {
 	static char *defl_argv[] = {"sh", NULL};
@@ -182,53 +207,62 @@ static void open_child_shell(char *const *argv)
 		perror("fork");
 		exit(1);
 	} else if (pid == 0) {
-		int fd = open("/dev/pty0", O_RDWR);
+		// todo: ptsname
+		int fd = open("/dev/pts/0", O_RDWR | O_CLOEXEC);
 		if (fd == -1) {
-			perror("/dev/pty0");
+			perror("/dev/pts/0");
 			exit(1);
 		}
 		dup2(fd, 0);
 		dup2(fd, 1);
-		dup2(fd, 2);
-		close(fd);
+		// todo: fcntl(F_SETFL)
+		dup2(1, 2);
 		if (!argv[0])
 			argv = defl_argv;
 		execvp(argv[0], argv);
 		perror(argv[0]);
 		exit(1);
 	}
-	printf("child started %d\n", pid);
+	printf("xterm: child started %d\n", pid);
 }
 
 static void do_message(struct Message *msg)
 {
 	char data[1];
+	if (msg->hwnd != hwnd)
+		return;
+	//printf("do_message beg\n");
+	ssetmask(-1);
 	switch (msg->type) {
 	case WM_KEYDOWN:
 		data[0] = msg->key;
-		printf("key [%c]\n", data[0]);
-		write(ptys, data, 1);
+		//printf("in [%c]\n", data[0]);
+		if (write(ptmx, data, 1) != 1)
+			perror("cannot write /dev/ptmx");
 		break;
 	}
+	ssetmask(0);
+	//printf("do_message end\n");
 }
 
 static void do_output(int sig)
 {
+	//printf("do_output beg\n");
 	ssetmask(-1);
 	signal(SIGPOLL, do_output);
-	ionotify(ptys, ION_READ, 1);
+	ionotify(ptmx, ION_READ, 1);
 	char buf[233];
-	ssize_t ret = read(ptys, buf, sizeof(buf) - 1);
+	ssize_t ret = read(ptmx, buf, sizeof(buf) - 1);
 	if (ret <= 0) {
-		perror("cannot read /dev/ptys0");
+		perror("cannot read /dev/ptmx");
 		return;
 	}
 	buf[ret] = 0;
-	printf("got [%s]\n", buf);
+	//printf("out [%.*s]\n", (int)ret, buf);
 	con_write(buf, ret);
 	con_update();
-	printf("hdc ok\n");
 	ssetmask(0);
+	//printf("do_output end\n");
 }
 
 static void init_terminal(void)
@@ -252,21 +286,25 @@ int main(int argc, char **argv)
 	init_terminal();
 	XUpdateWindow(hwnd);
 
+	signal(SIGCHLD, on_child);
 	open_child_shell(argv + 1);
-	ptys = open("/dev/ptys0", O_RDWR | O_NONBLOCK);
-	if (-1 == ptys) {
-		perror("/dev/ptys0");
+	ptmx = open("/dev/ptmx", O_RDWR | O_NONBLOCK | O_CLOEXEC);
+	if (-1 == ptmx) {
+		perror("/dev/ptmx");
 		return 1;
 	}
 	signal(SIGPOLL, do_output);
-	if (-1 == ionotify(ptys, ION_READ, 1)) {
-		perror("cannot ionotify /dev/ptys0");
+	if (-1 == ionotify(ptmx, ION_READ, 1)) {
+		perror("cannot ionotify /dev/ptmx");
 		return 1;
 	}
+	signal(SIGALRM, on_alarm);
+	alarm(1);
 
 	XCreateListener(&hmon);
 	XListenerBind(hmon, hwnd, 1);
-	while (1) {
+	while (!over) {
+		memset(&msg, 0, sizeof(msg));
 		if (-1 == XListen(hmon, &msg)) {
 			perror("XListen");
 			continue;
@@ -274,6 +312,7 @@ int main(int argc, char **argv)
 		do_message(&msg);
 	}
 	XDestroyDC(hdc);
+	XDestroyWindow(hwnd);
 	XDestroyListener(hmon);
 
 	return 0;

@@ -8,7 +8,8 @@
 
 #define TTY_COM0 0
 #define TTY_VGA  1
-#define NTTYS    2
+#define TTY_PTS0 2
+#define NTTYS    10
 #ifdef _TTY_SERIAL
 #define TTY_STD TTY_COM0
 #else
@@ -19,6 +20,11 @@
 
 typedef sring_t(char, TTY_BUFSIZ) tty_queue_t;
 
+struct pty_struct
+{
+	struct inode *read_p, *write_p;
+};
+
 struct tty_struct
 {
 	int (*putc)(int, int);
@@ -28,6 +34,8 @@ struct tty_struct
 	struct termios tc;
 	struct task *notify;
 	long notify_arg;
+	struct pty_struct pty;
+	int valid;
 };
 
 struct tty_struct ttys[NTTYS];

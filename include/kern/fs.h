@@ -14,7 +14,7 @@
 #define DEV_ZERO	0x001
 #define DEV_FB0		0x002
 #define DEV_MOUSE	0x003
-#define DEV_PTYS0	0x090
+#define DEV_PTMX	0x004
 #define DEV_TTY0	0x100
 
 #define DRV_HDA		1
@@ -57,10 +57,13 @@ struct pipe_inode {
 	struct task *p_write_wait;
 	struct task *p_notify;
 	long p_notify_arg;
+	int p_ptyp1;
 };
 
 #define IFS_NEFS 0
 #define IFS_PIPE 1
+
+static_assert(sizeof(struct nefs_inode) >= sizeof(struct pipe_inode));
 
 struct inode {
 	union {
@@ -89,6 +92,7 @@ struct inode {
 #define i_p_write_wait i_pipe.p_write_wait
 #define i_p_notify i_pipe.p_notify
 #define i_p_notify_arg i_pipe.p_notify_arg
+#define i_p_ptyp1 i_pipe.p_ptyp1
 
 struct super_block {
 	struct nefs_super_block s_nefs;
@@ -110,6 +114,7 @@ struct super_block {
 
 #define FT_INODE	0
 #define FT_MSGQ		1
+#define FT_IMUX		2
 struct file {
 	union {
 		struct inode *f_ip;
@@ -118,6 +123,7 @@ struct file {
 	off_t f_offset;
 	int f_type;
 	int f_flags;
+	struct inode *f_wip;
 	int f_fdargs;
 };
 
@@ -134,6 +140,7 @@ size_t chr_drv_rw(int rw, int nr, size_t pos, void *buf, size_t size);
 ssize_t chr_drv_seek(int nr, size_t pos);
 int chr_drv_ioctl(int nr, int req, long arg);
 int chr_drv_ionotify(int nr, int flags, long arg);
+int chr_drv_open(int nr, struct file *f);
 // buffer.c
 struct buf *bread(dev_t dev, blkno_t blkno);
 void bwrite(struct buf *b);
@@ -163,6 +170,7 @@ int istat(struct inode *ip, struct stat *st);
 int iioctl(struct inode *ip, int req, long arg);
 int iionotify(struct inode *ip, int flags, long arg);
 int iaccess(struct inode *ip, mode_t amode, int eacc);
+int iopen(struct inode *ip, struct file *f);
 ssize_t iseek(struct inode *ip, size_t size);
 struct inode *alloc_m_inode(void);
 void dump_inode(int more);

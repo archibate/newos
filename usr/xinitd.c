@@ -523,6 +523,7 @@ static void RefreshWindow(struct Window *w, int deep)
 static void DestroyWindow(struct Window *w)
 {
 	EraseWindow(w);
+	UpdateWindow(w->parent);
 	if (w->text) free(w->text);
 	buf_destroy(&w->b);
 	if (w->next)
@@ -774,7 +775,8 @@ static void on_mouse_lbutton(int isdown)
 		g_sel_y = g_my;
 		g_sel_win = FindWindowUnder(g_desktop,
 				&g_sel_x, &g_sel_y, &g_mov_win);
-		g_act_win = g_sel_win;
+		if (g_sel_win)
+			g_act_win = g_sel_win;
 	}
 	if (g_sel_win) {
 		on_window_lbutton(g_sel_win, isdown, g_sel_x, g_sel_y);
@@ -832,8 +834,6 @@ static void on_mouse_pos_change(int dx, int dy)
 static void do_mouse(void)
 {
 	char data[3];
-	if (-1 == ionotify(g_mouse_fd, ION_READ, 1))
-		perror("cannot ionotify /dev/mouse");
 	while (1) {
 		data[0] = data[1] = data[2] = 0;
 		if (read(g_mouse_fd, data, 1) != 1)
@@ -876,8 +876,6 @@ static void mouse_init(void)
 	}
 
 	ioctl(g_mouse_fd, I_CLBUF);
-	if (-1 == ionotify(g_mouse_fd, ION_READ, 1))
-		perror("cannot ionotify /dev/mouse");
 
 	g_mx = g_nx / 2;
 	g_my = g_ny / 2;
@@ -925,8 +923,6 @@ static void on_keybd(int isdown, int key)
 static void do_keybd(void)
 {
 	char data[1];
-	if (-1 == ionotify(g_keybd_fd, ION_READ, 2))
-		perror("cannot ionotify /dev/keybd");
 	while (1) {
 		if (read(g_keybd_fd, data, 1) != 1)
 			break;
@@ -959,9 +955,6 @@ static void keybd_init(void)
 		else
 			atexit(cookmode);
 	}
-
-	if (-1 == ionotify(g_keybd_fd, ION_READ, 2))
-		perror("cannot ionotify /dev/keybd");
 }
 
 // }}}
@@ -1002,12 +995,10 @@ static void do_poll(int sig, sigset_t blk, long arg)
 {
 	ssetmask(-1);
 	signal(SIGPOLL, (void *)do_poll);
-	//printf("do_poll %ld\n", arg);
-	if (arg == 1) {
-		do_mouse();
-	} else if (arg == 2) {
-		do_keybd();
-	}
+	ionotify(g_mouse_fd, ION_READ, 1);
+	ionotify(g_keybd_fd, ION_READ, 2);
+	do_keybd();
+	do_mouse();
 	ssetmask(0);
 }
 
@@ -1028,9 +1019,13 @@ int main(int argc, char **argv)
 	ipc_init();
 	screen_init();
 	desktop_init();
-	signal(SIGPOLL, (void *)do_poll);
 	mouse_init();
 	keybd_init();
+	signal(SIGPOLL, (void *)do_poll);
+	if (-1 == ionotify(g_keybd_fd, ION_READ, 2))
+		perror("cannot ionotify /dev/keybd");
+	if (-1 == ionotify(g_mouse_fd, ION_READ, 1))
+		perror("cannot ionotify /dev/mouse");
 
 	while (1) {
 #include <idl/rax.svr.c>

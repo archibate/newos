@@ -1,4 +1,5 @@
 #include <kern/fs.h>
+#include <bits/notify.h>
 #include <kern/kernel.h>
 #include <kern/sched.h>
 #include <malloc.h>
@@ -55,6 +56,11 @@ struct file *fs_open(const char *path, int flags, mode_t mode)
 	f->f_flags = flags;
 	if (flags & O_CLOEXEC)
 		f->f_fdargs |= FD_CLOEXEC;
+	if (iopen(ip, f) == -1) {
+		free(f);
+		iput(ip);
+		return NULL;
+	}
 	return f;
 }
 
@@ -88,7 +94,7 @@ void fs_close(struct file *f)
 
 size_t fs_read(struct file *f, void *buf, size_t size)
 {
-	if (f->f_type != FT_INODE ||
+	if ((f->f_type != FT_INODE && f->f_type != FT_IMUX) ||
 	    (f->f_flags & (O_RDONLY | O_DIRECTORY)) != O_RDONLY) {
 		errno = EBADF;
 		return 0;
@@ -102,13 +108,14 @@ size_t fs_read(struct file *f, void *buf, size_t size)
 
 size_t fs_write(struct file *f, const void *buf, size_t size)
 {
-	if (f->f_type != FT_INODE ||
+	if ((f->f_type != FT_INODE && f->f_type != FT_IMUX) ||
 	    (f->f_flags & (O_WRONLY | O_DIRECTORY)) != O_WRONLY) {
 		errno = EBADF;
 		return 0;
 	}
+	struct inode *ip = f->f_type == FT_IMUX ? f->f_wip : f->f_ip;
 	current->ks_nowait = f->f_flags & O_NONBLOCK;
-	size = iwrite(f->f_ip, f->f_offset, buf, size);
+	size = iwrite(ip, f->f_offset, buf, size);
 	current->ks_nowait = 0;
 	f->f_offset += size;
 	return size;
@@ -169,6 +176,11 @@ int fs_ioctl(struct file *f, int req, long arg)
 
 int fs_ionotify(struct file *f, int flags, long arg)
 {
+	if (f->f_type == FT_IMUX) {
+		int ret = -1 == iionotify(f->f_ip, flags & ~ION_WRITE, arg);
+		ret = -1 == iionotify(f->f_wip, flags & ~ION_READ, arg) || ret;
+		return ret ? -1 : 0;
+	}
 	if (f->f_type != FT_INODE) {
 		errno = ENODEV;
 		return -1;

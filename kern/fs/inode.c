@@ -120,7 +120,7 @@ void iput(struct inode *ip)
 		if (ip->i_fstype == IFS_PIPE)
 			free_pipe(ip);
 		wake_up(&inode_buffer_wait);
-		if (ip->i_nlink == 0)
+		if (ip->i_fstype == IFS_NEFS && ip->i_nlink == 0)
 			erase_inode(ip);
 	}
 }
@@ -225,11 +225,11 @@ struct inode *iget(dev_t dev, ino_t ino)
 int iioctl(struct inode *ip, int req, long arg)
 {
 	if (ip->i_fstype == IFS_PIPE)
-		goto notty;
+		goto bad;
 	if (S_ISCHR(ip->i_mode))
 		return chr_drv_ioctl(ip->i_nodnr, req, arg);
-notty:
-	errno = ENOTTY;
+bad:
+	errno = ENODEV;
 	return -1;
 }
 
@@ -322,19 +322,15 @@ size_t rw_inode(int rw, struct inode *ip, size_t pos, void *buf, size_t size)
 
 size_t iread(struct inode *ip, size_t pos, void *buf, size_t size)
 {
-	if (iaccess(ip, R_OK, 0) == -1) {
-		errno = EPERM;
+	if (iaccess(ip, R_OK, 0) == -1)
 		return 0;
-	}
 	return rw_inode(READ, ip, pos, buf, size);
 }
 
 size_t iwrite(struct inode *ip, size_t pos, const void *buf, size_t size)
 {
-	if (iaccess(ip, W_OK, 0) == -1) {
-		errno = EPERM;
+	if (iaccess(ip, W_OK, 0) == -1)
 		return 0;
-	}
 	return rw_inode(WRITE, ip, pos, (void *)buf, size);
 }
 
@@ -366,9 +362,21 @@ notsupp:
 
 int iaccess(struct inode *ip, mode_t amode, int eacces)
 {
+	if (ip->i_fstype == IFS_PIPE)
+		return 0;
 	mode_t mode = ip->i_mode >> 6;
 	if ((mode & amode) == amode)
 		return 0;
+	//printk("bad access %d, %d", mode, amode);
 	errno = EACCES;
 	return -1;
+}
+
+int iopen(struct inode *ip, struct file *f)
+{
+	if (ip->i_fstype == IFS_PIPE)
+		return 0;
+	if (S_ISCHR(ip->i_mode))
+		return chr_drv_open(ip->i_nodnr, f);
+	return 0;
 }

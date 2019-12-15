@@ -7,7 +7,8 @@ extern int ioctl_dev_fb0(int req, long arg);
 extern int ioctl_dev_mouse(int req, long arg);
 extern int ionotify_dev_mouse(int flags, long arg);
 extern size_t rw_dev_fb0(int rw, size_t pos, void *buf, size_t size);
-size_t rw_dev_mouse(int rw, size_t pos, void *buf, size_t size);
+extern size_t rw_dev_mouse(int rw, size_t pos, void *buf, size_t size);
+extern int ptmx_open(struct file *f);
 
 static size_t rw_dev_null(int rw, size_t pos, void *buf, size_t size)
 {
@@ -84,4 +85,12 @@ int chr_drv_ionotify(int nr, int flags, long arg)
 	}
 	errno = ENODEV;
 	return -1;
+}
+
+int chr_drv_open(int nr, struct file *f)
+{
+	switch (nr) {
+	case DEV_PTMX: return ptmx_open(f);
+	}
+	return 0;
 }

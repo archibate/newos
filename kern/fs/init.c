@@ -14,6 +14,8 @@ void fs_init(void)
 	iput(creati("/dev/ttyS1", 1, S_IFCHR | 0660, DEV_TTY0 + TTY_VGA));
 	iput(creati("/dev/null", 1, S_IFCHR | 0666, DEV_NULL));
 	iput(creati("/dev/zero", 1, S_IFCHR | 0666, DEV_ZERO));
+	iput(creati("/dev/ptmx", 1, S_IFCHR | 0666, DEV_PTMX));
+	iput(creati("/dev/pts", 1, S_IFDIR | 0755, 0));
 	iput(creati("/dev/hda", 1, S_IFBLK | 0660, DRV_HDA));
 	iput(creati("/dev/hdb", 1, S_IFBLK | 0660, DRV_HDB));
 #ifdef _VIDEO

@@ -171,6 +171,8 @@ static void parse_mode(const char * mode, int * flags_, int * mask_) {
 			flags &= ~O_WRONLY;
 			flags &= ~O_RDONLY;
 			flags |= O_RDWR;
+		} else if (*x == 'x') {
+			flags |= O_EXCL;
 		} else if (*x == 'e') {
 			flags |= O_CLOEXEC;
 		}

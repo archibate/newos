@@ -1,4 +1,5 @@
 #include <kern/fs.h>
+#include <kern/tty.h>
 #include <kern/kernel.h>
 #include <bits/notify.h>
 #include <kern/sched.h>
@@ -29,7 +30,8 @@ void free_pipe(struct inode *ip)
 size_t pipe_read(struct inode *ip, void *buf, size_t size)
 {
 	size_t s, n, m = 0;
-	//printk("pipe_read %d", size);
+	//printk("pipe_read %p %d from %p", ip, size, __builtin_return_address(0));
+	//if (!ring_left(&ip->i_p_ring)) printk("???? %p %d", ip, ring_left(&ip->i_p_ring));
 	while (size > 0) {
 		while (!(n = ring_left(&ip->i_p_ring))) {
 			wake_up(&ip->i_p_write_wait);
@@ -55,9 +57,7 @@ size_t pipe_read(struct inode *ip, void *buf, size_t size)
 	}
 out:
 	wake_up(&ip->i_p_write_wait);
-	if (m == 0) {
-		//printk("reader: EOF!!!");
-	}
+	//if (m == 0) printk("reader: EOF!!!");
 	return m;
 }
 
@@ -92,9 +92,13 @@ size_t pipe_write(struct inode *ip, const void *buf, size_t size)
 out:
 	wake_up(&ip->i_p_read_wait);
 	if (ip->i_p_notify) {
-		//printk("pip ionotify ok");
+		//printk("donotify");
 		do_kill(ip->i_p_notify, SIGPOLL, ip->i_p_notify_arg);
 		ip->i_p_notify = NULL;
+	}
+	if (ip->i_p_ptyp1) {
+		//printk("!!! %p %d (%d/%d)", ip, ip->i_p_ptyp1 - 1, m, ring_left(&ip->i_p_ring));
+		tty_intr(ip->i_p_ptyp1 - 1);
 	}
 	return m;
 }
