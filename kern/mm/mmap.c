@@ -60,10 +60,10 @@ int sys_munmap(void *addr, size_t length)
 	return 0;
 }
 
-int sys_msync(void *addr, size_t length)
+int sys_msync(void *addr, size_t length, int flags)
 {
 	length = (length + PGSIZE - 1) & PGMASK;
-	if (!length || PGOFFS(addr)) {
+	if (!length || PGOFFS(addr) || flags != MS_SYNC) {
 		errno = EINVAL;
 		return -1;
 	}

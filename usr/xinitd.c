@@ -15,7 +15,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 
-//#define MAP_VRAM 1
+#define MAP_VRAM 1
 
 // Part of ASC16: {{{
 const int asc16[1024] = {
@@ -435,7 +435,7 @@ static void screen_init(void)
 #ifdef MAP_VRAM
 	g_vram = (void *)0x70000000;
 	g_vram = mmap(g_vram, g_vram_size, PROT_READ | PROT_WRITE,
-			MAP_PRIVATE, g_screen_f, 0);
+			MAP_SHARED, g_screen_f, 0);
 	printf("g_vram at %p\n", g_vram);
 #else
 	g_vram = malloc(g_vram_size);
@@ -501,25 +501,29 @@ struct Window *g_desktop, *g_act_win;
 static void UpdateScreen(void)
 {
 #ifdef MAP_VRAM
-	if (g_bpp == 24) {
-		printf("UPdate24\n");
-		memcpy(g_vram, g_desktop->b.rgb, g_vram_size);
-		if (-1 == msync(g_vram, g_vram_size))
-			perror("cannot msync video memory");
-	} else {
+	//if (g_bpp == 24 && g_desktop->b.rgb != g_vram) memcpy(g_vram, g_desktop->b.rgb, g_vram_size);
+	if (g_bpp != 24) {
 		for (int y = 0; y < g_ny; y++) {
 			for (int x = 0; x < g_nx; x++) {
 				char *q = g_vram + y * g_nx + x;
 				RGB *p = g_desktop->b.rgb
 					+ y * g_desktop->b.sy
 					+ x * g_desktop->b.sx;
+#if 0
 				int c = (((p->r * 3) >> 8) & 0x03)
 				      |	(((p->g * 6) >> 6) & 0x1c)
 				      |	(((p->b * 6) >> 3) & 0xe0);
+#else
+				int c = (((p->b * 3) >> 8) & 0x03)
+				      |	(((p->g * 6) >> 6) & 0x1c)
+				      |	(((p->r * 6) >> 3) & 0xe0);
+#endif
 				*q = c;
 			}
 		}
 	}
+	if (-1 == msync(g_vram, g_vram_size, MS_SYNC))
+		perror("cannot msync video memory");
 #else
 	FILE *g_screen_f = fopen("/dev/fb0", "w");
 	if (!g_screen_f) {
@@ -534,9 +538,9 @@ static void UpdateScreen(void)
 		for (int y = 0; y < g_ny; y++) {
 			for (int x = 0; x < g_nx; x++) {
 				RGB *p = g_vram + y * g_nx + x;
-				int c = (((p->r * 3) >> 8) & 0x03)
+				int c = (((p->b * 3) >> 8) & 0x03)
 				      |	(((p->g * 6) >> 6) & 0x1c)
-				      |	(((p->b * 6) >> 3) & 0xe0);
+				      |	(((p->r * 6) >> 3) & 0xe0);
 				putc(c, g_screen_f);
 			}
 		}
@@ -915,6 +919,9 @@ static void desktop_init(void)
 	g_desktop = CreateWindow(NULL, 0, 0, g_nx, g_ny, 0, WF_NOSEL);
 #ifndef MAP_VRAM
 	g_vram = g_desktop->b.rgb;
+#else
+	if (g_bpp == 24)
+		g_desktop->b.rgb = g_vram;
 #endif
 }
 

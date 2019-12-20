@@ -85,6 +85,7 @@ enable_prot:
 	jmp 0x0008:start32
 
 set_video:
+	;jmp .vga13;;
 	mov di, buffer
 	mov ax, 0x4f00
 	int 0x10
@@ -116,11 +117,6 @@ set_video:
 	int 0x10
 	jc error
 	mov eax, [di + 0x28]
-	test eax, eax
-	jz .iszero
-	mov [vram_addr], eax
-	ret
-.iszero:
 	mov [vram_addr], dword 0xa0000
 	ret
 

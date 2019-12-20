@@ -163,11 +163,19 @@ static void mm_sep_del_area_in(
 	mm_del_area(vm);
 }
 
+static int mm_sync_area(
+		struct vm_area_struct *vm,
+		viraddr_t begin, viraddr_t end);
+
 int mm_find_sync_area(
 		struct mm_struct *mm,
 		viraddr_t begin, viraddr_t end)
 {
-	return 0;
+	struct vm_area_struct *vm = mm_find_area(mm, begin, end);
+	if (!vm) return 0;
+	if (vm->vm_begin > begin || vm->vm_end < end)
+		return 0;
+	return mm_sync_area(vm, begin, end);
 }
 
 int mm_find_replace_area(
@@ -302,6 +310,25 @@ int mm_page_fault(
 	if ((perm & PG_W) && pg->cow_next != pg)
 		do_cow_vm_page(pg);
 	page_insert(mm->pd, dup_page(pa2page(pg->pg_paddr)), (void *)va, perm);
+	return 1;
+}
+
+static int mm_sync_area(
+		struct vm_area_struct *vm,
+		viraddr_t begin, viraddr_t end)
+{
+	off_t offset;
+	viraddr_t va;
+	struct vm_page *pg;
+	if (!vm->vm_file)
+		return 0;
+	list_foreach(pg, &vm->vm_pages, pg_list) {
+		va = vm->vm_begin + (pg->pg_index << 12);
+		if (va >= begin && va <= end) {
+			offset = vm->vm_file_offset + (pg->pg_index << 12);
+			iwrite(vm->vm_file, offset, kvaddr(pg->pg_paddr), PGSIZE);
+		}
+	}
 	return 1;
 }
 
