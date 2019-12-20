@@ -6,5 +6,6 @@
 #define I_TC_SETATTR	0x1002
 #define I_FB_GET_NX	0x2001
 #define I_FB_GET_NY	0x2002
+#define I_FB_GET_BPP	0x2003
 
 #endif

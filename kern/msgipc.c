@@ -168,8 +168,9 @@ ssize_t sys_msgrcv(int msqid, void *msgb, size_t msgsz,
 		errno = EINVAL;
 		return -1;
 	}
-	return msqueue_receive(msq, msgtyp, (int *)msgb,
+	int ret = msqueue_receive(msq, msgtyp, (int *)msgb,
 			msgb + sizeof(long), msgsz, msgflg & IPC_NOWAIT);
+	return ret;
 }
 
 int sys_msgsnd(int msqid, const void *msgb, size_t msgsz, int msgflg)
@@ -179,6 +180,7 @@ int sys_msgsnd(int msqid, const void *msgb, size_t msgsz, int msgflg)
 		errno = EINVAL;
 		return -1;
 	}
-	return msqueue_send(msq, *(int *)msgb, msgb + sizeof(long),
+	int ret = msqueue_send(msq, *(int *)msgb, msgb + sizeof(long),
 			msgsz, msgflg & IPC_NOWAIT);
+	return ret;
 }

@@ -1262,6 +1262,7 @@ err:		error("\"%s\" Cannot write: %s", path, strerror(errno));
 		goto err;
 
 	g_path = path;
+	newfile = 0;
 
 	show_file_status();
 	redraw();

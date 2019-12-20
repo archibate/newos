@@ -13,8 +13,8 @@
 
 static int ptmx, hdc, hwnd, over;
 
-#define CON_COLS 25
-#define CON_ROWS 8
+#define CON_COLS 80
+#define CON_ROWS 25
 #define CON_SIZE (CON_COLS * CON_ROWS)
 const int xWin = CON_COLS * 8, yWin = CON_ROWS * 16;
 
@@ -24,15 +24,15 @@ static char con_buf[CON_SIZE];
 static void con_update(void)
 {
 	int i, j;
-	XSetFillStyle(hdc, 0, 3 + 6*4 + 6*32);
+	XSetFillStyle(hdc, 0, 0xc0c0c0);
 	XFillRect(hdc, 0, 0, xWin, yWin);
 	for (i = 0; i < CON_ROWS; i++) {
 		XTextOut(hdc, 0, i * 16, con_buf + i * CON_COLS, CON_COLS);
 	}
 	int cx = (con_pos % CON_COLS) * 8, cy = (con_pos / CON_COLS) * 16;
-	if (!hide_cur) XSetFillStyle(hdc, 3 + 6*4 + 6*32, 0);
+	if (!hide_cur) XSetFillStyle(hdc, 0xc0c0c0, 0);
 	XFillRect(hdc, cx, cy, cx + 8, cy + 16);
-	XTextOut(hdc, 0, cy * 16, con_buf + con_pos, CON_COLS);
+	XTextOut(hdc, 0, cy * 16, con_buf + con_pos, 1);
 	XUpdateDC(hdc);
 	XUpdateWindow(hwnd);
 }
@@ -215,7 +215,8 @@ static void open_child_shell(char *const *argv)
 		}
 		dup2(fd, 0);
 		dup2(fd, 1);
-		// todo: fcntl(F_SETFL)
+		fcntl(0, F_SETFL, O_RDONLY | O_CLOEXEC);
+		fcntl(1, F_SETFL, O_WRONLY | O_CLOEXEC);
 		dup2(1, 2);
 		if (!argv[0])
 			argv = defl_argv;
@@ -240,6 +241,9 @@ static void do_message(struct Message *msg)
 		if (write(ptmx, data, 1) != 1)
 			perror("cannot write /dev/ptmx");
 		break;
+	/*case WM_DESTROY:
+		kill(0, SIGKILL);
+		break;*/
 	}
 	ssetmask(0);
 	//printf("do_message end\n");
@@ -280,11 +284,15 @@ int main(int argc, char **argv)
 		perror("cannot connect X server");
 	}
 
+	ssetmask(-1);
 	XCreateWindow(&hwnd, 0, 30, 30, xWin, yWin, WT_CAPTION | WF_MOVE | WF_KEYDOWN);
 	XSetWindowText(hwnd, "Terminal");
 	XCreateDC(&hdc, hwnd);
 	init_terminal();
 	XUpdateWindow(hwnd);
+
+	XCreateListener(&hmon);
+	XListenerBind(hmon, hwnd, 1);
 
 	signal(SIGCHLD, on_child);
 	open_child_shell(argv + 1);
@@ -301,8 +309,8 @@ int main(int argc, char **argv)
 	signal(SIGALRM, on_alarm);
 	alarm(1);
 
-	XCreateListener(&hmon);
-	XListenerBind(hmon, hwnd, 1);
+	ssetmask(0);
+
 	while (!over) {
 		memset(&msg, 0, sizeof(msg));
 		if (-1 == XListen(hmon, &msg)) {

@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 void XCreateDC(int *hdc, int hwnd)
 {
 	struct msg {
@@ -78,14 +80,14 @@ void XTextOut(int hdc, int x0, int y0, const char *text, int count)
 		int hdc;
 		int x0;
 		int y0;
-		char text[33];
+		char text[128];
 		int count;
 	} m;
 	m.cmd = 6;
 	m.hdc = hdc;
 	m.x0 = x0;
 	m.y0 = y0;
-	memcpy(m.text, text, 33 * sizeof(char));
+	memcpy(m.text, text, 128 * sizeof(char));
 	m.count = count;
 	msgsnd(g_msq, &m, sizeof(m) - sizeof(m.cmd), 0);
 }

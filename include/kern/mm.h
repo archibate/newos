@@ -23,6 +23,7 @@
 #define KERNEL_PMAP 0x400000
 #define KERNEL_STKS 0x18000000
 #define KERNEL_HEAP 0x20000000
+#define KERNEL_VRAM 0x3f000000
 #define KERNEL_END  0x40000000
 
 #define kvaddr(pa) ((void *)(pa) + KERNEL_BASE)
@@ -130,6 +131,9 @@ int mm_find_replace_area(
 		struct mm_struct *mm,
 		viraddr_t begin, viraddr_t end,
 		int noreplace);
+int mm_find_sync_area(
+		struct mm_struct *mm,
+		viraddr_t begin, viraddr_t end);
 void mm_del_area(struct vm_area_struct *vm);
 struct vm_page *vm_area_new_page(
 		struct vm_area_struct *vm,

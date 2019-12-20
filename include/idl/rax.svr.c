@@ -26,7 +26,7 @@
 				int hdc;
 				int x0;
 				int y0;
-				char text[33];
+				char text[128];
 				int count;
 			} a6;
 			struct a7 {

@@ -163,6 +163,13 @@ static void mm_sep_del_area_in(
 	mm_del_area(vm);
 }
 
+int mm_find_sync_area(
+		struct mm_struct *mm,
+		viraddr_t begin, viraddr_t end)
+{
+	return 0;
+}
+
 int mm_find_replace_area(
 		struct mm_struct *mm,
 		viraddr_t begin, viraddr_t end,

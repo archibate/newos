@@ -1,4 +1,5 @@
 #include <kern/mm.h>
+#include <kern/kernel.h>
 #include <kern/fs.h>
 #include <kern/sched.h>
 #include <errno.h>
@@ -56,5 +57,20 @@ int sys_munmap(void *addr, size_t length)
 	}
 	mm_find_replace_area(current->mm, (viraddr_t)addr,
 			(viraddr_t)addr + length - 1, 0);
+	return 0;
+}
+
+int sys_msync(void *addr, size_t length)
+{
+	length = (length + PGSIZE - 1) & PGMASK;
+	if (!length || PGOFFS(addr)) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!mm_find_sync_area(current->mm, (viraddr_t)addr,
+			(viraddr_t)addr + length - 1)) {
+		errno = ENOMEM;
+		return -1;
+	}
 	return 0;
 }

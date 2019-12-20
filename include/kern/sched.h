@@ -31,6 +31,17 @@
 #define K_EFLAGS	5
 #define NR_KREGS	6
 
+#if 0
+struct handle {
+	struct list_node list;
+	struct task *server;
+};
+
+struct container {
+	struct list_head handles;
+};
+#endif
+
 struct task {
 	int state;
 	int counter;
@@ -51,6 +62,10 @@ struct task {
 	struct inode *root;
 	struct mm_struct *mm;
 	struct file *filp[NR_OPEN];
+
+#if 0
+	struct container *conp[NR_CONT];
+#endif
 
 	char *command;
 };

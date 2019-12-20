@@ -16,6 +16,13 @@ page2pa(struct page_info *page)
 }
 
 struct page_info *
+__pa2page(physaddr_t pa)
+{
+	size_t i = pa >> 12;
+	return &pages[i];
+}
+
+struct page_info *
 pa2page(physaddr_t pa)
 {
 	size_t i = pa >> 12;

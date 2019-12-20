@@ -85,8 +85,34 @@ enable_prot:
 	jmp 0x0008:start32
 
 set_video:
-	mov ax, 0x0013
 	mov di, buffer
+	mov ax, 0x4f00
+	int 0x10
+	cmp ax, 0x004f
+	jne .vga13
+	cmp word [di + 4], 0x0200
+	jb .vga13
+	mov cx, 0x118
+	mov ax, 0x4f01
+	int 0x10
+	cmp ax, 0x004f
+	jne .vga13
+	test word [di], 0x0080
+	jz .vga13
+	mov ax, [di + 0x12]
+	mov [vram_nx], ax
+	mov ax, [di + 0x14]
+	mov [vram_ny], ax
+	mov al, [di + 0x19]
+	mov [vram_bpp], al
+	mov eax, [di + 0x28]
+	mov [vram_addr], eax
+	mov bx, 0x4118
+	mov ax, 0x4f02
+	int 0x10
+	ret
+.vga13:
+	mov ax, 0x0013
 	int 0x10
 	jc error
 	mov eax, [di + 0x28]
@@ -114,6 +140,11 @@ start32:
 	xor eax, eax
 	mov ecx, (kmem_size + 3 - kern_size) >> 2
 	rep stosd
+	mov eax, [vram_addr]
+	mov [eax + 40000], dword 0xffffffff
+	mov [eax + 40004], dword 0xffffffff
+	mov [eax + 40008], dword 0xffffffff
+	mov [eax + 40012], dword 0xffffffff
 	jmp 0x0008:kern_addr
 
 	align 8

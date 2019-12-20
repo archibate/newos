@@ -4,7 +4,7 @@ XUpdateDC	: int hdc
 XDestroyDC	: int hdc
 XSetFillStyle	: int hdc, int bgcolor, int fgcolor
 XFillRect	: int hdc, int x0, int y0, int x1, int y1
-XTextOut	: int hdc, int x0, int y0, char text[33], int count
+XTextOut	: int hdc, int x0, int y0, char text[128], int count
 XSetPixel	: int hdc, int x0, int y0
 XCreateWindow	: out int hwnd, int hparent, int x0, int y0, int nx, int ny, int flags
 XUpdateWindow	: int hwnd

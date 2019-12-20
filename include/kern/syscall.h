@@ -186,6 +186,7 @@ _syscall3(36, int, msgctl, int, int, struct msqid_ds *);
 _syscall5(37, ssize_t, msgrcv, int, void *, size_t, long, int);
 _syscall4(38, int, msgsnd, int, const void *, size_t, int);
 _syscall3(39, int, ionotify, int, int, long);
+_syscall2(40, int, msync, void *, size_t);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:
