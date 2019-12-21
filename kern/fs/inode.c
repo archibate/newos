@@ -7,9 +7,9 @@
 struct inode inodes[NINODES];
 static struct task *inode_buffer_wait;
 
-#ifdef _KDEBUG
 void dump_inode(int more)
 {
+#ifdef _KDEBUG
 	struct inode *ip;
 	printk("dev| ino |#l|ud|%");
 	for (ip = inodes; ip < inodes + NINODES; ip++) {
@@ -20,8 +20,8 @@ void dump_inode(int more)
 		"u-"[!ip->i_uptodate], "d-"[!ip->i_dirt],
 		ip->i_count);
 	}
-}
 #endif
+}
 
 static struct inode *__alloc_m_inode(void)
 {

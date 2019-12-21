@@ -9,6 +9,10 @@
 #include <bits/signal.h>
 // Get CLOCKS_PER_SEC, time_t, clock_t.
 #include <bits/time.h>
+// >>>>>>>>>>>> IPC
+// Get list data structure.
+#include <ds/list.h>
+// <<<<<<<<<<<< IPC
 
 #define _S(sig) (1 << ((sig) - 1))
 #define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
@@ -42,6 +46,38 @@ struct container {
 };
 #endif
 
+// >>>>>>>>>>>> IPC
+#define NR_CONN NR_OPEN
+#define NR_CHANNELS 8
+
+enum endpoint_status
+{
+	EP_FREE = 0,	/* recver busy on other things and no sender, buffer clean */
+	EP_WAIT,	/* recv -> send: recver ready, buffer clean */
+	EP_SENT,	/* send -> recv: sender ready, buffer valid */
+	EP_RCVD,	/* recv -> reply: recver processing, ep->reply valid */
+};
+
+struct endpoint
+{
+	enum endpoint_status state;
+
+	struct list_head sender;	/* queue waiting for you to be READY */
+	struct connection *reply;	/* target you accepted & going to reply */
+	struct task *server;		/* endpoint owner */
+
+	char *buf;		/* message recving buffer */
+	size_t bufsize;		/* buffer size */
+	size_t size;		/* size of actual message */
+};
+// <<<<<<<<<<<< IPC
+
+struct connection
+{
+	struct endpoint *endp;	/* connect to what */
+	struct task *client;	/* connection owner */
+};
+
 struct task {
 	int state;
 	int counter;
@@ -63,6 +99,12 @@ struct task {
 	struct mm_struct *mm;
 	struct file *filp[NR_OPEN];
 
+// >>>>>>>>>>>> IPC
+	struct list_node ipc_list;
+	struct connection conn[NR_CONN];
+	struct endpoint channels[NR_CHANNELS];
+// <<<<<<<<<<<< IPC
+
 #if 0
 	struct container *conp[NR_CONT];
 #endif
@@ -82,7 +124,7 @@ extern struct task *exit_wait;
 
 void switch_to(int i);
 int schedule(void);
-void do_pause(void);
+int sys_pause(void);
 void block_policy_enter(int o_nonblock);
 void block_policy_leave(void);
 void block_on(struct task **p);

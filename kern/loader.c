@@ -18,7 +18,7 @@ static void load_dynamics(struct mm_struct *mm, viraddr_t addr,
 	int ret;
 	char *name;
 	off_t dlt_pos;
-	viraddr_t disp;
+	viraddr_t disp = 0;
 	struct elf32_dlhdr dl;
 	struct inode *dlip;
 	for (dlt_pos = offset;

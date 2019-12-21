@@ -187,6 +187,11 @@ _syscall5(37, ssize_t, msgrcv, int, void *, size_t, long, int);
 _syscall4(38, int, msgsnd, int, const void *, size_t, int);
 _syscall3(39, int, ionotify, int, int, long);
 _syscall3(40, int, msync, void *, size_t, int);
+_syscall3(41, int, Connect, int, pid_t, id_t);
+_syscall1(42, int, CreateChannel, id_t);
+struct msgio;
+_syscall3(43, int, MsgSend, int, struct msgio *, size_t);
+_syscall3(44, int, MsgReceive, id_t, struct msgio *, size_t);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:

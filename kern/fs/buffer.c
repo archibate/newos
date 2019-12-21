@@ -6,9 +6,9 @@
 struct buf buffer[NBUFS];
 static struct task *buffer_wait;
 
-#ifdef _KDEBUG
 void dump_buffer(int more)
 {
+#ifdef _KDEBUG
 	struct buf *b;
 	printk("dev|blkno|udb|%");
 	for (b = buffer; b < buffer + NBUFS; b++) {
@@ -19,8 +19,8 @@ void dump_buffer(int more)
 		"d-"[!b->b_dirt], "b-"[!b->b_wait],
 		b->b_count);
 	}
-}
 #endif
+}
 
 static struct buf *getblk(dev_t dev, blkno_t blkno)
 {

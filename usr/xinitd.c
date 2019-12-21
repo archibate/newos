@@ -921,7 +921,7 @@ static void desktop_init(void)
 	g_vram = g_desktop->b.rgb;
 #else
 	if (g_bpp == 24)
-		g_desktop->b.rgb = g_vram;
+		g_desktop->b.rgb = g_vram;// - 4;
 #endif
 }
 

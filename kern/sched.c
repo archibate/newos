@@ -20,9 +20,9 @@ __attribute__((fastcall)) void switch_context(
 #define TASK_BLOCKED	2
 #define TASK_ZOMBIE	3
 #define TASK_STOPPED	4
-#ifdef _KDEBUG
 void dump_tasks(void)
 {
+#ifdef _KDEBUG
 	printk(" pid|ppid|prio|s| command");
 	for (int i = 0; i < NTASKS; i++) {
 		struct task *p = task[i];
@@ -31,8 +31,8 @@ void dump_tasks(void)
 			p->priority, "rwbzs?????"[p->state % 10],
 			p->command ? p->command : "(noname)");
 	}
-}
 #endif
+}
 
 static void switch_to_current_from(struct task *previous)
 {
@@ -148,7 +148,7 @@ repeat:	current->state = TASK_SLEEPING;
 		errno = EINTR;
 		return 1;
 	}
-	if (task_signal(current))
+	//if (task_signal(current))//????
 		//printk("rep within signal");
 	if (*p && *p != current) {
 		(*p)->state = 0;

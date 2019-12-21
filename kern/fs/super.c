@@ -4,12 +4,12 @@
 
 struct super_block super[NR_SUPER];
 
-#ifdef _KDEBUG
 void dump_super(void)
 {
+#ifdef _KDEBUG
 	panic("dump_super() UIMP");
-}
 #endif
+}
 
 struct super_block *get_super(dev_t dev)
 {

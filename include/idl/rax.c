@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 void XCreateDC(int *hdc, int hwnd)
 {
 	struct msg {

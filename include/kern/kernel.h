@@ -13,4 +13,10 @@ __attribute__((noreturn)) void do_panic(void);
 	do_panic(); \
 } while (0)
 
+#define assert(x) do { \
+	if (!(x)) { \
+		panic("assert(" #x ") failed"); \
+	} \
+} while (0)
+
 #endif

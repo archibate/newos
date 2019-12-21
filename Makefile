@@ -1,5 +1,4 @@
 DISP=1
-VIDEO=1
 #####################################
 ifdef RELEASE
 OPTIM=3
