@@ -50,6 +50,13 @@ struct container {
 #define NR_CONN NR_OPEN
 #define NR_CHANNELS 8
 
+struct msgbuf
+{
+	char *buf;		/* buffer pointer */
+	size_t bufsize;		/* buffer size */
+	size_t size;		/* size of actual message */
+};
+
 enum endpoint_status
 {
 	EP_FREE = 0,	/* recver busy on other things and no sender, buffer clean */
@@ -62,20 +69,22 @@ struct endpoint
 {
 	enum endpoint_status state;
 
-	struct list_head sender;	/* queue waiting for you to be READY */
+	struct list_head waiting;	/* queue waiting for you to be READY */
 	struct connection *reply;	/* target you accepted & going to reply */
 	struct task *server;		/* endpoint owner */
 
-	char *buf;		/* message recving buffer */
-	size_t bufsize;		/* buffer size */
-	size_t size;		/* size of actual message */
+	struct msgbuf msg;		/* message recving buffer */
 };
 // <<<<<<<<<<<< IPC
 
 struct connection
 {
-	struct endpoint *endp;	/* connect to what */
-	struct task *client;	/* connection owner */
+	struct list_node ipc_list;	/* to queue in ep->waiting */
+	struct endpoint *endp;		/* connect to what */
+	struct task *client;		/* connection owner */
+
+	struct msgbuf rep;		/* message replying buffer */
+	int replied;			/* tell wheather is replied */
 };
 
 struct task {
@@ -100,7 +109,6 @@ struct task {
 	struct file *filp[NR_OPEN];
 
 // >>>>>>>>>>>> IPC
-	struct list_node ipc_list;
 	struct connection conn[NR_CONN];
 	struct endpoint channels[NR_CHANNELS];
 // <<<<<<<<<<<< IPC

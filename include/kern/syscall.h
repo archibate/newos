@@ -190,8 +190,9 @@ _syscall3(40, int, msync, void *, size_t, int);
 _syscall3(41, int, Connect, int, pid_t, id_t);
 _syscall1(42, int, CreateChannel, id_t);
 struct msgio;
-_syscall3(43, int, MsgSend, int, struct msgio *, size_t);
+_syscall5(43, int, MsgSend, int, struct msgio *, size_t, struct msgio *, size_t);
 _syscall3(44, int, MsgReceive, id_t, struct msgio *, size_t);
+_syscall3(45, int, MsgReply, id_t, struct msgio *, size_t);
 
 #ifdef _DEFINE_KERNEL_SYSCALL_SWITCH
 	default:
