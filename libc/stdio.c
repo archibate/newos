@@ -57,7 +57,11 @@ static FILE _stderr = {
 	.bufsiz = BUFSIZ,
 };
 
-FILE *__iob[3] = {&_stdin, &_stdout, &_stderr};
+static FILE *__iob[3] = {&_stdin, &_stdout, &_stderr};
+
+FILE **__iob_location() {
+    return __iob;
+}
 
 void __stdio_init_buffers(void) {
 	_stdin.read_buf = malloc(BUFSIZ);

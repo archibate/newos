@@ -23,10 +23,10 @@ typedef struct _fpos {
 	long __pos;
 } fpos_t;
 
-extern FILE *__iob[3];
-#define stdin  (__iob[0])
-#define stdout (__iob[1])
-#define stderr (__iob[2])
+FILE **__iob_location();
+#define stdin  (__iob_location()[0])
+#define stdout (__iob_location()[1])
+#define stderr (__iob_location()[2])
 #define fgetc getc
 #define fputc putc
 
