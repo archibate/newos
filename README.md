@@ -67,7 +67,9 @@ make run VIDEO=1
 
 will run our OS in graphics mode (work in progress).
 
-`vncviewer :5900`
+```bash
+vncviewer :5900
+```
 
 to view the graphics.
 
