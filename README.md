@@ -34,16 +34,48 @@ A hobby unix-like operating system
 - bochs 2.6.9 (for bximage)
 - python 3.8.0 (for tools/idl.py)
 - gdb 8.3.1 (for debugging)
+- tigervnc 1.13.1 (for viewing)
 
 #### To build:
-`make all`
+```bash
+make all
+```
 
 will create `build/boot.img`.
 
 #### To run:
-`make run`
+```bash
+make run
+```
 
 will run our OS in qemu.
+
+`vncviewer :5900`
+
+to view the console.
+
+try typing this in our console:
+```bash
+vi /usr/src/snake.c
+```
+
+#### To run in graphics:
+```bash
+make clean
+make run VIDEO=1
+```
+
+will run our OS in graphics mode (work in progress).
+
+`vncviewer :5900`
+
+to view the graphics.
+
+try typing this in the serial terminal:
+```bash
+bkg xinitd
+xtest
+```
 
 ### Errors on your machine?
 Please contact me at <u>17721388340@163.com</u>.
