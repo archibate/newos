@@ -11,10 +11,8 @@
 
 #define RAND_MAX 32767
 
-#ifndef _LIBC_EXP
-#define environ (*IMP$environ)
-#endif
-extern char **environ;
+char ***__environ_location();
+#define environ (*__environ_location())
 
 typedef struct _div {
 	int quot, rem;

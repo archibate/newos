@@ -2,8 +2,12 @@
 #include <getopt.h>
 #include <string.h>
 
-char *optarg;
-int optind = 1, opterr = 1, optopt;
+static struct _getopt __getopt;
+
+struct _getopt *__getopt_location() {
+    return &__getopt;
+}
+
 static int optinn = 0;
 
 int getopt(int argc, char *const *argv, const char *optstr)

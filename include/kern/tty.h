@@ -38,7 +38,7 @@ struct tty_struct
 	int valid;
 };
 
-struct tty_struct ttys[NTTYS];
+extern struct tty_struct ttys[NTTYS];
 
 void tty_intr(int num);
 size_t tty_read(int num, char *buf, size_t n);

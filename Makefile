@@ -4,7 +4,7 @@ ifdef RELEASE
 OPTIM=3
 STRIP=strip
 else
-CFLAGS+=-ggdb -gstabs+ -D_KDEBUG
+CFLAGS+=-ggdb -D_KDEBUG
 endif
 ifeq ($(STRIP),)
 STRIP=:
@@ -59,7 +59,7 @@ build/boot.img: build/boot/bootsect.S.bin build/vmlinux.bin build/usr/busybox bu
 	@echo + '[gen]' $@
 	@mkdir -p $(@D)
 	@-rm -rf $@
-	@bximage -q -mode=create -imgmode=flat -hd=10M $@
+	@bximage -q -func=create -imgmode=flat -hd=10M $@
 	@tools/dd.sh if=$< of=$@ bs=2048 count=1 conv=notrunc
 	@tools/dd.sh if=$(word 2, $^) of=$@ bs=1024 seek=2 conv=notrunc count=`tools/blks.c $(word 2, $^)`
 	@tools/mknefs.c $@ -r `tools/blks.c build/vmlinux.bin | awk '{print $$1}'` -L NewOS -f build/filesys.txt
@@ -133,8 +133,8 @@ include/idl/%.c include/idl/%.h include/idl/%.svr.c: scripts/%.idl tools/idl.py
 	@echo - '[idl]' $<
 	@tools/idl.py $< include/idl/$*.c include/idl/$*.h include/idl/$*.svr.c
 
-build/lib%: CFLAGS+=-fPIC -D_LIBC_EXP
-build/kern/%: CFLAGS+=-D_LIBC_EXP
+build/lib%: CFLAGS+=-fPIC
+build/kern/%: CFLAGS+=
 
 build/librax.%: LIBS+=c
 

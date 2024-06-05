@@ -1,14 +1,18 @@
 #ifndef _GETOPT_H
 #define _GETOPT_H 1
 
-#ifndef _LIBC_EXP
-#define optarg (*IMP$optarg)
-#define optind (*IMP$optind)
-#define opterr (*IMP$opterr)
-#define optopt (*IMP$optopt)
-#endif
 int getopt(int argc, char *const *argv, const char *optstr);
-extern char *optarg;
-extern int optind, opterr, optopt;
+
+struct _getopt {
+    char *_optarg;
+    int _optind, _opterr, _optopt;
+};
+
+struct _getopt *__getopt_location();
+
+#define optarg (__getopt_location()->_optarg)
+#define optind (__getopt_location()->_optind)
+#define opterr (__getopt_location()->_opterr)
+#define optopt (__getopt_location()->_optopt)
 
 #endif

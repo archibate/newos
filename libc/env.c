@@ -1,7 +1,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-char **environ;
+static char **_environ;
+
+char ***__environ_location() {
+    return &_environ;
+}
 
 char *getenv(const char *name)
 {

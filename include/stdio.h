@@ -23,9 +23,6 @@ typedef struct _fpos {
 	long __pos;
 } fpos_t;
 
-#ifndef _LIBC_EXP
-#define __iob (*IMP$__iob)
-#endif
 extern FILE *__iob[3];
 #define stdin  (__iob[0])
 #define stdout (__iob[1])
